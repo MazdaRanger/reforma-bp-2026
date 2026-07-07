@@ -69,6 +69,9 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
             // 1. Physically Arrived (flagged in Job via Receiving PO)
             if (part.hasArrived) {
                 status = 'ARRIVED';
+                if (part.inventoryId && stockMap[part.inventoryId]) {
+                    stockMap[part.inventoryId] -= reqQty;
+                }
                 readyCount++;
             }
             // 2. In Stock at Warehouse (FIFO Allocation)
@@ -527,19 +530,19 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
                                                 <div className="flex flex-col gap-2">
                                                     {part.allocationStatus !== 'ISSUED' && (
                                                         <button 
-                                                            disabled={isUpdating || part.hasArrived}
+                                                            disabled={isUpdating || part.hasArrived || part.allocationStatus === 'READY'}
                                                             onClick={() => handleToggleIndent(idx, part.isIndent, part.indentETA)}
                                                             className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border shadow-sm ${
-                                                                part.hasArrived ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50' :
+                                                                (part.hasArrived || part.allocationStatus === 'READY') ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50' :
                                                                 part.isIndent 
                                                                     ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100' 
                                                                     : 'bg-red-600 text-white border-red-700 hover:bg-red-700 hover:scale-105 active:scale-95'
                                                             }`}
                                                         >
-                                                            {part.hasArrived ? 'SELESAI' : part.isIndent ? 'BATAL INDENT' : 'SET INDENT'}
+                                                            {(part.hasArrived || part.allocationStatus === 'READY') ? 'SELESAI' : part.isIndent ? 'BATAL INDENT' : 'SET INDENT'}
                                                         </button>
                                                     )}
-                                                    {part.hasArrived && (
+                                                    {(part.hasArrived || part.allocationStatus === 'READY') && (
                                                         <button 
                                                             disabled={isUpdating}
                                                             onClick={() => handleSwitchPart(idx, part)}
