@@ -1,13 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, List, LogOut, User, Menu, PlusCircle, FileText, Settings, Package, ChevronDown, ChevronRight, Truck, Wrench, PaintBucket, ShoppingCart, ClipboardList, BarChart3, Banknote, Scale, FileCheck, Landmark, ExternalLink, Briefcase, Phone, MessageSquare, Hammer, FileSpreadsheet, ShieldCheck, PieChart, TrendingUp, Trophy, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { LayoutDashboard, List, LogOut, User, Menu, PlusCircle, FileText, Settings, Package, ChevronDown, ChevronRight, Truck, Wrench, PaintBucket, ShoppingCart, ClipboardList, BarChart3, Banknote, Scale, FileCheck, Landmark, ExternalLink, Briefcase, MessageSquare, Hammer, FileSpreadsheet, ShieldCheck, TrendingUp, Trophy, Sparkles } from 'lucide-react';
 import { UserProfile, UserPermissions, Settings as SystemSettings } from '../../types';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -90,7 +89,12 @@ const DICTIONARY: Record<string, Record<string, string>> = {
 const Sidebar: React.FC<SidebarProps> = ({ 
   isOpen, setIsOpen, currentView, setCurrentView, userData, userPermissions, onLogout, settings 
 }) => {
-  const [expandedMenuId, setExpandedMenuId] = useState<string | "">("");
+  const [expandedMenuId, setExpandedMenuId] = useState<string>('');
+  // Track the "pinned" open accordion — the one the user had open before collapsing
+  const [pinnedMenuId, setPinnedMenuId] = useState<string>('');
+  const [collapsed, setCollapsed] = useState(true);
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const lang = settings.language || 'id';
   const t = (key: string) => DICTIONARY[lang]?.[key] || key;
 
@@ -161,106 +165,349 @@ const Sidebar: React.FC<SidebarProps> = ({
     return items;
   }, [userPermissions, lang]);
 
+  // Auto-expand the parent of the active view
   useEffect(() => {
     const activeParent = menuItems.find(item => 
       item.children?.some(child => child.id === currentView)
     );
-    if (activeParent) setExpandedMenuId(activeParent.id);
+    if (activeParent) {
+      setPinnedMenuId(activeParent.id);
+      setExpandedMenuId(activeParent.id);
+    }
   }, [currentView, menuItems]);
 
-  const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl border-r">
-      <div className="p-6 flex justify-between items-center border-b bg-background/50">
-        <div>
-          <h2 className="text-xl font-extrabold text-primary tracking-tight">ReForma</h2>
-          <p className="text-xs text-muted-foreground font-medium">Body & Paint System</p>
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="md:hidden text-muted-foreground"><Menu size={20} /></Button>
-      </div>
-      
-      <div className="flex-grow p-4 overflow-y-auto scrollbar-thin">
-        <Accordion type="single" collapsible value={expandedMenuId} onValueChange={setExpandedMenuId} className="w-full space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const hasChildren = item.children && item.children.length > 0;
-            const isSingleActive = !hasChildren && currentView === item.id;
-            const isParentActive = hasChildren && item.children?.some(child => child.id === currentView);
+  const handleMouseEnter = () => {
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    setCollapsed(false);
+    // Restore the pinned expanded menu when sidebar re-opens
+    setExpandedMenuId(pinnedMenuId);
+  };
 
-            return (
-              <div key={item.id} className="mb-1">
-                {!hasChildren ? (
-                  <Button 
-                    variant={isSingleActive ? "default" : "ghost"}
-                    className={cn("w-full justify-start gap-3", isSingleActive ? "shadow-md" : "text-muted-foreground hover:text-primary")}
-                    onClick={() => { setCurrentView(item.id); setIsOpen(false); }}
-                  >
-                    <Icon size={18}/> {item.label}
-                  </Button>
-                ) : (
-                  <AccordionItem value={item.id} className="border-none">
-                    <AccordionTrigger className={cn("px-3 py-2 rounded-md hover:bg-accent hover:no-underline transition-all", isParentActive && expandedMenuId !== item.id && "bg-primary/10 text-primary", !isParentActive && "text-muted-foreground")}>
-                      <div className="flex items-center gap-3"><Icon size={18}/> {item.label}</div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-1 pt-1">
-                      <div className="flex flex-col space-y-1 pl-4 border-l ml-4 mt-1 border-border/50">
+  const handleMouseLeave = () => {
+    // Small delay so users can click items near the edge
+    collapseTimerRef.current = setTimeout(() => {
+      setCollapsed(true);
+      setExpandedMenuId(''); // Close all dropdowns when sidebar collapses
+    }, 200);
+  };
+
+  const handleAccordionChange = (val: string) => {
+    setExpandedMenuId(val);
+    setPinnedMenuId(val); // Remember user's last manual selection
+  };
+
+  // Desktop sidebar nav content
+  const NavItems = () => (
+    <div className="flex flex-col space-y-0.5">
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        const hasChildren = item.children && item.children.length > 0;
+        const isSingleActive = !hasChildren && currentView === item.id;
+        const isParentActive = hasChildren && item.children?.some(child => child.id === currentView);
+        const isExpanded = expandedMenuId === item.id;
+
+        return (
+          <div key={item.id}>
+            {!hasChildren ? (
+              // ── Leaf menu item ──────────────────────────────────────────
+              <button
+                onClick={() => { setCurrentView(item.id); setIsOpen(false); }}
+                title={collapsed ? item.label : undefined}
+                className={cn(
+                  'relative flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+                  isSingleActive
+                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                <Icon size={18} className="shrink-0" />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="truncate"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {/* Collapsed tooltip */}
+                {collapsed && (
+                  <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-md bg-foreground/90 px-2 py-1 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-md">
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            ) : (
+              // ── Parent menu with children ────────────────────────────
+              <div className={cn('rounded-xl overflow-hidden transition-colors duration-200', isExpanded && !collapsed ? 'bg-accent/40' : '')}>
+                <button
+                  onClick={() => {
+                    if (collapsed) {
+                      // Expand sidebar first on click when collapsed
+                      setCollapsed(false);
+                      setExpandedMenuId(item.id);
+                      setPinnedMenuId(item.id);
+                    } else {
+                      handleAccordionChange(isExpanded ? '' : item.id);
+                    }
+                  }}
+                  title={collapsed ? item.label : undefined}
+                  className={cn(
+                    'relative flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+                    isParentActive && !isExpanded
+                      ? 'text-primary bg-primary/10'
+                      : isExpanded && !collapsed
+                        ? 'text-foreground font-semibold'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <Icon size={18} className="shrink-0" />
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -6 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className="flex-1 text-left truncate ml-3"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="ml-auto shrink-0"
+                      >
+                        <motion.div
+                          animate={{ rotate: isExpanded ? 90 : 0 }}
+                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        >
+                          <ChevronRight size={15} />
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  {/* Active dot indicator when collapsed */}
+                  {collapsed && isParentActive && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                  {/* Collapsed tooltip */}
+                  {collapsed && (
+                    <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-md bg-foreground/90 px-2 py-1 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-md">
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown sub-menu */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && !collapsed && (
+                    <motion.div
+                      key="submenu"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="flex flex-col gap-0.5 pl-5 pr-2 pb-2 pt-1 border-l-2 border-primary/20 ml-6">
                         {item.children?.map(child => {
                           const ChildIcon = child.icon;
                           const isChildActive = currentView === child.id;
                           return (
-                            <Button
+                            <button
                               key={child.id}
-                              variant={isChildActive ? "secondary" : "ghost"}
-                              className={cn("w-full justify-start gap-3 h-9 font-normal", isChildActive ? "font-semibold text-primary" : "text-muted-foreground")}
                               onClick={() => { setCurrentView(child.id); setIsOpen(false); }}
+                              className={cn(
+                                'flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-all duration-150',
+                                isChildActive
+                                  ? 'bg-primary/15 text-primary font-semibold'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              )}
                             >
-                              <ChildIcon size={16} className={isChildActive ? "text-primary" : "opacity-70"}/> {child.label}
-                            </Button>
-                          )
+                              <ChildIcon size={15} className={cn('shrink-0', isChildActive ? 'text-primary' : 'opacity-60')} />
+                              <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.05 }}
+                              >
+                                {child.label}
+                              </motion.span>
+                            </button>
+                          );
                         })}
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )
-          })}
-        </Accordion>
-      </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
-      <div className="p-4 border-t bg-background/50 space-y-3">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <Avatar className="h-9 w-9 border shadow-sm">
-              <AvatarFallback className="bg-primary/10 text-primary"><User size={18}/></AvatarFallback>
+  // ── Desktop sidebar (collapsible) ──────────────────────────────────────
+  const DesktopSidebar = () => (
+    <motion.aside
+      initial={false}
+      animate={{ width: collapsed ? 64 : 256 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="hidden md:flex h-screen flex-col z-30 sticky top-0 left-0 overflow-hidden shrink-0"
+    >
+      <div className="flex h-full flex-col bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl border-r">
+        {/* Header */}
+        <div className={cn('flex items-center border-b bg-background/50 transition-all duration-200', collapsed ? 'p-3 justify-center' : 'p-4 gap-3')}>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
+            <span className="text-primary-foreground font-extrabold text-sm">R</span>
+          </div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <h2 className="text-base font-extrabold text-foreground tracking-tight leading-none">ReForma</h2>
+                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Body & Paint System</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Nav items */}
+        <div className="flex-grow p-2 overflow-y-auto overflow-x-hidden scrollbar-thin">
+          <NavItems />
+        </div>
+
+        {/* Footer: user & settings */}
+        <div className={cn('border-t bg-background/50 transition-all duration-200', collapsed ? 'p-2' : 'p-3 space-y-2')}>
+          <div className={cn('flex items-center transition-all duration-200', collapsed ? 'justify-center flex-col gap-2' : 'justify-between px-1')}>
+            <div className={cn('flex items-center overflow-hidden', collapsed ? 'flex-col gap-1' : 'gap-2')}>
+              <Avatar className="h-8 w-8 border shadow-sm shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                  {(userData.displayName || userData.email || 'U').charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs font-bold text-foreground truncate max-w-[100px]">{userData.displayName || userData.email || 'User'}</p>
+                    <p className="text-[10px] text-muted-foreground truncate capitalize">{userPermissions.role}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <button
+              onClick={() => { setCurrentView('settings'); setIsOpen(false); }}
+              title={t('settings')}
+              className={cn(
+                'p-1.5 rounded-lg transition-colors',
+                currentView === 'settings' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              )}
+            >
+              <Settings size={16} />
+            </button>
+          </div>
+          <button
+            onClick={onLogout}
+            title={collapsed ? t('logout') : undefined}
+            className={cn(
+              'flex items-center gap-2 text-destructive text-xs font-medium hover:bg-destructive/10 rounded-lg transition-all',
+              collapsed ? 'justify-center p-1.5 w-full' : 'w-full px-2 py-1.5'
+            )}
+          >
+            <LogOut size={15} className="shrink-0" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                  {t('logout')}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
+      </div>
+    </motion.aside>
+  );
+
+  // ── Mobile Sheet sidebar ────────────────────────────────────────────────
+  const MobileSidebarContent = () => (
+    <div className="flex h-full flex-col bg-background/95 backdrop-blur-xl">
+      <div className="p-5 flex justify-between items-center border-b bg-background/50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
+            <span className="text-primary-foreground font-extrabold text-sm">R</span>
+          </div>
+          <div>
+            <h2 className="text-base font-extrabold text-foreground tracking-tight leading-none">ReForma</h2>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Body & Paint System</p>
+          </div>
+        </div>
+        <button onClick={() => setIsOpen(false)} className="p-1.5 text-muted-foreground hover:bg-accent rounded-lg transition-colors">
+          <Menu size={20} />
+        </button>
+      </div>
+      <div className="flex-grow p-3 overflow-y-auto scrollbar-thin">
+        <NavItems />
+      </div>
+      <div className="p-3 border-t bg-background/50 space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 border shadow-sm">
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                {(userData.displayName || userData.email || 'U').charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold text-foreground truncate max-w-[120px]">{userData.displayName || userData.email || 'User'}</p>
-              <p className="text-xs text-muted-foreground truncate capitalize font-medium">{userPermissions.role}</p>
+            <div>
+              <p className="text-xs font-bold text-foreground truncate max-w-[130px]">{userData.displayName || userData.email || 'User'}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{userPermissions.role}</p>
             </div>
           </div>
-          <Button variant={currentView === 'settings' ? "secondary" : "ghost"} size="icon" onClick={() => { setCurrentView('settings'); setIsOpen(false); }} title={t('settings')} className="rounded-full">
-            <Settings size={18} />
-          </Button>
+          <button onClick={() => { setCurrentView('settings'); setIsOpen(false); }} className={cn('p-1.5 rounded-lg transition-colors', currentView === 'settings' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent')}>
+            <Settings size={16} />
+          </button>
         </div>
-        <Button variant="ghost" className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onLogout}>
-          <LogOut size={16}/> {t('logout')}
-        </Button>
+        <button onClick={onLogout} className="flex items-center gap-2 text-destructive text-xs font-medium hover:bg-destructive/10 rounded-lg transition-all w-full px-2 py-1.5">
+          <LogOut size={15} /> {t('logout')}
+        </button>
       </div>
     </div>
   );
 
   return (
     <>
+      {/* Mobile Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent side="left" className="p-0 w-72 md:hidden border-r-0 [&>button]:hidden">
           <SheetTitle className="sr-only">Navigasi Utama</SheetTitle>
-          <SidebarContent />
+          <MobileSidebarContent />
         </SheetContent>
       </Sheet>
 
-      <aside className="hidden md:flex h-screen w-64 flex-col z-30 sticky top-0 left-0">
-        <SidebarContent />
-      </aside>
+      {/* Desktop collapsible sidebar */}
+      <DesktopSidebar />
     </>
   );
 };
