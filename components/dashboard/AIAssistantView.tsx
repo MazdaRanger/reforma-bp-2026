@@ -23,7 +23,14 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
       setAnalysisResult(null);
 
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const apiKey = settings.geminiApiKey || (process.env.GEMINI_API_KEY as string);
+          if (!apiKey) {
+              setAnalysisResult("API Key Google Gemini belum diatur. Silakan masukkan API Key di menu Pengaturan (Akses Super Admin/Manager).");
+              setIsLoading(false);
+              return;
+          }
+
+          const ai = new GoogleGenAI({ apiKey });
           
           // Calculate Realized GP (Invoiced Only) for the current month
           const now = new Date();

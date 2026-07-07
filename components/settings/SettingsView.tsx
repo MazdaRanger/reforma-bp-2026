@@ -345,6 +345,29 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                               </div>
                           </div>
                       </section>
+                      
+                      <section className="bg-white/60 p-6 rounded-3xl shadow-sm border border-slate-100/60 backdrop-blur-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity -mr-10 -mt-10 pointer-events-none"></div>
+                          <div className="flex items-center gap-3 mb-6">
+                              <div className="p-3 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg shadow-slate-200">
+                                  <Bot size={20} className="text-white" />
+                              </div>
+                              <h3 className="text-base font-black text-slate-800 tracking-tight uppercase bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-500">Integrasi AI Google Gemini</h3>
+                          </div>
+                          <div className="space-y-4 relative z-10">
+                              <div>
+                                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GEMINI API KEY</label>
+                                  <input 
+                                      type="password" 
+                                      value={localSettings.geminiApiKey || ''}
+                                      onChange={e => setLocalSettings({...localSettings, geminiApiKey: e.target.value})}
+                                      placeholder="Masukkan API Key Google Gemini..."
+                                      className="w-full p-2.5 border border-slate-200 rounded-lg text-sm font-mono bg-slate-50 focus:ring-2 focus:ring-slate-500 transition-all shadow-inner"
+                                  />
+                                  <p className="text-[9px] text-gray-400 mt-1 italic">* Key ini diperlukan untuk fitur AI Strategic Insight. Simpan dengan aman.</p>
+                              </div>
+                          </div>
+                      </section>
 
                       <div className="space-y-6">
                           <div className="grid grid-cols-1 gap-6">

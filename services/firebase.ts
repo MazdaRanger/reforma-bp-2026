@@ -34,6 +34,5 @@ export const PURCHASE_ORDERS_COLLECTION = "bengkel-purchase-orders";
 export const CASHIER_COLLECTION = "bengkel-cashier-transactions";
 export const ASSETS_COLLECTION = "bengkel-assets";
 export const SERVICES_MASTER_COLLECTION = "bengkel-services-master"; // NEW FOR PANEL RATE
-export const INTERNAL_CHATS_COLLECTION = "bengkel-internal-chats"; // NEW FOR CHAT
 // DEPRECATED (Keeping reference for migration if needed)
 export const JOBS_COLLECTION = "shared-bengkel-jobs";

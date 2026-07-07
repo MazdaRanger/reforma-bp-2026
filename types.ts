@@ -9,16 +9,6 @@ export interface ProductionLog {
   type: 'progress' | 'rework';
 }
 
-export interface ChatMessage {
-  id: string;
-  text: string;
-  senderId: string;
-  senderName: string;
-  senderRole: string;
-  recipientId?: string | null; // Added: If null/undefined = Global, otherwise = Private UID
-  createdAt: any;
-}
-
 export interface MechanicAssignment {
   name: string;
   stage: string;
@@ -61,6 +51,7 @@ export interface Settings {
     waApiKey?: string;
     waProvider?: 'Whacenter' | 'Fonnte' | 'Lainnya';
   };
+  geminiApiKey?: string;
   taxProfile?: 'UMKM' | 'UMUM';
   fixedPph25Amount?: number;
   language: 'id' | 'en'; 
