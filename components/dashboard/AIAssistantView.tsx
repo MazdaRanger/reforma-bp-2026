@@ -16,6 +16,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeAnalysis, setActiveAnalysis] = useState<'trouble' | 'promo' | 'target' | 'general' | null>(null);
+  const [showUnderConstruction, setShowUnderConstruction] = useState(true);
 
   const runAIScreening = async (mode: 'trouble' | 'promo' | 'target' | 'general') => {
       setIsLoading(true);
@@ -108,9 +109,15 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
                 <BrainCircuit size={300}/>
             </div>
             <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 bg-indigo-500/20 px-4 py-2 rounded-full border border-indigo-500/30 mb-6 backdrop-blur-md">
-                    <Sparkles className="text-indigo-400" size={16}/>
-                    <span className="text-xs font-black tracking-widest uppercase">Accumulative Profit Intelligence</span>
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="inline-flex items-center gap-2 bg-indigo-500/20 px-4 py-2 rounded-full border border-indigo-500/30 backdrop-blur-md">
+                        <Sparkles className="text-indigo-400" size={16}/>
+                        <span className="text-xs font-black tracking-widest uppercase">Accumulative Profit Intelligence</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 bg-amber-500/20 px-4 py-2 rounded-full border border-amber-500/50 backdrop-blur-md animate-pulse">
+                        <AlertTriangle className="text-amber-400" size={16}/>
+                        <span className="text-xs font-black text-amber-200 tracking-widest uppercase">Under Construction</span>
+                    </div>
                 </div>
                 <h1 className="text-5xl font-black tracking-tighter leading-none">
                     AI Business <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Profit Strategist</span>
@@ -218,6 +225,28 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
                 </div>
             )}
         </div>
+        
+        {/* UNDER CONSTRUCTION MODAL */}
+        {showUnderConstruction && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden text-center animate-pop-in">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
+                    <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertTriangle size={40} />
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Fitur Dalam Pengembangan</h2>
+                    <p className="text-gray-600 mb-8 font-medium">
+                        Menu AI Strategic Insight saat ini berstatus <strong>Under Construction</strong>. Anda tetap dapat melakukan uji coba integrasi API Gemini, namun fungsionalitas dan prompt mungkin belum 100% sempurna.
+                    </p>
+                    <button 
+                        onClick={() => setShowUnderConstruction(false)}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-200"
+                    >
+                        Saya Mengerti, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        )}
     </div>
   );
 };
