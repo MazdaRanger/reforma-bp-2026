@@ -21,6 +21,39 @@ interface PurchaseOrderViewProps {
 
 const UNIT_OPTIONS = ['Pcs', 'Set', 'Unit', 'Liter', 'Kaleng', 'Kg', 'Gram', 'Meter', 'Roll', 'Galon'];
 
+const generateSequentialId = async (collectionName: string, idField: string, prefixText: string): Promise<string> => {
+    const today = new Date();
+    const yy = today.getFullYear().toString().slice(-2);
+    const mm = (today.getMonth() + 1).toString().padStart(2, '0');
+    const prefix = `${prefixText}-${yy}${mm}-`; 
+    
+    try {
+        const q = query(
+            collection(db, collectionName),
+            where(idField, ">=", prefix + "0000"),
+            where(idField, "<=", prefix + "9999"),
+            orderBy(idField, "desc"),
+            limit(1)
+        );
+        const snap = await getDocs(q);
+        let nextNum = 1;
+        if (!snap.empty) {
+            const lastId = snap.docs[0].data()[idField]; 
+            if (lastId) {
+                const parts = lastId.split('-');
+                if (parts.length >= 3) {
+                    const lastSeq = parseInt(parts[2], 10);
+                    if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+                }
+            }
+        }
+        return `${prefix}${nextNum.toString().padStart(4, '0')}`;
+    } catch (e) {
+        console.error("Error generating sequential ID:", e);
+        return `${prefix}${Math.floor(Math.random() * 9000 + 1000).toString()}`;
+    }
+};
+
 const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({ 
   suppliers, inventoryItems, jobs = [], userPermissions, showNotification, realTimePOs = [], initialJobId, onPOComplete
 }) => {
@@ -431,8 +464,19 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               receivedBy: userPermissions.role
           });
 
+          const bstNumber = await generateSequentialId('receiptBsts', 'bstNumber', 'BST');
+          const bstRef = doc(collection(db, 'receiptBsts'));
+          batch.set(bstRef, {
+              bstNumber,
+              poId: selectedPO.id,
+              poNumber: selectedPO.poNumber,
+              receivedAt: serverTimestamp(),
+              receivedBy: userPermissions.role,
+              itemsCount: itemsReceivedForReport.length
+          });
+
           await batch.commit();
-          generateReceivingReportPDF(selectedPO, itemsReceivedForReport, settings, userPermissions.role);
+          generateReceivingReportPDF(selectedPO, itemsReceivedForReport, settings, userPermissions.role, bstNumber);
           
           if (mismatchCount > 0) {
               showNotification(`Barang Diterima. Warning: ${mismatchCount} item mismatch harga.`, "info");
@@ -561,7 +605,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               showNotification(`PO ${poForm.poNumber} berhasil diperbarui.`, "success");
           } else {
               // CREATE NEW PO
-              const poNumber = generateRandomId('PO');
+              const poNumber = await generateSequentialId(PURCHASE_ORDERS_COLLECTION, 'poNumber', 'PO');
               payload.poNumber = poNumber;
               payload.createdAt = serverTimestamp();
               

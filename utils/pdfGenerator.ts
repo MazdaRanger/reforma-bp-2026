@@ -450,7 +450,7 @@ export const generatePurchaseOrderPDF = (po: PurchaseOrder, settings: Settings, 
     doc.save(`${po.poNumber}.pdf`);
 };
 
-export const generateReceivingReportPDF = (po: PurchaseOrder, receivedItems: {item: PurchaseOrderItem, qtyReceivedNow: number}[], settings: Settings, receiverName: string) => {
+export const generateReceivingReportPDF = (po: PurchaseOrder, receivedItems: {item: PurchaseOrderItem, qtyReceivedNow: number}[], settings: Settings, receiverName: string, bstNumber?: string) => {
     const doc: any = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     addHeader(doc, settings);
@@ -461,14 +461,23 @@ export const generateReceivingReportPDF = (po: PurchaseOrder, receivedItems: {it
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Ref PO: ${po.poNumber}`, 15, 55);
-    doc.text(`Supplier: ${po.supplierName}`, 15, 60);
+    
+    if (bstNumber) {
+        doc.setFont("helvetica", "bold");
+        doc.text(`No. Dokumen: ${bstNumber}`, 15, 55);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Ref PO: ${po.poNumber}`, 15, 60);
+        doc.text(`Supplier: ${po.supplierName}`, 15, 65);
+    } else {
+        doc.text(`Ref PO: ${po.poNumber}`, 15, 55);
+        doc.text(`Supplier: ${po.supplierName}`, 15, 60);
+    }
     
     // Added Date
     const todayStr = formatDateIndo(new Date());
-    doc.text(`Tanggal: ${todayStr}`, pageWidth - 15, 55, { align: 'right' });
-    
-    doc.text(`Pencatat: ${receiverName}`, pageWidth - 15, 60, { align: 'right' });
+    const rightY = bstNumber ? 60 : 55;
+    doc.text(`Tanggal: ${todayStr}`, pageWidth - 15, rightY, { align: 'right' });
+    doc.text(`Pencatat: ${receiverName}`, pageWidth - 15, rightY + 5, { align: 'right' });
 
     autoTable(doc, {
         startY: 70,
@@ -502,7 +511,8 @@ export const generateReceivingReportPDF = (po: PurchaseOrder, receivedItems: {it
     doc.text(`( ${po.supplierName} )`, 40, finalY + 25, { align: 'center' });
     doc.text(`( ${receiverName} )`, pageWidth - 40, finalY + 25, { align: 'center' });
 
-    doc.save(`BST_${po.poNumber}_${new Date().getTime()}.pdf`);
+    const fileName = bstNumber ? `${bstNumber}.pdf` : `BST_${po.poNumber}_${new Date().getTime()}.pdf`;
+    doc.save(fileName);
 };
 
 // --- GATE PASS TICKET (A5 LANDSCAPE) ---
