@@ -78,8 +78,10 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
   const [jasaItems, setJasaItems] = useState<EstimateItem[]>(job.estimateData?.jasaItems || []);
   const [partItems, setPartItems] = useState<EstimateItem[]>(job.estimateData?.partItems || []);
   
-  const [discountJasa, setDiscountJasa] = useState(job.estimateData?.discountJasa || 0);
-  const [discountPart, setDiscountPart] = useState(job.estimateData?.discountPart || 0);
+  const [discountJasa, setDiscountJasa] = useState(job.estimateData?.discountJasa ?? 0);
+  const [discountPart, setDiscountPart] = useState(job.estimateData?.discountPart ?? 0);
+  // Track whether the discount was auto-filled (for badge display)
+  const [autoFillSource, setAutoFillSource] = useState<string | null>(null);
   
   const [localEstNumber, setLocalEstNumber] = useState(job.estimateData?.estimationNumber || '');
 
@@ -104,14 +106,20 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
       return (settings.specialColorRates || []).find(r => r.colorName === job.warnaMobil);
   }, [job.warnaMobil, settings.specialColorRates]);
 
+  // Auto-fill discount from insurance settings on first open (no WO yet = fresh estimate)
   useEffect(() => {
-      const ins = insuranceOptions.find(i => i.name === job.namaAsuransi);
-      if (ins && discountJasa === 0 && discountPart === 0) {
-          setDiscountJasa(ins.jasa);
-          setDiscountPart(ins.part);
+      const isNewEstimate = !job.estimateData?.estimationNumber;
+      if (isNewEstimate && insuranceOptions.length > 0) {
+          const ins = insuranceOptions.find(i => i.name === job.namaAsuransi);
+          if (ins) {
+              setDiscountJasa(ins.jasa);
+              setDiscountPart(ins.part);
+              setAutoFillSource(ins.name);
+          }
       }
       loadServices();
-  }, [job.namaAsuransi, insuranceOptions]); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   // Optimized Search for Parts
   useEffect(() => {
@@ -543,7 +551,16 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                   </div>
                   <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Diskon Jasa ({discountJasa}%)</p>
-                      <input type="range" min="0" max="100" value={discountJasa} onChange={e => setDiscountJasa(Number(e.target.value))} disabled={isLocked} className="w-full accent-indigo-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"/>
+                      <div className="flex items-center gap-2">
+                          <input type="range" min="0" max="100" value={discountJasa} onChange={e => setDiscountJasa(Number(e.target.value))} disabled={isLocked} className="flex-1 accent-indigo-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"/>
+                          <input
+                              type="number" min="0" max="100"
+                              value={discountJasa}
+                              onChange={e => setDiscountJasa(Math.min(100, Math.max(0, Number(e.target.value))))}
+                              disabled={isLocked}
+                              className="w-16 text-center bg-slate-700 text-white rounded-lg text-xs font-black p-1.5 border border-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                          />
+                      </div>
                       <p className="text-sm font-bold text-red-400 mt-1">- {formatCurrency(totals.discountJasaAmount)}</p>
                   </div>
               </div>
@@ -555,7 +572,16 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                   </div>
                   <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Diskon Part ({discountPart}%)</p>
-                      <input type="range" min="0" max="100" value={discountPart} onChange={e => setDiscountPart(Number(e.target.value))} disabled={isLocked} className="w-full accent-orange-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"/>
+                      <div className="flex items-center gap-2">
+                          <input type="range" min="0" max="100" value={discountPart} onChange={e => setDiscountPart(Number(e.target.value))} disabled={isLocked} className="flex-1 accent-orange-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"/>
+                          <input
+                              type="number" min="0" max="100"
+                              value={discountPart}
+                              onChange={e => setDiscountPart(Math.min(100, Math.max(0, Number(e.target.value))))}
+                              disabled={isLocked}
+                              className="w-16 text-center bg-slate-700 text-white rounded-lg text-xs font-black p-1.5 border border-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-400 disabled:opacity-50"
+                          />
+                      </div>
                       <p className="text-sm font-bold text-red-400 mt-1">- {formatCurrency(totals.discountPartAmount)}</p>
                   </div>
               </div>
@@ -583,6 +609,15 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                           <span className="text-sm font-bold">{creatorName}</span>
                       </div>
                   </div>
+                  {autoFillSource && (
+                      <div className="p-3 bg-emerald-900/40 rounded-xl border border-emerald-700/50 text-[10px] text-emerald-300 flex items-start gap-2">
+                          <CheckCircle2 size={14} className="shrink-0 mt-0.5"/>
+                          <div>
+                              <span className="font-black block">Auto-Diskon Diterapkan</span>
+                              <span className="opacity-80">Sumber: {autoFillSource} (Jasa {discountJasa}% / Part {discountPart}%)</span>
+                          </div>
+                      </div>
+                  )}
                   {specialColorRate && (
                       <div className="p-3 bg-pink-900/30 rounded-xl border border-pink-800/50 text-[10px] text-pink-300 flex items-center gap-2">
                           <Palette size={14}/>

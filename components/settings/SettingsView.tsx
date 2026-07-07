@@ -237,6 +237,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
             { id: 'general', label: 'Bengkel & Target' },
             { id: 'database', label: 'Data Master' },
             { id: 'unit_catalog', label: 'Katalog Unit' },
+            { id: 'insurance', label: '🏦 Database Asuransi' },
             { id: 'whatsapp', label: 'WhatsApp & Pesan' },
             { id: 'services', label: 'Master Jasa & Panel' }
           ].map(tab => (
@@ -752,6 +753,169 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                            <Info size={14} className="inline mr-1"/> Daftar role ini akan muncul sebagai pilihan saat mendaftarkan staff baru.
                         </div>
                     </div>
+                  </div>
+              </div>
+          )}
+
+          {activeTab === 'insurance' && (
+              <div className={`space-y-6 animate-fade-in ${restrictedClass}`}>
+                  <RestrictedOverlay />
+
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><ShieldCheck className="text-indigo-600" size={20}/> Database Asuransi & Aturan Diskon</h3>
+                          <p className="text-xs text-gray-500 mt-1">Nilai diskon yang ditetapkan di sini akan <strong>otomatis diterapkan</strong> saat membuat estimasi baru berdasarkan nama asuransi unit kendaraan.</p>
+                      </div>
+                      <button
+                          onClick={() => {
+                              const current = localSettings.insuranceOptions || [];
+                              handleChange('insuranceOptions', [...current, { name: '', jasa: 0, part: 0 }]);
+                          }}
+                          className="flex-shrink-0 flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-indigo-700 shadow-md transition-all active:scale-95"
+                      >
+                          <Plus size={16}/> Tambah Asuransi
+                      </button>
+                  </div>
+
+                  {/* Info Banner */}
+                  <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                      <Info size={18} className="text-blue-600 shrink-0 mt-0.5"/>
+                      <div className="text-xs text-blue-800 leading-relaxed">
+                          <strong>Cara Kerja Auto-Fill:</strong> Ketika SA membuka form estimasi untuk unit dengan asuransi <em>"Garda Oto Ins"</em>, sistem akan otomatis mengisi kolom Diskon Jasa dan Diskon Part sesuai angka yang tersimpan di sini. SA tetap dapat mengubah nilai tersebut secara manual jika diperlukan.
+                      </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                              <thead className="bg-gray-50 border-b border-gray-100">
+                                  <tr>
+                                      <th className="px-5 py-3.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest w-8">#</th>
+                                      <th className="px-5 py-3.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Asuransi / Rekanan</th>
+                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-indigo-500 uppercase tracking-widest w-52">Diskon Jasa (%)</th>
+                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-orange-500 uppercase tracking-widest w-52">Diskon Part (%)</th>
+                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest w-20">Hapus</th>
+                                  </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-50">
+                                  {(localSettings.insuranceOptions || []).map((ins, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/60 transition-colors group">
+                                          <td className="px-5 py-4 text-xs font-bold text-gray-300">{idx + 1}</td>
+
+                                          {/* Nama Asuransi */}
+                                          <td className="px-5 py-4">
+                                              <input
+                                                  type="text"
+                                                  value={ins.name}
+                                                  onChange={e => {
+                                                      const updated = [...(localSettings.insuranceOptions || [])];
+                                                      updated[idx] = { ...updated[idx], name: e.target.value };
+                                                      handleChange('insuranceOptions', updated);
+                                                  }}
+                                                  placeholder="Nama asuransi..."
+                                                  className="w-full p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm font-bold text-gray-800 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all outline-none placeholder-gray-300"
+                                              />
+                                          </td>
+
+                                          {/* Diskon Jasa */}
+                                          <td className="px-5 py-4">
+                                              <div className="flex flex-col gap-1.5">
+                                                  <div className="flex items-center gap-2">
+                                                      <input
+                                                          type="number"
+                                                          min="0"
+                                                          max="100"
+                                                          value={ins.jasa}
+                                                          onChange={e => {
+                                                              const updated = [...(localSettings.insuranceOptions || [])];
+                                                              updated[idx] = { ...updated[idx], jasa: Math.min(100, Math.max(0, Number(e.target.value))) };
+                                                              handleChange('insuranceOptions', updated);
+                                                          }}
+                                                          className="w-20 p-2 border border-indigo-100 bg-indigo-50/50 rounded-lg text-sm font-black text-indigo-700 text-center focus:ring-2 focus:ring-indigo-300 outline-none"
+                                                      />
+                                                      <span className="text-indigo-400 font-bold text-xs">%</span>
+                                                      <div className="flex-1 h-2 bg-indigo-100 rounded-full overflow-hidden">
+                                                          <div
+                                                              className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-300"
+                                                              style={{ width: `${Math.min(ins.jasa, 100)}%` }}
+                                                          />
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          </td>
+
+                                          {/* Diskon Part */}
+                                          <td className="px-5 py-4">
+                                              <div className="flex flex-col gap-1.5">
+                                                  <div className="flex items-center gap-2">
+                                                      <input
+                                                          type="number"
+                                                          min="0"
+                                                          max="100"
+                                                          value={ins.part}
+                                                          onChange={e => {
+                                                              const updated = [...(localSettings.insuranceOptions || [])];
+                                                              updated[idx] = { ...updated[idx], part: Math.min(100, Math.max(0, Number(e.target.value))) };
+                                                              handleChange('insuranceOptions', updated);
+                                                          }}
+                                                          className="w-20 p-2 border border-orange-100 bg-orange-50/50 rounded-lg text-sm font-black text-orange-700 text-center focus:ring-2 focus:ring-orange-300 outline-none"
+                                                      />
+                                                      <span className="text-orange-400 font-bold text-xs">%</span>
+                                                      <div className="flex-1 h-2 bg-orange-100 rounded-full overflow-hidden">
+                                                          <div
+                                                              className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full transition-all duration-300"
+                                                              style={{ width: `${Math.min(ins.part, 100)}%` }}
+                                                          />
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          </td>
+
+                                          {/* Hapus */}
+                                          <td className="px-5 py-4 text-center">
+                                              <button
+                                                  onClick={() => {
+                                                      const updated = (localSettings.insuranceOptions || []).filter((_, i) => i !== idx);
+                                                      handleChange('insuranceOptions', updated);
+                                                  }}
+                                                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                  title="Hapus"
+                                              >
+                                                  <Trash2 size={15}/>
+                                              </button>
+                                          </td>
+                                      </tr>
+                                  ))}
+                                  {(localSettings.insuranceOptions || []).length === 0 && (
+                                      <tr>
+                                          <td colSpan={5} className="py-16 text-center">
+                                              <ShieldCheck size={40} className="mx-auto text-gray-200 mb-3"/>
+                                              <p className="text-sm font-bold text-gray-400">Belum ada data asuransi.</p>
+                                              <p className="text-xs text-gray-300 mt-1">Klik "Tambah Asuransi" untuk mulai mengisi database.</p>
+                                          </td>
+                                      </tr>
+                                  )}
+                              </tbody>
+                          </table>
+                      </div>
+
+                      {/* Footer Summary */}
+                      {(localSettings.insuranceOptions || []).length > 0 && (
+                          <div className="bg-gray-50 border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+                              <span className="text-xs text-gray-400 font-medium">{(localSettings.insuranceOptions || []).length} rekanan asuransi terdaftar</span>
+                              <span className="text-[10px] bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                                  <CheckCircle2 size={11}/> Aktif — otomatis diterapkan ke Estimasi
+                              </span>
+                          </div>
+                      )}
+                  </div>
+
+                  {/* Save reminder */}
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                      <Save size={14} className="text-amber-600 shrink-0"/>
+                      <p className="text-xs text-amber-800 font-medium">Jangan lupa klik <strong>"Simpan Perubahan"</strong> di bagian atas halaman setelah selesai mengedit.</p>
                   </div>
               </div>
           )}
