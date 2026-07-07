@@ -422,7 +422,15 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                           <div ref={searchRef} className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] max-h-60 overflow-y-auto animate-pop-in">
                                               {filteredServices.map(s => (
                                                   <div key={s.id} onClick={() => selectService(i, s)} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                                      <div className="font-bold text-sm text-gray-800">{s.serviceName}</div>
+                                                      <div className="flex items-start justify-between">
+                                                          <div className="font-bold text-sm text-gray-800">{s.serviceName}</div>
+                                                          <span className={`shrink-0 ml-2 px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-widest ${
+                                                              s.workType === 'KC' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                                              s.workType === 'GTC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                              s.workType === 'BP' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                              'bg-gray-100 text-gray-600 border-gray-200'
+                                                          }`}>{s.workType || 'Umum'}</span>
+                                                      </div>
                                                       <div className="text-[10px] text-gray-400 flex justify-between mt-1">
                                                           <span>Kode: {s.serviceCode || '-'}</span>
                                                           <span className="font-bold text-indigo-600">{formatCurrency(s.basePrice)}</span>

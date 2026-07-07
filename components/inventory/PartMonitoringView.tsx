@@ -11,9 +11,10 @@ import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 interface PartMonitoringViewProps {
   jobs: Job[];
   inventoryItems: InventoryItem[];
+  onNavigateToPO?: (jobId: string) => void;
 }
 
-const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventoryItems }) => {
+const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventoryItems, onNavigateToPO }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'LENGKAP' | 'PARTIAL' | 'INDENT' | 'NEED_ORDER'>('ALL');
   // Use any to allow augmented properties from processedJobs which are not defined on Job interface
@@ -314,12 +315,20 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
                                     </td>
                                     <td className="px-6 py-4">
                                         {job.hasOutstandingOrder ? (
-                                            <div className="flex flex-col gap-1">
+                                            <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center gap-1.5 text-amber-600">
                                                     <ShoppingCart size={14} className="animate-pulse"/>
                                                     <span className="text-[11px] font-black uppercase tracking-tighter">Perlu PO ({job.unOrderedCount})</span>
                                                 </div>
-                                                <p className="text-[9px] text-amber-500 font-bold">Segera buat Purchase Order</p>
+                                                {onNavigateToPO && (
+                                                    <button
+                                                        onClick={() => onNavigateToPO(job.id)}
+                                                        className="flex items-center gap-1 self-start text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded-lg shadow-sm transition-all active:scale-95"
+                                                    >
+                                                        <ShoppingCart size={11}/>
+                                                        Buat PO →
+                                                    </button>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-1.5 text-emerald-600">

@@ -42,6 +42,7 @@ const AppContent: React.FC = () => {
   
   const [currentView, setCurrentView] = useState('overview_main'); 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [poNavigationJobId, setPoNavigationJobId] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<Settings>(defaultSettings);
   
   // Real-time Data States (GLOBAL INTEGRATION FIX)
@@ -398,9 +399,28 @@ const AppContent: React.FC = () => {
         
         {currentView === 'inventory' && <InventoryView userPermissions={userPermissions} showNotification={showNotification} suppliers={suppliers} />}
         
-        {currentView === 'part_monitoring' && <PartMonitoringView jobs={jobs} inventoryItems={inventoryItems} />}
+        {currentView === 'part_monitoring' && <PartMonitoringView
+            jobs={jobs}
+            inventoryItems={inventoryItems}
+            onNavigateToPO={(jobId: string) => {
+              setPoNavigationJobId(jobId);
+              setCurrentView('purchase_order');
+            }}
+        />}
         
-        {currentView === 'purchase_order' && <PurchaseOrderView suppliers={suppliers} inventoryItems={inventoryItems} jobs={jobs} userPermissions={userPermissions} showNotification={showNotification} realTimePOs={purchaseOrders} />}
+        {currentView === 'purchase_order' && <PurchaseOrderView
+            suppliers={suppliers}
+            inventoryItems={inventoryItems}
+            jobs={jobs}
+            userPermissions={userPermissions}
+            showNotification={showNotification}
+            realTimePOs={purchaseOrders}
+            initialJobId={poNavigationJobId}
+            onPOComplete={() => {
+              setPoNavigationJobId(null);
+              setCurrentView('part_monitoring');
+            }}
+        />}
         
         {currentView === 'part_issuance' && <MaterialIssuanceView activeJobs={jobs.filter(j => j.woNumber)} inventoryItems={inventoryItems} suppliers={suppliers} userPermissions={userPermissions} showNotification={showNotification} onRefreshData={() => {}} issuanceType="sparepart" />}
         {currentView === 'material_issuance' && <MaterialIssuanceView activeJobs={jobs.filter(j => j.woNumber)} inventoryItems={inventoryItems} suppliers={suppliers} userPermissions={userPermissions} showNotification={showNotification} onRefreshData={() => {}} issuanceType="material" settings={appSettings} />}

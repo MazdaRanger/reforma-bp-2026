@@ -15,12 +15,14 @@ interface PurchaseOrderViewProps {
   userPermissions: UserPermissions;
   showNotification: (msg: string, type: string) => void;
   realTimePOs?: PurchaseOrder[];
+  initialJobId?: string | null;
+  onPOComplete?: () => void;
 }
 
 const UNIT_OPTIONS = ['Pcs', 'Set', 'Unit', 'Liter', 'Kaleng', 'Kg', 'Gram', 'Meter', 'Roll', 'Galon'];
 
 const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({ 
-  suppliers, inventoryItems, jobs = [], userPermissions, showNotification, realTimePOs = []
+  suppliers, inventoryItems, jobs = [], userPermissions, showNotification, realTimePOs = [], initialJobId, onPOComplete
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'detail'>('list');
   const [loading, setLoading] = useState(false);
@@ -84,6 +86,36 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           if (updated) setSelectedPO(updated);
       }
   }, [realTimePOs]);
+
+  // Handle direct navigation from Part Monitoring
+  useEffect(() => {
+      if (initialJobId && jobs.length > 0) {
+          const targetJob = jobs.find(j => j.id === initialJobId);
+          if (targetJob) {
+              // 1. Masuk mode create & WO
+              setViewMode('create');
+              setPoCreationMode('wo');
+              // 2. Isi term dan temukan job-nya
+              setWoSearchTerm(targetJob.woNumber || targetJob.policeNumber);
+              
+              // 3. Langsung select job-nya (auto-load parts)
+              if (targetJob.estimateData?.partItems && targetJob.estimateData.partItems.length > 0) {
+                  setFoundJob(targetJob);
+                  const initialSelection: any = {};
+                  targetJob.estimateData.partItems.forEach((p, idx) => { 
+                      if (!p.isOrdered) initialSelection[idx] = { selected: true, isIndent: p.isIndent || false }; 
+                  });
+                  setSelectedPartsFromWo(initialSelection);
+                  
+                  setTimeout(() => {
+                     showNotification(`Mode Cepat: Data part dari WO ${targetJob.woNumber || targetJob.policeNumber} telah dimuat.`, "success");
+                  }, 500);
+              } else {
+                  showNotification(`Pekerjaan ${targetJob.policeNumber} tidak memiliki estimasi suku cadang.`, "error");
+              }
+          }
+      }
+  }, [initialJobId, jobs]);
 
   useEffect(() => {
       if (selectedPO && (selectedPO.status === 'Ordered' || selectedPO.status === 'Partial')) {
@@ -518,7 +550,11 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               }
           }
           
-          setViewMode('list');
+          if (onPOComplete) {
+              onPOComplete();
+          } else {
+              setViewMode('list');
+          }
           setPoForm({ id: null, poNumber: '', supplierId: '', items: [], notes: '', hasPpn: false, date: new Date().toISOString().split('T')[0] });
           setPoCreationMode('manual');
       } catch (e: any) {
@@ -548,7 +584,10 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
       return (
           <div className="animate-fade-in bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center gap-4 mb-6 border-b pb-4">
-                  <button onClick={() => { setViewMode('list'); setPoForm({id: null, poNumber: '', supplierId: '', items: [], hasPpn: false, date: new Date().toISOString().split('T')[0]}); }} className="p-2 hover:bg-gray-100 rounded-full"><ArrowLeft size={20}/></button>
+                  <button onClick={() => { 
+                      setPoForm({id: null, poNumber: '', supplierId: '', items: [], hasPpn: false, date: new Date().toISOString().split('T')[0]}); 
+                      if (onPOComplete) onPOComplete(); else setViewMode('list'); 
+                  }} className="p-2 hover:bg-gray-100 rounded-full"><ArrowLeft size={20}/></button>
                   <h2 className="text-2xl font-bold text-gray-800">{isEditing ? `Edit PO ${poForm.poNumber}` : 'Buat Purchase Order Baru'}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
