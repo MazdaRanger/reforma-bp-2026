@@ -1,7 +1,13 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { LayoutDashboard, List, LogOut, User, Menu, PlusCircle, FileText, Settings, Package, ChevronDown, ChevronRight, Truck, Wrench, PaintBucket, ShoppingCart, ClipboardList, BarChart3, Banknote, Scale, FileCheck, Landmark, ExternalLink, Briefcase, Phone, MessageSquare, Hammer, FileSpreadsheet, ShieldCheck, PieChart, TrendingUp, Trophy, Sparkles } from 'lucide-react';
 import { UserProfile, UserPermissions, Settings as SystemSettings } from '../../types';
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -84,9 +90,9 @@ const DICTIONARY: Record<string, Record<string, string>> = {
 const Sidebar: React.FC<SidebarProps> = ({ 
   isOpen, setIsOpen, currentView, setCurrentView, userData, userPermissions, onLogout, settings 
 }) => {
-  const [expandedMenuId, setExpandedMenuId] = useState<string | null>(null);
+  const [expandedMenuId, setExpandedMenuId] = useState<string | "">("");
   const lang = settings.language || 'id';
-  const t = (key: string) => DICTIONARY[lang][key] || key;
+  const t = (key: string) => DICTIONARY[lang]?.[key] || key;
 
   const menuItems = useMemo(() => {
     const items = [
@@ -162,78 +168,98 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (activeParent) setExpandedMenuId(activeParent.id);
   }, [currentView, menuItems]);
 
-  const toggleMenu = (id: string) => setExpandedMenuId(prevId => (prevId === id ? null : id));
-
-  return (
-    <>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden" onClick={() => setIsOpen(false)}></div>
-      )}
-      <aside className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-white/80 backdrop-blur-2xl border-r border-white/50 shadow-xl flex flex-col z-30 transform transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="p-6 border-b border-indigo-50/50 flex justify-between items-center bg-white/40">
-          <div>
-            <h2 className="text-xl font-extrabold text-indigo-700 tracking-tight">ReForma</h2>
-            <p className="text-xs text-slate-500 font-medium">Body & Paint System</p>
-          </div>
-          <button onClick={() => setIsOpen(false)} className="md:hidden text-slate-500"><Menu size={20} /></button>
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl border-r">
+      <div className="p-6 flex justify-between items-center border-b bg-background/50">
+        <div>
+          <h2 className="text-xl font-extrabold text-primary tracking-tight">ReForma</h2>
+          <p className="text-xs text-muted-foreground font-medium">Body & Paint System</p>
         </div>
-        <nav className="flex-grow p-4 space-y-1 overflow-y-auto scrollbar-thin">
+        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="md:hidden text-muted-foreground"><Menu size={20} /></Button>
+      </div>
+      
+      <div className="flex-grow p-4 overflow-y-auto scrollbar-thin">
+        <Accordion type="single" collapsible value={expandedMenuId} onValueChange={setExpandedMenuId} className="w-full space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
-            const isExpanded = expandedMenuId === item.id;
-            const isParentActive = hasChildren && item.children?.some(child => child.id === currentView);
             const isSingleActive = !hasChildren && currentView === item.id;
+            const isParentActive = hasChildren && item.children?.some(child => child.id === currentView);
 
             return (
               <div key={item.id} className="mb-1">
-                  {!hasChildren ? (
-                      <button 
-                        onClick={() => { setCurrentView(item.id); setIsOpen(false); }} 
-                        className={`flex items-center gap-3 w-full p-3 rounded-xl text-sm font-medium transition-all duration-200 ${isSingleActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-600 hover:bg-white/60 hover:text-indigo-600'}`}
-                      >
-                        <Icon size={18}/> {item.label}
-                      </button>
-                  ) : (
-                      <div className={`rounded-xl transition-colors duration-200 ${isExpanded ? 'bg-indigo-50/50' : ''}`}>
-                          <button onClick={() => toggleMenu(item.id)} className={`flex items-center justify-between w-full p-3 rounded-xl text-sm font-medium transition-all duration-200 ${isParentActive && !isExpanded ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-600 hover:bg-white/60 hover:text-indigo-600'} ${isExpanded ? 'text-indigo-700 font-bold' : ''}`}>
-                             <div className="flex items-center gap-3"><Icon size={18}/> {item.label}</div>
-                             {isExpanded ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
-                          </button>
-                          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100 pb-2' : 'max-h-0 opacity-0'}`}>
-                              <div className="space-y-1 px-3">
-                                  {item.children?.map(child => {
-                                      const ChildIcon = child.icon;
-                                      const isChildActive = currentView === child.id;
-                                      return (
-                                        <button key={child.id} onClick={() => { setCurrentView(child.id); setIsOpen(false); }} className={`flex items-center gap-3 w-full p-2.5 rounded-lg text-sm transition-all duration-200 ${isChildActive ? 'text-indigo-700 font-bold bg-white shadow-sm' : 'text-slate-500 hover:text-indigo-600 hover:bg-white/40'}`}>
-                                            <ChildIcon size={16} className={isChildActive ? "text-indigo-600" : "opacity-70"}/> {child.label}
-                                        </button>
-                                      )
-                                  })}
-                              </div>
-                          </div>
+                {!hasChildren ? (
+                  <Button 
+                    variant={isSingleActive ? "default" : "ghost"}
+                    className={cn("w-full justify-start gap-3", isSingleActive ? "shadow-md" : "text-muted-foreground hover:text-primary")}
+                    onClick={() => { setCurrentView(item.id); setIsOpen(false); }}
+                  >
+                    <Icon size={18}/> {item.label}
+                  </Button>
+                ) : (
+                  <AccordionItem value={item.id} className="border-none">
+                    <AccordionTrigger className={cn("px-3 py-2 rounded-md hover:bg-accent hover:no-underline transition-all", isParentActive && expandedMenuId !== item.id && "bg-primary/10 text-primary", !isParentActive && "text-muted-foreground")}>
+                      <div className="flex items-center gap-3"><Icon size={18}/> {item.label}</div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1 pt-1">
+                      <div className="flex flex-col space-y-1 pl-4 border-l ml-4 mt-1 border-border/50">
+                        {item.children?.map(child => {
+                          const ChildIcon = child.icon;
+                          const isChildActive = currentView === child.id;
+                          return (
+                            <Button
+                              key={child.id}
+                              variant={isChildActive ? "secondary" : "ghost"}
+                              className={cn("w-full justify-start gap-3 h-9 font-normal", isChildActive ? "font-semibold text-primary" : "text-muted-foreground")}
+                              onClick={() => { setCurrentView(child.id); setIsOpen(false); }}
+                            >
+                              <ChildIcon size={16} className={isChildActive ? "text-primary" : "opacity-70"}/> {child.label}
+                            </Button>
+                          )
+                        })}
                       </div>
-                  )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
               </div>
             )
           })}
-        </nav>
-        <div className="p-4 border-t border-indigo-50/50 bg-white/40 space-y-3">
-          <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-white flex items-center justify-center text-indigo-700 font-bold shrink-0 shadow-sm border border-white"><User size={18}/></div>
-                <div className="overflow-hidden">
-                  <p className="text-sm font-bold text-slate-800 truncate max-w-[100px]">{userData.displayName || userData.email || 'User'}</p>
-                  <p className="text-xs text-slate-500 truncate capitalize font-medium">{userPermissions.role}</p>
-                </div>
-              </div>
-              <button onClick={() => { setCurrentView('settings'); setIsOpen(false); }} className={`p-2 rounded-full transition-colors ${currentView === 'settings' ? 'bg-indigo-100 text-indigo-800' : 'hover:bg-white text-slate-500'}`} title={t('settings')}><Settings size={18} /></button>
+        </Accordion>
+      </div>
+
+      <div className="p-4 border-t bg-background/50 space-y-3">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <Avatar className="h-9 w-9 border shadow-sm">
+              <AvatarFallback className="bg-primary/10 text-primary"><User size={18}/></AvatarFallback>
+            </Avatar>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-foreground truncate max-w-[120px]">{userData.displayName || userData.email || 'User'}</p>
+              <p className="text-xs text-muted-foreground truncate capitalize font-medium">{userPermissions.role}</p>
+            </div>
           </div>
-          <button onClick={onLogout} className="flex items-center gap-2 text-rose-600 text-sm font-medium hover:text-rose-800 hover:bg-rose-50/50 p-2.5 rounded-xl transition-all w-full border border-transparent hover:border-rose-100">
-            <LogOut size={16}/> {t('logout')}
-          </button>
+          <Button variant={currentView === 'settings' ? "secondary" : "ghost"} size="icon" onClick={() => { setCurrentView('settings'); setIsOpen(false); }} title={t('settings')} className="rounded-full">
+            <Settings size={18} />
+          </Button>
         </div>
+        <Button variant="ghost" className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onLogout}>
+          <LogOut size={16}/> {t('logout')}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent side="left" className="p-0 w-72 md:hidden border-r-0 [&>button]:hidden">
+          <SheetTitle className="sr-only">Navigasi Utama</SheetTitle>
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+
+      <aside className="hidden md:flex h-screen w-64 flex-col z-30 sticky top-0 left-0">
+        <SidebarContent />
       </aside>
     </>
   );
