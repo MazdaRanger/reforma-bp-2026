@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { collection, getDocs, doc, addDoc, updateDoc, serverTimestamp, increment, query, orderBy, limit, getDoc, where, Timestamp, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, serverTimestamp, increment, query, orderBy, limit, getDoc, where, Timestamp, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db, PURCHASE_ORDERS_COLLECTION, SPAREPART_COLLECTION, SETTINGS_COLLECTION, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { InventoryItem, Supplier, PurchaseOrder, PurchaseOrderItem, UserPermissions, Settings, Job, EstimateItem } from '../../types';
 import { formatCurrency, formatDateIndo, cleanObject, generateRandomId, toYyyyMmDd } from '../../utils/helpers';
@@ -284,6 +284,13 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               showNotification(`Qty untuk ${item.name} melebihi sisa pesanan (${remaining}).`, "error");
               return;
           }
+
+          // Validasi Harga Jual vs Harga Beli untuk Part Baru dari Estimasi
+          const isLinkedToExisting = item.inventoryId && inventoryItems.some(i => i.id === item.inventoryId);
+          if (!isLinkedToExisting && item.estimatedSellPrice && item.estimatedSellPrice < item.price) {
+              showNotification(`BLOKIR: Harga jual estimasi ${item.name} (${formatCurrency(item.estimatedSellPrice)}) lebih rendah dari modal beli (${formatCurrency(item.price)}). Revisi di menu Estimasi terlebih dahulu!`, "error");
+              return;
+          }
       }
 
       setIsProcessing(true);
@@ -302,7 +309,9 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               
               let targetInventoryId = item.inventoryId;
               const newBuyPrice = item.price;
-              const newSellPrice = Math.round(newBuyPrice * 1.3);
+              const newSellPrice = (!targetInventoryId && item.estimatedSellPrice && item.estimatedSellPrice > newBuyPrice) 
+                                      ? item.estimatedSellPrice 
+                                      : Math.round(newBuyPrice * 1.3);
 
               const isLinkedToExisting = targetInventoryId && inventoryItems.some(i => i.id === targetInventoryId);
 
@@ -367,6 +376,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                   if (jobUpdateMap[jobId] && jobUpdateMap[jobId].parts[item.refPartIndex]) {
                       const jobPart = jobUpdateMap[jobId].parts[item.refPartIndex];
                       jobPart.inventoryId = targetInventoryId;
+                      jobPart.hasArrived = true; // Mark as arrived since we received it
                       jobUpdateMap[jobId].changed = true;
 
                       if (inventoryItems.find(i => i.id === targetInventoryId)) {
@@ -380,14 +390,38 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               }
           }
 
-          Object.entries(jobUpdateMap).forEach(([jobId, data]) => {
+          // Handle Job Status Sync for received parts
+          for (const [jobId, data] of Object.entries(jobUpdateMap)) {
               if (data.changed) {
-                  batch.update(doc(db, SERVICE_JOBS_COLLECTION, jobId), {
+                  const updatePayload: any = {
                       'estimateData.partItems': data.parts,
                       updatedAt: serverTimestamp()
-                  });
+                  };
+                  
+                  // Check if ALL parts are now fulfilled (either arrived or already in stock and not ordered)
+                  const partsComplete = data.parts.every(p => p.hasArrived || !p.isOrdered);
+                  
+                  if (partsComplete) {
+                      const jobRef = doc(db, SERVICE_JOBS_COLLECTION, jobId);
+                      const jobSnap = await getDoc(jobRef);
+                      if (jobSnap.exists()) {
+                          const currentStatus = jobSnap.data().statusKendaraan;
+                          if (currentStatus === 'Tunggu Part' || currentStatus === 'Unit di Pemilik (Tunggu Part)') {
+                              updatePayload.statusKendaraan = 'Sparepart Lengkap';
+                              updatePayload.productionLogs = arrayUnion({
+                                  stage: 'Logistik',
+                                  note: 'Semua part telah diterima dari PO (Sparepart Lengkap)',
+                                  timestamp: new Date().toISOString(),
+                                  user: userPermissions.role,
+                                  type: 'progress'
+                              });
+                          }
+                      }
+                  }
+
+                  batch.update(doc(db, SERVICE_JOBS_COLLECTION, jobId), updatePayload);
               }
-          });
+          }
 
           const isFull = updatedItems.every(i => (i.qtyReceived || 0) >= i.qty);
           batch.update(doc(db, PURCHASE_ORDERS_COLLECTION, selectedPO.id), { 
@@ -451,7 +485,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               const partCodeUpper = estItem.number?.toUpperCase().trim() || "";
               const invItem = inventoryItems.find(i => (estItem.inventoryId && i.id === estItem.inventoryId) || (partCodeUpper && i.code?.toUpperCase() === partCodeUpper));
               itemsToAdd.push({
-                  code: partCodeUpper || estItem.number || 'NON-PART-NO', name: estItem.name || 'Tanpa Nama', brand: invItem?.brand || foundJob.carBrand || 'Genuine', category: 'sparepart', qty: estItem.qty || 1, qtyReceived: 0, unit: invItem?.unit || 'Pcs', price: invItem?.buyPrice || 0, total: (estItem.qty || 1) * (invItem?.buyPrice || 0), inventoryId: estItem.inventoryId || invItem?.id || null, refJobId: foundJob.id, refWoNumber: foundJob.woNumber, refPartIndex: idx, isIndent: selection.isIndent, isStockManaged: true
+                  code: partCodeUpper || estItem.number || 'NON-PART-NO', name: estItem.name || 'Tanpa Nama', brand: invItem?.brand || foundJob.carBrand || 'Genuine', category: 'sparepart', qty: estItem.qty || 1, qtyReceived: 0, unit: invItem?.unit || 'Pcs', price: invItem?.buyPrice || 0, total: (estItem.qty || 1) * (invItem?.buyPrice || 0), inventoryId: estItem.inventoryId || invItem?.id || null, refJobId: foundJob.id, refWoNumber: foundJob.woNumber, refPartIndex: idx, isIndent: selection.isIndent, isStockManaged: true, estimatedSellPrice: estItem.price || 0
               });
           }
       });

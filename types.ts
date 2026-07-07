@@ -309,6 +309,7 @@ export interface PurchaseOrderItem {
   refPartIndex?: number;
   isIndent?: boolean;
   isStockManaged?: boolean;
+  estimatedSellPrice?: number;
 }
 
 export interface PurchaseOrder {

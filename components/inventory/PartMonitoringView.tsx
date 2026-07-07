@@ -1,11 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { Job, InventoryItem, EstimateItem } from '../../types';
-import { formatDateIndo } from '../../utils/helpers';
+import { formatDateIndo, formatCurrency } from '../../utils/helpers';
 // Added CheckCircle2 to the imports to resolve reference error
-import { Search, Filter, CheckCircle, CheckCircle2, Clock, Package, AlertCircle, Eye, X, AlertTriangle, Save, ShoppingCart, Info, Zap } from 'lucide-react';
+import { Search, Filter, CheckCircle, CheckCircle2, Clock, Package, AlertCircle, Eye, X, AlertTriangle, Save, ShoppingCart, Info, Zap, ArrowRightLeft } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 
 interface PartMonitoringViewProps {
@@ -16,7 +16,7 @@ interface PartMonitoringViewProps {
 
 const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventoryItems, onNavigateToPO }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'LENGKAP' | 'PARTIAL' | 'INDENT' | 'NEED_ORDER'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'LENGKAP' | 'PARTIAL' | 'INDENT' | 'NEED_ORDER' | 'ON_ORDER'>('ALL');
   // Use any to allow augmented properties from processedJobs which are not defined on Job interface
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -118,7 +118,9 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
         
         const matchesStatus = 
             statusFilter === 'ALL' || 
-            (statusFilter === 'NEED_ORDER' ? job.hasOutstandingOrder : job.partStatus === statusFilter);
+            (statusFilter === 'NEED_ORDER' ? job.hasOutstandingOrder : 
+             statusFilter === 'ON_ORDER' ? (!job.hasOutstandingOrder && job.partStatus !== 'LENGKAP' && job.detailedParts.some((p:any) => p.isOrdered && !p.hasArrived)) :
+             job.partStatus === statusFilter);
 
         return matchesSearch && matchesStatus;
     });
@@ -129,7 +131,8 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
       const partial = processedJobs.filter(j => j.partStatus === 'PARTIAL').length;
       const indent = processedJobs.filter(j => j.partStatus === 'INDENT').length;
       const needOrder = processedJobs.filter(j => j.hasOutstandingOrder).length;
-      return { total: processedJobs.length, lengkap, partial, indent, needOrder };
+      const onOrder = processedJobs.filter(j => !j.hasOutstandingOrder && j.partStatus !== 'LENGKAP' && j.detailedParts.some((p:any) => p.isOrdered && !p.hasArrived)).length;
+      return { total: processedJobs.length, lengkap, partial, indent, needOrder, onOrder };
   }, [processedJobs]);
 
   const handleToggleIndent = async (partIndex: number, currentIndentStatus: boolean, currentETA?: string) => {
@@ -174,6 +177,63 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
       }
   };
 
+  const handleSwitchPart = async (idx: number, part: any) => {
+      const targetPoliceNo = prompt("Masukkan No. Polisi tujuan (Urgent) untuk mengalihkan part ini:");
+      if (!targetPoliceNo) return;
+
+      const targetJob = jobs.find(j => 
+          j.policeNumber.toUpperCase() === targetPoliceNo.toUpperCase() &&
+          !j.isClosed && !j.isDeleted
+      );
+
+      if (!targetJob) { alert("Unit tujuan tidak ditemukan atau sudah selesai."); return; }
+
+      const targetPartIndex = targetJob.estimateData?.partItems?.findIndex((p: any) => 
+          (p.number && p.number.toUpperCase() === part.number.toUpperCase()) || 
+          (p.inventoryId && p.inventoryId === part.inventoryId)
+      );
+
+      if (targetPartIndex === undefined || targetPartIndex === -1) { alert("Unit tujuan tidak membutuhkan part ini di estimasinya."); return; }
+
+      const targetPart = targetJob.estimateData!.partItems![targetPartIndex];
+      if (targetPart.hasArrived) { alert("Unit tujuan sudah memiliki part ini (Lengkap)."); return; }
+      
+      const invItem = inventoryItems.find(i => i.id === part.inventoryId);
+      if (invItem && targetPart.price < invItem.buyPrice) {
+          alert(`BLOKIR: Harga estimasi pada unit tujuan (${formatCurrency(targetPart.price)}) lebih rendah dari harga modal/beli (${formatCurrency(invItem.buyPrice)}). Harap revisi estimasi unit tujuan terlebih dahulu!`);
+          return;
+      }
+
+      if (!confirm(`Yakin ingin mengalihkan part ini ke ${targetJob.policeNumber}? Status PO akan diswap otomatis.`)) return;
+
+      setIsUpdating(true);
+      try {
+          const batch = writeBatch(db);
+          
+          const sourceParts = [...selectedJob.estimateData.partItems];
+          // Swapping PO states: Source takes Target's state
+          sourceParts[idx].hasArrived = targetPart.hasArrived || false;
+          sourceParts[idx].isOrdered = targetPart.isOrdered || false;
+          
+          batch.update(doc(db, SERVICE_JOBS_COLLECTION, selectedJob.id), { 'estimateData.partItems': sourceParts, updatedAt: serverTimestamp() });
+
+          const targetParts = [...targetJob.estimateData!.partItems!];
+          targetParts[targetPartIndex].hasArrived = true;
+          targetParts[targetPartIndex].inventoryId = part.inventoryId;
+          
+          batch.update(doc(db, SERVICE_JOBS_COLLECTION, targetJob.id), { 'estimateData.partItems': targetParts, updatedAt: serverTimestamp() });
+
+          await batch.commit();
+          
+          setSelectedJob((prev: any) => prev ? { ...prev, estimateData: { ...prev.estimateData!, partItems: sourceParts } } : null);
+          alert("Berhasil mengalihkan part.");
+      } catch (e) {
+          console.error(e); alert("Gagal mengalihkan part.");
+      } finally {
+          setIsUpdating(false);
+      }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -205,6 +265,18 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
                 </div>
                 <div className="text-2xl font-black text-amber-700">{stats.needOrder}</div>
                 <p className="text-[10px] text-amber-600 font-bold mt-1">Outstanding Pekerjaan</p>
+            </div>
+
+            <div 
+                onClick={() => setStatusFilter('ON_ORDER')}
+                className={`p-4 rounded-xl border cursor-pointer transition-all ${statusFilter === 'ON_ORDER' ? 'bg-cyan-50 border-cyan-300 ring-1 ring-cyan-300' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+            >
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-bold text-cyan-700 uppercase">PO Berjalan</span>
+                    <Clock size={16} className="text-cyan-500"/>
+                </div>
+                <div className="text-2xl font-black text-cyan-800">{stats.onOrder}</div>
+                <p className="text-[10px] text-cyan-600 font-bold mt-1">On Order</p>
             </div>
 
             <div 
@@ -452,18 +524,32 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
                                                 {statusBadge}
                                             </td>
                                             <td className="p-4 text-center">
-                                                {part.allocationStatus !== 'ISSUED' && (
-                                                    <button 
-                                                        disabled={isUpdating}
-                                                        onClick={() => handleToggleIndent(idx, part.isIndent, part.indentETA)}
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border shadow-sm ${part.isIndent 
-                                                            ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100' 
-                                                            : 'bg-red-600 text-white border-red-700 hover:bg-red-700 hover:scale-105 active:scale-95'
-                                                        }`}
-                                                    >
-                                                        {part.isIndent ? 'BATAL INDENT' : 'SET INDENT'}
-                                                    </button>
-                                                )}
+                                                <div className="flex flex-col gap-2">
+                                                    {part.allocationStatus !== 'ISSUED' && (
+                                                        <button 
+                                                            disabled={isUpdating || part.hasArrived}
+                                                            onClick={() => handleToggleIndent(idx, part.isIndent, part.indentETA)}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border shadow-sm ${
+                                                                part.hasArrived ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50' :
+                                                                part.isIndent 
+                                                                    ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100' 
+                                                                    : 'bg-red-600 text-white border-red-700 hover:bg-red-700 hover:scale-105 active:scale-95'
+                                                            }`}
+                                                        >
+                                                            {part.hasArrived ? 'SELESAI' : part.isIndent ? 'BATAL INDENT' : 'SET INDENT'}
+                                                        </button>
+                                                    )}
+                                                    {part.hasArrived && (
+                                                        <button 
+                                                            disabled={isUpdating}
+                                                            onClick={() => handleSwitchPart(idx, part)}
+                                                            className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-white text-cyan-600 border border-cyan-300 hover:bg-cyan-50 transition-all shadow-sm flex items-center justify-center gap-1"
+                                                            title="Alihkan part ini ke unit lain (Urgent)"
+                                                        >
+                                                            <ArrowRightLeft size={10}/> ALIH PART
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );

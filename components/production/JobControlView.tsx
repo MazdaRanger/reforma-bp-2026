@@ -34,6 +34,7 @@ const ADMIN_HURDLE_STATUSES = [
     "Banding Harga SPK",
     "Tunggu Part",
     "Unit di Pemilik (Tunggu Part)",
+    "Sparepart Lengkap",
     "Tunggu SPK Asuransi",
     "Tunggu Estimasi",
     "Booking Masuk"

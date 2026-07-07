@@ -525,7 +525,7 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                   <input type="number" value={item.qty || 1} onChange={e => updateItemRaw('part', i, 'qty', Number(e.target.value))} className="w-16 p-2 text-center bg-gray-50 border-none rounded-lg font-bold text-xs disabled:opacity-60" disabled={isLocked} />
                               </td>
                               <td className="px-4 py-3 border-y border-gray-100 text-right relative group-input">
-                                  <input type="number" value={item.price} onChange={e => updateItemRaw('part', i, 'price', Number(e.target.value))} className={`w-full p-2 text-right bg-gray-50 border-none rounded-lg font-bold text-gray-800 ${item.isPriceMismatch ? 'ring-2 ring-red-300' : ''} disabled:opacity-60`} disabled={isLocked} />
+                                  <input type="number" value={item.price} onChange={e => updateItemRaw('part', i, 'price', Number(e.target.value))} className={`w-full p-2 text-right bg-gray-50 border-none rounded-lg font-bold text-gray-800 ${item.isPriceMismatch ? 'ring-2 ring-red-300' : ''} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={isLocked || !!item.inventoryId} />
                                   {item.isPriceMismatch && item.mismatchSuggestedPrice && (
                                        <button 
                                           onClick={() => syncPartPrice(i, item.mismatchSuggestedPrice)} 
