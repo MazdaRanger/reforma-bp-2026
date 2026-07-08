@@ -777,6 +777,61 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </div>
                     </div>
                   </div>
+
+                  <div className={`bg-gray-50 p-6 rounded-2xl border border-gray-200 ${restrictedClass}`}>
+                      <RestrictedOverlay/>
+                      <div className="flex justify-between items-center mb-4">
+                          <h4 className="font-bold text-gray-700 flex items-center gap-2 uppercase tracking-widest text-xs">
+                              <Calendar size={16} className="text-rose-500"/> Pengaturan Kalender Kerja (Libur Internal/Nasional)
+                          </h4>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-4">
+                          Hari Minggu secara otomatis dihitung sebagai hari libur. Silakan tambahkan tanggal khusus (format YYYY-MM-DD) yang dihitung sebagai hari libur untuk keperluan akurasi perhitungan SLA dan Performa Mingguan.
+                      </p>
+                      
+                      <div className="flex flex-col md:flex-row gap-4 mb-4">
+                          <div className="flex items-center gap-2 w-full md:w-auto">
+                              <input 
+                                  type="date" 
+                                  id="newHolidayInput"
+                                  className="w-full md:w-auto p-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:ring-2 focus:ring-rose-500"
+                              />
+                              <button 
+                                  onClick={() => {
+                                      const el = document.getElementById('newHolidayInput') as HTMLInputElement;
+                                      if (el && el.value) {
+                                          const current = localSettings.internalHolidays || [];
+                                          if (!current.includes(el.value)) {
+                                              handleChange('internalHolidays', [...current, el.value].sort());
+                                          }
+                                          el.value = '';
+                                      }
+                                  }}
+                                  className="shrink-0 text-xs bg-rose-600 text-white px-4 py-2.5 rounded-lg font-bold border border-rose-600 hover:bg-rose-700 shadow-sm transition-all flex items-center gap-2"
+                              >
+                                  <Plus size={14}/> Tambah Tanggal
+                              </button>
+                          </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto scrollbar-thin">
+                          {(localSettings.internalHolidays || []).map((dateStr, idx) => (
+                              <div key={idx} className="flex items-center gap-2 bg-white p-2 px-3 rounded-xl border border-rose-100 shadow-sm transition-all">
+                                  <span className="text-sm font-black text-rose-700">{dateStr}</span>
+                                  <button onClick={() => {
+                                      const newHolidays = [...(localSettings.internalHolidays || [])];
+                                      newHolidays.splice(idx, 1);
+                                      handleChange('internalHolidays', newHolidays);
+                                  }} className="text-rose-300 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors">
+                                      <Trash2 size={14}/>
+                                  </button>
+                              </div>
+                          ))}
+                          {(!localSettings.internalHolidays || localSettings.internalHolidays.length === 0) && (
+                              <div className="w-full text-center py-4 text-xs text-gray-400 italic">Belum ada hari libur khusus yang ditambahkan.</div>
+                          )}
+                      </div>
+                  </div>
               </div>
           )}
 

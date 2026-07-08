@@ -48,6 +48,8 @@ const StatCard = ({ title, value, icon: Icon, color, subValue, trend, info }: an
 const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, settings, onNavigate }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [activeWeek, setActiveWeek] = useState<number | 'total'>(1);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const lang = settings.language || 'id';
 
   // Helper untuk parsing tanggal (Timestamp Firebase atau Date Object) agar robust
@@ -73,9 +75,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               card3_sub: "Menunggu penyerahan",
               card4: "Revenue (Terfaktur)",
               card4_sub: "Total bill periode ini",
-              card_forecast: "Forecast Gross Profit",
-              card_forecast_sub: "Potensi Laba (WO Belum Faktur)",
-              card_forecast_info: "Asumsi: Bahan 15%, Part 80%",
               row1: "Unit Terfaktur",
               row2: "Total Produksi Panel",
               row3: "Gross Profit (Real)",
@@ -92,9 +91,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               card3_sub: "Waiting for handover",
               card4: "Revenue (Invoiced)",
               card4_sub: "Total bill this period",
-              card_forecast: "Forecast Gross Profit",
-              card_forecast_sub: "Potential Profit (Non-Invoiced)",
-              card_forecast_info: "Assumed: Mat 15%, Part 80%",
               row1: "Invoiced Units",
               row2: "Production Panels",
               row3: "Gross Profit (Realized)",
@@ -106,55 +102,115 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
   };
 
   const stats = useMemo(() => {
-    // 1. WIP Stats - Unit yang memiliki WO dan belum ditutup (Active Production)
+    // 1. WIP Stats
     const activeJobsList = allJobs.filter(j => j.woNumber && !j.isClosed && !j.isDeleted);
     const activeJobsCount = activeJobsList.length;
     
-    // Unit Selesai (Ready for Delivery) - Cek status text yang mungkin panjang
     const completedWaiting = allJobs.filter(j => 
         !j.isClosed && 
         !j.isDeleted && 
         (j.statusKendaraan === 'Selesai (Tunggu Pengambilan)' || j.statusPekerjaan?.includes('Selesai'))
     ).length;
 
-    // --- FORECAST LOGIC (ESTIMASI LABA DARI WIP) ---
-    // UPDATED: Only calculate jobs that have WO but DO NOT have invoice yet
-    const forecastJobsList = allJobs.filter(j => 
-        j.woNumber &&       // Sudah jadi WO
-        !j.hasInvoice &&    // Belum jadi Faktur (Uang belum masuk/piutang belum tercatat real)
-        !j.isDeleted
-    );
+    // --- WEEKLY LOGIC ---
+    const getWorkingDaysInWeek = (week: number) => {
+        let startDay = (week - 1) * 7 + 1;
+        let endDay = week * 7;
+        let lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+        if (startDay > lastDayOfMonth) return 0;
+        if (endDay > lastDayOfMonth) endDay = lastDayOfMonth;
+        
+        let workingDays = 0;
+        for (let d = startDay; d <= endDay; d++) {
+            let currDate = new Date(selectedYear, selectedMonth, d);
+            let dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (currDate.getDay() !== 0 && !(settings.internalHolidays || []).includes(dateStr)) {
+                workingDays++;
+            }
+        }
+        return workingDays;
+    };
 
-    let potentialRevJasa = 0;
-    let potentialRevPart = 0;
+    const getWeekNumber = (date: Date, year: number, month: number) => {
+        if (date.getMonth() !== month || date.getFullYear() !== year) return -1;
+        const day = date.getDate();
+        if (day <= 7) return 1;
+        if (day <= 14) return 2;
+        if (day <= 21) return 3;
+        if (day <= 28) return 4;
+        return 5;
+    };
 
-    forecastJobsList.forEach(j => {
-        const est = j.estimateData;
-        if (est) {
-            potentialRevJasa += (est.subtotalJasa || 0);
-            potentialRevPart += (est.subtotalPart || 0);
+    const weeklyData: Record<string, any> = {
+        1: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(1) },
+        2: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(2) },
+        3: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(3) },
+        4: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(4) },
+        5: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(5) },
+        total: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: 0 }
+    };
+
+    weeklyData.total.workingDays = [1,2,3,4,5].reduce((acc, w) => acc + weeklyData[w].workingDays, 0);
+
+    allJobs.forEach(j => {
+        if (j.isDeleted) return;
+
+        // Weekly Entry
+        if (j.actualStartDate) {
+            const entryDate = parseDate(j.actualStartDate);
+            const w = getWeekNumber(entryDate, selectedYear, selectedMonth);
+            if (w >= 1 && w <= 5) {
+                weeklyData[w].entry++;
+                weeklyData.total.entry++;
+            }
+        }
+
+        // Weekly Out
+        const isOut = j.statusKendaraan?.includes('Sudah Diambil') || j.isClosed;
+        const outDateRaw = j.closedAt || j.updatedAt;
+        if (isOut && outDateRaw) {
+            const outDate = parseDate(outDateRaw);
+            const w = getWeekNumber(outDate, selectedYear, selectedMonth);
+            if (w >= 1 && w <= 5) {
+                weeklyData[w].out++;
+                weeklyData.total.out++;
+            }
+        }
+
+        // Weekly Revenue Nett & Costs
+        if (j.hasInvoice) {
+            const invDateRaw = j.closedAt || j.createdAt;
+            const invDate = parseDate(invDateRaw);
+            const w = getWeekNumber(invDate, selectedYear, selectedMonth);
+            if (w >= 1 && w <= 5) {
+                const est = j.estimateData;
+                const cost = j.costData;
+                if (est) {
+                    weeklyData[w].jasaNett += (est.subtotalJasa || 0);
+                    weeklyData[w].partNett += (est.subtotalPart || 0);
+                    weeklyData.total.jasaNett += (est.subtotalJasa || 0);
+                    weeklyData.total.partNett += (est.subtotalPart || 0);
+                }
+                if (cost) {
+                    weeklyData[w].bahanCost += (cost.hargaModalBahan || 0);
+                    weeklyData[w].partCost += (cost.hargaBeliPart || 0);
+                    weeklyData.total.bahanCost += (cost.hargaModalBahan || 0);
+                    weeklyData.total.partCost += (cost.hargaBeliPart || 0);
+                }
+            }
         }
     });
 
-    // Hitung asumsi biaya untuk Forecast
-    const assumedMatCost = potentialRevJasa * 0.15; // 15% dari Jasa untuk Bahan
-    const assumedPartCost = potentialRevPart * 0.80; // 80% dari Part (margin 20%) untuk HPP Part
-    const forecastGP = (potentialRevJasa + potentialRevPart) - (assumedMatCost + assumedPartCost);
-
-    // 2. Filtered Stats (REALIZED - BASED ON INVOICE / CLOSING DATE)
+    // 2. Filtered Stats
     const periodJobs = allJobs.filter(j => {
         if (j.isDeleted) return false;
-        // Gunakan closedAt jika ada (prioritas untuk laporan keuangan), jika tidak gunakan createdAt
         const refDate = j.closedAt || j.createdAt; 
         const dateObj = parseDate(refDate);
         return dateObj.getMonth() === selectedMonth && dateObj.getFullYear() === selectedYear;
     });
 
-    // HANYA MENGHITUNG YANG SUDAH TERFAKTUR (HasInvoice = true)
     const invoicedJobs = periodJobs.filter(j => j.hasInvoice);
     const totalInvoicedUnits = invoicedJobs.length;
-    
-    // REVENUE: Total Bill (Termasuk PPN) untuk ditampilkan sebagai Omzet Kotor
     const revenue = invoicedJobs.reduce((acc, j) => acc + (j.estimateData?.grandTotal || 0), 0);
     
     const totalPanels = invoicedJobs.reduce((acc, j) => {
@@ -162,21 +218,14 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         return acc + panels;
     }, 0);
 
-    // --- REALIZED GROSS PROFIT CALCULATION ---
-    // Rumus: (Jasa + Part) - (Modal Bahan + Beli Part + Jasa Luar)
-    // Note: Tidak menyertakan PPN dalam perhitungan Profit Bengkel
     const grossProfit = invoicedJobs.reduce((acc, j) => {
-        // Revenue Components (Net without PPN)
         const revJasa = j.hargaJasa || 0;
         const revPart = j.hargaPart || 0;
         const totalNetRevenue = revJasa + revPart;
-
-        // Cost Components (Real Recorded Costs) - SAFETY CHECK ADDED
         const costBahan = j.costData?.hargaModalBahan || 0;
         const costPart = j.costData?.hargaBeliPart || 0;
         const costSublet = j.costData?.jasaExternal || 0;
         const totalCOGS = costBahan + costPart + costSublet;
-
         return acc + (totalNetRevenue - totalCOGS);
     }, 0);
 
@@ -193,11 +242,10 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         statusCounts, 
         totalInvoicedUnits, 
         totalPanels, 
-        grossProfit, // Corrected Realized GP
-        forecastGP,
-        forecastCount: forecastJobsList.length
+        grossProfit,
+        weeklyData
     };
-  }, [allJobs, selectedMonth, selectedYear]);
+  }, [allJobs, selectedMonth, selectedYear, settings.internalHolidays]);
 
   const barChartData = {
     labels: Object.keys(stats.statusCounts),
@@ -252,16 +300,7 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
           </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Forecast GP Card */}
-        <StatCard 
-            title={t('card_forecast')} 
-            value={formatCurrency(stats.forecastGP)} 
-            icon={Sparkles} 
-            color="bg-purple-600" 
-            subValue={`${stats.forecastCount} Unit WO Belum Faktur`} 
-            info={t('card_forecast_info')}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title={t('card2')} value={stats.activeJobsCount} icon={Wrench} color="bg-indigo-600" subValue={t('card2_sub')} />
         <StatCard title={t('card3')} value={stats.completedWaiting} icon={Car} color="bg-blue-500" subValue={t('card3_sub')} />
         <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} icon={Landmark} color="bg-emerald-600" subValue={t('card4_sub')} trend="up" />
@@ -279,6 +318,85 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
           <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl border border-white/60 shadow-lg shadow-indigo-100/30 flex items-center gap-6 border-l-4 border-l-emerald-500">
               <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl"><TrendingUp size={32}/></div>
               <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('row3')}</p><h4 className="text-3xl font-extrabold text-emerald-700">{formatCurrency(stats.grossProfit)}</h4></div>
+          </div>
+      </div>
+
+      {/* WEEKLY SIDEBAR SECTION */}
+      <div className="bg-white/70 backdrop-blur-md p-6 rounded-[32px] shadow-lg shadow-indigo-100/30 border border-white/60 flex h-auto md:h-[420px] transition-all">
+          {/* Sidebar */}
+          <div 
+              className={`flex flex-col gap-2 transition-all duration-300 ease-in-out border-r border-gray-100 pr-4 ${isSidebarHovered ? 'w-56' : 'w-16'}`}
+              onMouseEnter={() => setIsSidebarHovered(true)}
+              onMouseLeave={() => setIsSidebarHovered(false)}
+          >
+              <div className="mb-4 pl-2 h-10 flex items-center">
+                  <Calendar className="text-indigo-600 shrink-0" size={24}/>
+                  <span className={`ml-3 font-black text-slate-800 whitespace-nowrap transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+                      Performa Mingguan
+                  </span>
+              </div>
+              {[1, 2, 3, 4, 5].map((w) => (
+                  <button
+                      key={w}
+                      onMouseEnter={() => setActiveWeek(w)}
+                      className={`flex items-center p-3 rounded-2xl transition-all duration-300 whitespace-nowrap overflow-hidden group ${activeWeek === w ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-indigo-50 text-slate-600'}`}
+                  >
+                      <span className={`font-black text-lg min-w-[24px] text-center transition-colors ${activeWeek === w ? 'text-white' : 'text-indigo-300 group-hover:text-indigo-600'}`}>M{w}</span>
+                      <span className={`ml-4 font-bold transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0'}`}>Minggu ke - {w}</span>
+                  </button>
+              ))}
+              <div className="flex-grow"></div>
+              <button
+                  onMouseEnter={() => setActiveWeek('total')}
+                  className={`flex items-center p-3 rounded-2xl transition-all duration-300 whitespace-nowrap overflow-hidden group ${activeWeek === 'total' ? 'bg-emerald-600 text-white shadow-md' : 'hover:bg-emerald-50 text-slate-600'}`}
+              >
+                  <span className={`font-black text-lg min-w-[24px] text-center transition-colors ${activeWeek === 'total' ? 'text-white' : 'text-emerald-300 group-hover:text-emerald-600'}`}>T</span>
+                  <span className={`ml-4 font-bold transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0'}`}>Grand Total</span>
+              </button>
+          </div>
+          
+          {/* Content Area */}
+          <div className="flex-1 pl-6 md:pl-10 overflow-y-auto flex flex-col justify-center">
+              <div className="mb-8">
+                  <h3 className="text-3xl font-black text-slate-800 tracking-tight">
+                      {activeWeek === 'total' ? 'Total Keseluruhan' : `Detail Minggu ke - ${activeWeek}`}
+                  </h3>
+                  <p className="text-sm text-slate-500 font-bold mt-1 flex items-center gap-2">
+                      <Activity size={14}/> Total Hari Kerja: <span className="text-indigo-600">{stats.weeklyData[activeWeek].workingDays} Hari</span>
+                  </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  {/* Unit Stats */}
+                  <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Unit Masuk</p>
+                      <p className="text-3xl font-black text-indigo-900">{stats.weeklyData[activeWeek].entry}</p>
+                  </div>
+                  <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100">
+                      <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Unit Keluar</p>
+                      <p className="text-3xl font-black text-emerald-900">{stats.weeklyData[activeWeek].out}</p>
+                  </div>
+                  
+                  {/* Revenue Stats */}
+                  <div className="col-span-2 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Jasa Nett</p>
+                      <p className="text-3xl font-black text-slate-800">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
+                  </div>
+                  <div className="col-span-2 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Part Nett</p>
+                      <p className="text-3xl font-black text-slate-800">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
+                  </div>
+
+                  {/* Expenses Stats */}
+                  <div className="col-span-2 bg-rose-50/50 p-5 rounded-2xl border border-rose-100">
+                      <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">HPP Bahan</p>
+                      <p className="text-2xl font-black text-rose-900">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
+                  </div>
+                  <div className="col-span-2 bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
+                      <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">HPP Part</p>
+                      <p className="text-2xl font-black text-orange-900">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
+                  </div>
+              </div>
           </div>
       </div>
 

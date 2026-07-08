@@ -27,6 +27,7 @@ export interface Settings {
   mechanicPanelRate: number; // Added wage rate per panel
   afterServiceFollowUpDays: number;
   nationalHolidays: string[];
+  internalHolidays?: string[];
   mechanicNames: string[];
   serviceAdvisors: string[];
   insuranceOptions: { name: string; jasa: number; part: number }[];

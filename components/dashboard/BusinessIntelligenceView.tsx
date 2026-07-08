@@ -7,8 +7,9 @@ import {
 } from 'chart.js';
 import { 
     TrendingUp, Shield, User, MapPin, Car, Palette, 
-    ChevronRight, Filter, Calendar, Award, Info
+    ChevronRight, Filter, Calendar, Award, Info, Sparkles
 } from 'lucide-react';
+import { formatCurrency } from '../../utils/helpers';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -72,6 +73,29 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
     const getTop3 = (map: Record<string, number>) => 
         Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 3);
 
+    // --- FORECAST LOGIC (ESTIMASI LABA DARI WIP) ---
+    const forecastJobsList = jobs.filter(j => 
+        j.woNumber &&       // Sudah jadi WO
+        !j.hasInvoice &&    // Belum jadi Faktur
+        !j.isDeleted
+    );
+
+    let potentialRevJasa = 0;
+    let potentialRevPart = 0;
+
+    forecastJobsList.forEach(j => {
+        const est = j.estimateData;
+        if (est) {
+            potentialRevJasa += (est.subtotalJasa || 0);
+            potentialRevPart += (est.subtotalPart || 0);
+        }
+    });
+
+    const assumedMatCost = potentialRevJasa * 0.15; // 15% dari Jasa untuk Bahan
+    const assumedPartCost = potentialRevPart * 0.80; // 80% dari Part (margin 20%) untuk HPP Part
+    const forecastGP = (potentialRevJasa + potentialRevPart) - (assumedMatCost + assumedPartCost);
+    const forecastCount = forecastJobsList.length;
+
     return {
         insCount, priCount,
         topInsurance,
@@ -79,7 +103,9 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
         topBrands: getTop3(brandMap),
         topModels: getTop3(modelMap),
         topColors: getTop3(colorMap),
-        totalOrder: periodJobs.length
+        totalOrder: periodJobs.length,
+        forecastGP,
+        forecastCount
     };
   }, [jobs, selectedMonth, selectedYear]);
 
@@ -138,6 +164,29 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                         <option key={y} value={y}>{y}</option>
                     ))}
                 </select>
+            </div>
+        </div>
+
+        {/* FORECAST GROSS PROFIT CARD */}
+        <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-[32px] border border-purple-400/30 shadow-xl shadow-purple-200/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden group">
+            <div className="absolute right-0 top-0 p-4 opacity-10 rotate-12 scale-150 transition-transform duration-500 group-hover:scale-110">
+                <Sparkles size={200} className="text-white"/>
+            </div>
+            <div className="relative z-10">
+                <h3 className="font-black text-purple-200 uppercase tracking-widest text-xs mb-2 flex items-center gap-2">
+                    <Sparkles size={16}/> Forecast Gross Profit
+                </h3>
+                <p className="text-4xl md:text-5xl font-black text-white tracking-tighter">
+                    {formatCurrency(data.forecastGP)}
+                </p>
+                <div className="mt-4 flex items-center gap-4">
+                    <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 text-white font-bold text-sm">
+                        {data.forecastCount} Unit WO Belum Faktur
+                    </div>
+                    <p className="text-xs text-purple-200 italic hidden md:block">
+                        *Asumsi: HPP Bahan 15%, HPP Part 80%
+                    </p>
+                </div>
             </div>
         </div>
 
