@@ -101,18 +101,37 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     ).length;
 
     // --- WEEKLY LOGIC ---
-    const getWorkingDaysInWeek = (week: number) => {
-        let startDay = (week - 1) * 7 + 1;
-        let endDay = week * 7;
-        let lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-        if (startDay > lastDayOfMonth) return 0;
+    const getWeekBounds = (year: number, month: number, week: number) => {
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+        let firstSundayDate = 1;
+        while (new Date(year, month, firstSundayDate).getDay() !== 0 && firstSundayDate < lastDayOfMonth) {
+            firstSundayDate++;
+        }
+
+        if (week === 1) return { start: 1, end: firstSundayDate };
+        
+        let startDay = firstSundayDate + 1 + (week - 2) * 7;
+        let endDay = startDay + 6;
+        
+        if (week === 5) return { start: startDay, end: lastDayOfMonth };
+        
+        if (startDay > lastDayOfMonth) return { start: lastDayOfMonth + 1, end: lastDayOfMonth };
         if (endDay > lastDayOfMonth) endDay = lastDayOfMonth;
         
+        return { start: startDay, end: endDay };
+    };
+
+    const getWorkingDaysInWeek = (week: number) => {
+        const { start, end } = getWeekBounds(selectedYear, selectedMonth, week);
+        if (start > end) return 0;
+        
+        const workingDaysOfWeek = settings.workingDaysOfWeek || [1,2,3,4,5,6]; // Mon-Sat
         let workingDays = 0;
-        for (let d = startDay; d <= endDay; d++) {
+        
+        for (let d = start; d <= end; d++) {
             let currDate = new Date(selectedYear, selectedMonth, d);
             let dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            if (currDate.getDay() !== 0 && !(settings.internalHolidays || []).includes(dateStr)) {
+            if (workingDaysOfWeek.includes(currDate.getDay()) && !(settings.internalHolidays || []).includes(dateStr)) {
                 workingDays++;
             }
         }
@@ -122,11 +141,11 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     const getWeekNumber = (date: Date, year: number, month: number) => {
         if (date.getMonth() !== month || date.getFullYear() !== year) return -1;
         const day = date.getDate();
-        if (day <= 7) return 1;
-        if (day <= 14) return 2;
-        if (day <= 21) return 3;
-        if (day <= 28) return 4;
-        return 5;
+        for (let w = 1; w <= 5; w++) {
+            const { start, end } = getWeekBounds(year, month, w);
+            if (day >= start && day <= end) return w;
+        }
+        return -1;
     };
 
     const weeklyData: Record<string, any> = {

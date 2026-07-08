@@ -93,7 +93,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
       e.preventDefault();
       if (!isManager) return;
       setIsLoading(true);
-      let tempApp: firebase.app.App | null = null;
+      let tempApp: any = null;
       let newUid: string | null = null;
       try {
           if (userForm.password) {
@@ -123,7 +123,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
               } catch (fsErr: any) { msg = "Email ada di Auth tapi gagal update Firestore: " + fsErr.message; }
           }
           showNotification("Gagal menambah user: " + msg, "error");
-      } finally { if (tempApp) await (tempApp as firebase.app.App).delete(); setIsLoading(false); }
+      } finally { if (tempApp) await (tempApp as any).delete(); setIsLoading(false); }
   };
 
   const handleDeleteUser = async (uid: string) => { if (!window.confirm("Hapus akses user ini?")) return; try { await deleteDoc(doc(db, USERS_COLLECTION, uid)); showNotification("User dihapus.", "success"); } catch (e) { showNotification("Gagal menghapus.", "error"); } };
@@ -268,6 +268,80 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                     </div>
                   </section>
                   <section><h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Target className="text-red-500"/> Target & Pajak</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div><label className="block text-sm font-medium mb-1">PPN (%)</label><div className="relative"><input type="number" className="w-full p-2 border rounded pl-8" value={localSettings.ppnPercentage} onChange={e => handleChange('ppnPercentage', Number(e.target.value))} /><Percent size={14} className="absolute left-3 top-3 text-gray-400"/></div></div><div><label className="block text-sm font-medium mb-1">Target Bulanan (Rp)</label><input type="number" className="w-full p-2 border rounded" value={localSettings.monthlyTarget} onChange={e => handleChange('monthlyTarget', Number(e.target.value))} /></div><div><label className="block text-sm font-medium mb-1">Target Mingguan (Rp)</label><input type="number" className="w-full p-2 border rounded" value={localSettings.weeklyTarget} onChange={e => handleChange('weeklyTarget', Number(e.target.value))} /></div></div></section>
+                  
+                  {/* KALENDER HARI KERJA */}
+                  <section className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mt-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar className="text-blue-500" size={20}/> Kalender Hari Kerja & Libur</h3>
+                      <div className="space-y-6">
+                          <div>
+                              <label className="block text-sm font-bold mb-3 text-gray-700">Hari Kerja Operasional Rutin</label>
+                              <div className="flex flex-wrap gap-3">
+                                  {[{ id: 1, label: 'Senin' }, { id: 2, label: 'Selasa' }, { id: 3, label: 'Rabu' }, { id: 4, label: 'Kamis' }, { id: 5, label: 'Jumat' }, { id: 6, label: 'Sabtu' }, { id: 0, label: 'Minggu' }].map(day => {
+                                      const isWorkingDay = (localSettings.workingDaysOfWeek || [1,2,3,4,5,6]).includes(day.id);
+                                      return (
+                                          <button 
+                                              key={day.id}
+                                              type="button"
+                                              onClick={() => {
+                                                  const current = localSettings.workingDaysOfWeek || [1,2,3,4,5,6];
+                                                  const newDays = isWorkingDay 
+                                                      ? current.filter(d => d !== day.id) 
+                                                      : [...current, day.id];
+                                                  handleChange('workingDaysOfWeek', newDays);
+                                              }}
+                                              className={`px-5 py-2.5 rounded-full border text-sm font-bold transition-all ${
+                                                  isWorkingDay
+                                                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm ring-2 ring-indigo-100'
+                                                      : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                                              }`}
+                                          >
+                                              {day.label}
+                                          </button>
+                                      );
+                                  })}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2 italic">* Pengaturan ini akan digunakan untuk menghitung target jumlah hari kerja aktual setiap bulannya di Dashboard.</p>
+                          </div>
+                          <div className="pt-4 border-t border-gray-100">
+                              <label className="block text-sm font-bold mb-3 text-gray-700">Hari Libur Khusus / Nasional</label>
+                              <div className="flex gap-3 mb-4">
+                                  <input 
+                                      type="date" 
+                                      id="newHolidayInput"
+                                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                  />
+                                  <button 
+                                      type="button"
+                                      onClick={() => {
+                                          const val = (document.getElementById('newHolidayInput') as HTMLInputElement).value;
+                                          if (!val) return;
+                                          const currentHolidays = localSettings.internalHolidays || [];
+                                          if (!currentHolidays.includes(val)) {
+                                              handleChange('internalHolidays', [...currentHolidays, val].sort());
+                                              (document.getElementById('newHolidayInput') as HTMLInputElement).value = '';
+                                          }
+                                      }}
+                                      className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+                                  >
+                                      <Plus size={16}/> Tambah Libur
+                                  </button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                  {(localSettings.internalHolidays || []).length === 0 && <span className="text-sm text-gray-400 italic">Belum ada hari libur khusus yang ditambahkan.</span>}
+                                  {(localSettings.internalHolidays || []).map((h, i) => (
+                                      <span key={i} className="bg-white border border-gray-200 shadow-sm text-gray-700 px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-3">
+                                          🗓 {new Date(h).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                          <button onClick={() => {
+                                              const currentHolidays = [...(localSettings.internalHolidays || [])];
+                                              currentHolidays.splice(i, 1);
+                                              handleChange('internalHolidays', currentHolidays);
+                                          }} className="text-red-400 hover:text-red-600 bg-red-50 p-1 rounded-full"><Trash2 size={12}/></button>
+                                      </span>
+                                  ))}
+                              </div>
+                          </div>
+                      </div>
+                  </section>
               </div>
           )}
 

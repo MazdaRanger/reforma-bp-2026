@@ -28,6 +28,7 @@ export interface Settings {
   afterServiceFollowUpDays: number;
   nationalHolidays: string[];
   internalHolidays?: string[];
+  workingDaysOfWeek?: number[];
   mechanicNames: string[];
   serviceAdvisors: string[];
   insuranceOptions: { name: string; jasa: number; part: number }[];

@@ -27,6 +27,18 @@ declare module 'react' {
     export default React;
 }
 
+declare global {
+    namespace JSX {
+        interface Element {}
+        interface IntrinsicElements {
+            [elemName: string]: any;
+        }
+        interface ElementChildrenAttribute {
+            children: {};
+        }
+    }
+}
+
 declare module 'firebase/firestore' {
     export const doc: any;
     export const updateDoc: any;
@@ -43,6 +55,8 @@ declare module 'firebase/firestore' {
     export const onSnapshot: any;
     export const orderBy: any;
     export const limit: any;
+    export const writeBatch: any;
+    export const Timestamp: any;
 }
 
 declare module '*';
