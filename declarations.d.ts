@@ -14,6 +14,7 @@ declare module 'react' {
     export type ChangeEvent<T = any> = any;
     export type MouseEvent<T = any> = any;
     
+    function React(): any;
     namespace React {
         type FC<P = {}> = (props: P & { children?: any }) => any;
         type ReactNode = any;
@@ -44,7 +45,4 @@ declare module 'firebase/firestore' {
     export const limit: any;
 }
 
-declare module '*' {
-    const value: any;
-    export default value;
-}
+declare module '*';

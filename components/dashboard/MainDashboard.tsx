@@ -94,13 +94,13 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
             <div className="flex-grow w-full lg:w-auto">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="relative flex-grow max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary" size={18} />
                         <input 
                             type="text" 
                             placeholder={lang === 'id' ? "Cari No. Polisi, Pelanggan..." : "Search Plate, Customer..."}
                             value={searchQuery} 
                             onChange={e => setSearchQuery(e.target.value.toUpperCase())} 
-                            className="pl-10 p-2.5 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 transition-all"
+                            className="pl-10 p-2 border border-border rounded-md bg-card text-textPrimary w-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm"
                         />
                     </div>
                     
@@ -143,19 +143,19 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
            const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
            
            return (
-              <div key={job.id} className="bg-card rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-md transition-all group flex flex-col">
-                  {config.ribbon && (
-                      <div className={`text-[9px] font-black tracking-widest text-center py-1 ${config.color} border-b`}>
-                          {config.ribbon}
-                      </div>
-                  )}
+              <div key={job.id} className="bg-card rounded-md shadow-sm border border-border overflow-hidden hover:shadow-md transition-all group flex flex-col">
                   
-                  <div className="p-5 flex-grow">
+                  <div className="p-4 flex-grow">
                       <div className="flex justify-between items-start mb-4">
                           <div>
-                              <h3 className="text-xl font-bold text-textPrimary">{job.policeNumber}</h3>
-                              <p className="text-xs font-semibold text-textSecondary uppercase tracking-tighter">{job.carModel} • {job.warnaMobil}</p>
+                              <h3 className="text-lg font-bold text-textPrimary tracking-tight">{job.policeNumber}</h3>
+                              <p className="text-xs font-medium text-textSecondary uppercase tracking-wide mt-0.5">{job.carModel} • {job.warnaMobil}</p>
                           </div>
+                          {config.ribbon && (
+                              <span className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md border ${config.color}`}>
+                                  {config.ribbon}
+                              </span>
+                          )}
                       </div>
 
                       <div className="space-y-2 mb-4">
@@ -169,25 +169,25 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
                           </div>
                       </div>
 
-                      <div className="bg-muted rounded-md p-3 border border-border">
-                          <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-semibold text-textSecondary uppercase">{lang === 'id' ? 'Status Kontrol' : 'Control Status'}</span>
-                              <span className="text-[10px] font-semibold text-textSecondary uppercase">{lang === 'id' ? 'Pekerjaan' : 'Work Progress'}</span>
+                      <div className="bg-muted/50 rounded-md p-3 border border-border/50">
+                          <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[10px] font-medium text-textSecondary uppercase">{lang === 'id' ? 'Status Kontrol' : 'Control Status'}</span>
+                              <span className="text-[10px] font-medium text-textSecondary uppercase">{lang === 'id' ? 'Pekerjaan' : 'Work Progress'}</span>
                           </div>
                           <div className="flex justify-between items-center">
-                              <span className={`text-[11px] font-bold uppercase ${config.color.replace('bg-', 'text-').split(' ')[1]}`}>{job.statusKendaraan}</span>
+                              <span className={`text-[11px] font-semibold uppercase ${config.color.replace('bg-', 'text-').split(' ')[1]}`}>{job.statusKendaraan}</span>
                               <span className="text-[11px] font-semibold text-textPrimary">{job.statusPekerjaan}</span>
                           </div>
                       </div>
                   </div>
 
-                  <div className="bg-card p-4 border-t border-border flex items-center justify-between">
+                  <div className="bg-muted/30 p-3.5 border-t border-border flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                          <button onClick={() => openModal('create_estimation', job)} className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded hover:bg-primary/90 transition-colors shadow-sm">Detail</button>
-                          {userPermissions.role === 'Manager' && <button onClick={() => handleDelete(job)} className="px-3 py-1.5 bg-red-50 text-destructive border border-red-100 text-xs font-semibold rounded hover:bg-red-100 transition-colors shadow-sm">Hapus</button>}
+                          <button onClick={() => openModal('create_estimation', job)} className="px-3 py-1.5 bg-card border border-border text-textPrimary hover:bg-muted text-xs font-semibold rounded-md transition-colors shadow-sm">Detail</button>
+                          {userPermissions.role === 'Manager' && <button onClick={() => handleDelete(job)} className="px-3 py-1.5 bg-red-50 text-destructive border border-red-100 text-xs font-semibold rounded-md hover:bg-red-100 transition-colors shadow-sm">Hapus</button>}
                       </div>
                       <div className="text-right">
-                          <div className="text-[10px] font-semibold text-textSecondary uppercase leading-none mb-1">Total Bill</div>
+                          <div className="text-[9px] font-medium text-textSecondary uppercase tracking-wider mb-0.5">Total Bill</div>
                           <div className="text-sm font-bold text-textPrimary">{formatCurrency(job.estimateData?.grandTotal || 0)}</div>
                       </div>
                   </div>
