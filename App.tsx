@@ -367,8 +367,8 @@ const AppContent: React.FC = () => {
 
         {currentView === 'input_data' && (
              <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-                 <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Input Data Unit Baru</h1>
-                 <div className="bg-white/80 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-lg border border-white/50">
+                 <h1 className="text-2xl font-bold text-textPrimary tracking-tight">Input Data Unit Baru</h1>
+                 <div className="bg-card p-6 md:p-8 rounded-lg shadow-sm border border-border">
                     <JobForm settings={appSettings} onSave={handleSaveVehicle} onCancel={() => setCurrentView('entry_data')} />
                  </div>
              </div>
@@ -386,7 +386,7 @@ const AppContent: React.FC = () => {
 
         {currentView === 'entry_data' && (
             <div className="space-y-4">
-                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Daftar Pekerjaan</h1>
+                <h1 className="text-2xl font-bold text-textPrimary tracking-tight">Daftar Pekerjaan</h1>
                 <MainDashboard allData={filteredJobs} openModal={openModal} onDelete={async (j) => { await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, j.id), { isDeleted: true }); showNotification("Dihapus."); }} onCloseJob={handleCloseJob} onReopenJob={async (j) => { await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, j.id), { isClosed: false }); showNotification("WO Dibuka Kembali."); }} userPermissions={userPermissions} showNotification={showNotification} searchQuery={searchQuery} setSearchQuery={setSearchQuery} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterWorkStatus={filterWorkStatus} setFilterWorkStatus={setFilterWorkStatus} showClosedJobs={showClosedJobs} setShowClosedJobs={setShowClosedJobs} settings={appSettings} />
             </div>
         )}

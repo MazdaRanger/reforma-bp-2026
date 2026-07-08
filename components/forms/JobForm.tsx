@@ -181,18 +181,16 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in max-w-5xl mx-auto py-2">
-      <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3">
-          <Database className="text-blue-600 mt-1 shrink-0" size={24}/>
+      <div className="bg-muted border border-border p-4 rounded-lg flex items-start gap-3">
           <div>
-              <h4 className="font-bold text-blue-900 text-sm">Mode Registrasi Master Data</h4>
-              <p className="text-xs text-blue-800 mt-1 leading-relaxed">{t('desc_banner')}</p>
+              <h4 className="font-bold text-textPrimary text-sm">Mode Registrasi Master Data</h4>
+              <p className="text-xs text-textSecondary mt-1 leading-relaxed">{t('desc_banner')}</p>
           </div>
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-            <div className="p-1.5 bg-gray-50 rounded-lg"><Car className="text-gray-600" size={20} /></div>
-            <h4 className="text-base font-bold text-gray-800">{t('sec_vehicle')}</h4>
+        <div className="flex items-center gap-3 border-b border-border pb-3">
+            <h4 className="text-base font-bold text-textPrimary">{t('sec_vehicle')}</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6">
             <div className="space-y-1.5 md:col-span-1 relative">
@@ -205,7 +203,7 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
                         onChange={handleChange} 
                         onKeyDown={handleKeyDown}
                         placeholder={t('placeholder_police')} 
-                        className={`w-full p-3 pl-11 bg-white border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all uppercase font-black text-indigo-900 tracking-tight ${searchMessage?.type === 'success' ? 'border-emerald-400' : 'border-gray-200 focus:border-indigo-500'}`}
+                        className={`w-full p-3 pl-11 bg-card border rounded-md transition-all uppercase font-bold text-textPrimary tracking-tight ${searchMessage?.type === 'success' ? 'border-emerald-400' : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'}`}
                         required 
                         autoFocus 
                     />
@@ -229,61 +227,59 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
             </div>
             
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_brand')}</label>
-                <select name="carBrand" value={formData.carBrand} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-gray-700">
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_brand')}</label>
+                <select name="carBrand" value={formData.carBrand} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary">
                     {(settings.carBrands || []).map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_model')}</label>
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_model')}</label>
                 <div className="relative group">
-                    <input list="car-models-list" type="text" name="carModel" value={formData.carModel} onChange={handleChange} placeholder={t('placeholder_model')} className="w-full p-3 pl-11 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-gray-700" />
-                    <Tag size={16} className="absolute left-4 top-3.5 text-gray-300" />
+                    <input list="car-models-list" type="text" name="carModel" value={formData.carModel} onChange={handleChange} placeholder={t('placeholder_model')} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary" />
                     <datalist id="car-models-list">{(settings.carModels || []).map(m => <option key={m} value={m}/>)}</datalist>
                 </div>
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_color')}</label>
-                <select name="warnaMobil" value={formData.warnaMobil} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-gray-700">
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_color')}</label>
+                <select name="warnaMobil" value={formData.warnaMobil} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary">
                     {(settings.carColors || []).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_vin')}</label>
-                <input type="text" name="nomorRangka" value={formData.nomorRangka || ''} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-mono text-xs font-bold uppercase" placeholder={t('placeholder_vin')} />
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_vin')}</label>
+                <input type="text" name="nomorRangka" value={formData.nomorRangka || ''} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono text-xs font-semibold uppercase text-textPrimary" placeholder={t('placeholder_vin')} />
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_engine')}</label>
-                <input type="text" name="nomorMesin" value={formData.nomorMesin || ''} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-mono text-xs font-bold uppercase" placeholder={t('label_engine')} />
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_engine')}</label>
+                <input type="text" name="nomorMesin" value={formData.nomorMesin || ''} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono text-xs font-semibold uppercase text-textPrimary" placeholder={t('label_engine')} />
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_year')}</label>
-                <input type="text" name="tahunPembuatan" value={formData.tahunPembuatan || ''} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all font-bold" placeholder="2023" />
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_year')}</label>
+                <input type="text" name="tahunPembuatan" value={formData.tahunPembuatan || ''} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary" placeholder="2023" />
             </div>
         </div>
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-            <div className="p-1.5 bg-gray-50 rounded-lg"><Shield className="text-gray-600" size={20} /></div>
-            <h4 className="text-base font-bold text-gray-800">{t('sec_admin')}</h4>
+        <div className="flex items-center gap-3 border-b border-border pb-3">
+            <h4 className="text-base font-bold text-textPrimary">{t('sec_admin')}</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_insurance')}</label>
-                <select name="namaAsuransi" value={formData.namaAsuransi} onChange={handleChange} className={`w-full p-3 border rounded-xl font-black transition-all ${isInsurance ? 'border-indigo-200 bg-indigo-50/30 text-indigo-800 shadow-sm' : 'border-gray-100 bg-gray-50 text-gray-600'}`}>
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_insurance')}</label>
+                <select name="namaAsuransi" value={formData.namaAsuransi} onChange={handleChange} className={`w-full p-3 border rounded-md font-semibold transition-all ${isInsurance ? 'border-primary/50 bg-primary/5 text-primary shadow-sm' : 'border-border bg-card text-textPrimary'}`}>
                     {(settings.insuranceOptions || []).map(ins => <option key={ins.name} value={ins.name}>{ins.name}</option>)}
                 </select>
             </div>
             {isInsurance ? (
                 <>
                     <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_policy_no')}</label>
-                        <input type="text" name="nomorPolis" value={formData.nomorPolis || ''} onChange={handleChange} placeholder={t('label_policy_no')} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 font-bold" />
+                        <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_policy_no')}</label>
+                        <input type="text" name="nomorPolis" value={formData.nomorPolis || ''} onChange={handleChange} placeholder={t('label_policy_no')} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-textPrimary" />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><Calendar size={12}/> {t('label_policy_expiry')}</label>
-                        <input type="date" name="asuransiExpiryDate" value={formData.asuransiExpiryDate || ''} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 font-bold text-gray-700" />
+                        <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1">{t('label_policy_expiry')}</label>
+                        <input type="date" name="asuransiExpiryDate" value={formData.asuransiExpiryDate || ''} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-textPrimary" />
                     </div>
                 </>
             ) : <div className="hidden md:block"></div>}
@@ -291,41 +287,40 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-            <div className="p-1.5 bg-gray-50 rounded-lg"><User className="text-gray-600" size={20} /></div>
-            <h4 className="text-base font-bold text-gray-800">{t('sec_customer')}</h4>
+        <div className="flex items-center gap-3 border-b border-border pb-3">
+            <h4 className="text-base font-bold text-textPrimary">{t('sec_customer')}</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_cust_name')}</label>
-                <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 font-bold" required />
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_cust_name')}</label>
+                <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-textPrimary" required />
             </div>
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('label_cust_phone')}</label>
-                <input type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-100 font-bold" placeholder="08..." required />
+                <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_cust_phone')}</label>
+                <input type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-textPrimary" placeholder="08..." required />
             </div>
         </div>
-        <div className="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-4">
-            <div className="flex items-center gap-2 mb-2"><MapPin size={16} className="text-indigo-500"/><span className="text-xs font-black text-indigo-900 uppercase tracking-widest">{t('sec_location')}</span></div>
+        <div className="space-y-6 bg-muted/50 p-6 rounded-lg border border-border mt-4">
+            <div className="flex items-center gap-2 mb-2"><span className="text-xs font-bold text-textPrimary uppercase tracking-widest">{t('sec_location')}</span></div>
             <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label_address')}</label>
-                    <textarea name="customerAddress" value={formData.customerAddress} onChange={handleChange} rows={2} className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all" />
+                    <label className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">{t('label_address')}</label>
+                    <textarea name="customerAddress" value={formData.customerAddress} onChange={handleChange} rows={2} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-textPrimary" />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label_kel')}</label><input type="text" name="customerKelurahan" value={formData.customerKelurahan || ''} onChange={handleChange} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /></div>
-                <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label_kec')}</label><input type="text" name="customerKecamatan" value={formData.customerKecamatan || ''} onChange={handleChange} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /></div>
-                <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label_city')}</label><input type="text" name="customerKota" value={formData.customerKota || ''} onChange={handleChange} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /></div>
-                <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label_prov')}</label><input type="text" name="customerProvinsi" value={formData.customerProvinsi || ''} onChange={handleChange} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">{t('label_kel')}</label><input type="text" name="customerKelurahan" value={formData.customerKelurahan || ''} onChange={handleChange} className="w-full p-2.5 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-medium text-textPrimary" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">{t('label_kec')}</label><input type="text" name="customerKecamatan" value={formData.customerKecamatan || ''} onChange={handleChange} className="w-full p-2.5 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-medium text-textPrimary" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">{t('label_city')}</label><input type="text" name="customerKota" value={formData.customerKota || ''} onChange={handleChange} className="w-full p-2.5 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-medium text-textPrimary" /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">{t('label_prov')}</label><input type="text" name="customerProvinsi" value={formData.customerProvinsi || ''} onChange={handleChange} className="w-full p-2.5 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary font-medium text-textPrimary" /></div>
             </div>
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-        <button type="button" onClick={onCancel} className="px-6 py-3 text-gray-400 hover:text-gray-600 font-bold transition-colors" disabled={isSubmitting}>{t('btn_cancel')}</button>
-        <button type="submit" disabled={isSubmitting} className={`flex items-center gap-2 px-10 py-3 text-white rounded-2xl transition-all shadow-xl shadow-indigo-100 font-black tracking-wide ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-indigo-600 hover:bg-indigo-700'} transform active:scale-95`}>
-          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+      <div className="flex justify-end gap-3 pt-6 border-t border-border">
+        <button type="button" onClick={onCancel} className="px-6 py-2.5 text-textSecondary hover:text-textPrimary font-semibold transition-colors" disabled={isSubmitting}>{t('btn_cancel')}</button>
+        <button type="submit" disabled={isSubmitting} className={`flex items-center gap-2 px-8 py-2.5 text-primary-foreground rounded-md transition-all shadow-sm font-semibold tracking-wide bg-primary hover:bg-primary/90 transform active:scale-95`}>
+          {isSubmitting && <Loader2 className="animate-spin" size={16} />}
           {isEditMode ? t('btn_update') : t('btn_save')}
         </button>
       </div>

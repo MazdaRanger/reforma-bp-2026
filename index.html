@@ -11,7 +11,58 @@
       content="ReForma Body & Paint System"
     />
     <title>ReForma BP System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#7a9c84',
+                foreground: '#ffffff'
+              },
+              secondary: {
+                DEFAULT: '#e2e8e4',
+                foreground: '#1c2024'
+              },
+              accent: {
+                DEFAULT: '#d1ded5',
+                foreground: '#1c2024'
+              },
+              muted: {
+                DEFAULT: '#f0f4f1',
+                foreground: '#666666'
+              },
+              background: '#f9f9f9',
+              foreground: '#1c2024',
+              destructive: {
+                DEFAULT: '#e23b3b',
+                foreground: '#ffffff'
+              },
+              card: {
+                DEFAULT: '#ffffff',
+                foreground: '#1c2024'
+              },
+              border: '#e2e8e4',
+              textPrimary: '#1c2024',
+              textSecondary: '#666666'
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            borderRadius: {
+              DEFAULT: '0.35rem',
+              md: '0.35rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+            }
+          }
+        }
+      }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
   <script type="importmap">
@@ -50,7 +101,7 @@
 </style>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gradient-to-br from-slate-100 via-[#eff6ff] to-slate-200 text-slate-800 antialiased min-h-screen selection:bg-indigo-100 selection:text-indigo-700">
+  <body class="bg-background text-textPrimary font-sans antialiased min-h-screen selection:bg-primary/20 selection:text-primary">
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
