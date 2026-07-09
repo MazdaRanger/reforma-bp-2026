@@ -1026,6 +1026,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                   <div className="flex items-center gap-4 p-6 bg-canvas border border-ink">
                       <p className="text-[10px] text-ink font-medium uppercase tracking-widest">JANGAN LUPA KLIK "SIMPAN PERUBAHAN" DI BAGIAN ATAS HALAMAN SETELAH SELESAI MENGEDIT.</p>
                   </div>
+              </div>
           )}
           
           {activeTab === 'menu_access' && (
