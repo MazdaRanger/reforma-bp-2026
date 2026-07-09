@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, doc, updateDoc, deleteDoc, addDoc, onSnapshot, query, orderBy, serverTimestamp, writeBatch, getDocs, setDoc } from 'firebase/firestore'; 
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut as firebaseSignOut, updatePassword, sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth, firebaseConfig, SETTINGS_COLLECTION, SERVICES_MASTER_COLLECTION, USERS_COLLECTION, SERVICE_JOBS_COLLECTION, PURCHASE_ORDERS_COLLECTION } from '../../services/firebase';
 import { Settings, UserPermissions, UserProfile, Supplier, ServiceMasterItem, Job, PurchaseOrder } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
@@ -94,11 +94,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           if (userForm.password) {
               if (userForm.password.length < 6) throw new Error("PASSWORD MINIMAL 6 KARAKTER.");
               const tempAppName = `tempApp-${Date.now()}`;
-              tempApp = firebase.initializeApp(firebaseConfig, tempAppName);
-              const tempAuth = tempApp.auth();
-              const cred = await tempAuth.createUserWithEmailAndPassword(userForm.email, userForm.password);
+              tempApp = initializeApp(firebaseConfig, tempAppName);
+              const tempAuth = getAuth(tempApp);
+              const cred = await createUserWithEmailAndPassword(tempAuth, userForm.email, userForm.password);
               newUid = cred.user?.uid || null;
-              await tempAuth.signOut();
+              await firebaseSignOut(tempAuth);
           }
           const docId = newUid || userForm.email.toLowerCase();
           await setDoc(doc(db, USERS_COLLECTION, docId), { email: userForm.email.toLowerCase(), displayName: userForm.displayName, role: userForm.role, createdAt: serverTimestamp(), uid: newUid }, { merge: true }); 
@@ -118,12 +118,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
               } catch (fsErr: any) { msg = "EMAIL ADA DI AUTH TAPI GAGAL UPDATE FIRESTORE: " + fsErr.message; }
           }
           showNotification("GAGAL MENAMBAH USER: " + msg, "error");
-      } finally { if (tempApp) await (tempApp as any).delete(); setIsLoading(false); }
+      } finally { if (tempApp) await deleteApp(tempApp); setIsLoading(false); }
   };
 
   const handleDeleteUser = async (uid: string) => { if (!window.confirm("HAPUS AKSES USER INI?")) return; try { await deleteDoc(doc(db, USERS_COLLECTION, uid)); showNotification("USER DIHAPUS.", "success"); } catch (e) { showNotification("GAGAL MENGHAPUS.", "error"); } };
-  const handleResetPassword = async (email: string) => { if (!window.confirm(`KIRIM LINK RESET PASSWORD KE EMAIL: ${email}?`)) return; try { await auth.sendPasswordResetEmail(email); showNotification("EMAIL RESET PASSWORD BERHASIL DIKIRIM.", "success"); } catch (e: any) { showNotification("GAGAL MENGIRIM EMAIL RESET.", "error"); } };
-  const handleChangePassword = async (e: React.FormEvent) => { e.preventDefault(); if (newPassword !== confirmPassword) { showNotification("KONFIRMASI PASSWORD TIDAK COCOK.", "error"); return; } if (newPassword.length < 6) { showNotification("PASSWORD MINIMAL 6 KARAKTER.", "error"); return; } setIsLoading(true); try { if (auth.currentUser) { await auth.currentUser.updatePassword(newPassword); showNotification("PASSWORD BERHASIL DIUBAH.", "success"); setNewPassword(''); setConfirmPassword(''); } else { showNotification("GAGAL: USER TIDAK TERDETEKSI.", "error"); } } catch (e: any) { if (e.code === 'auth/requires-recent-login') showNotification("SESI KADALUARSA. SILAKAN LOGOUT LALU LOGIN KEMBALI UNTUK UBAH PASSWORD.", "error"); else showNotification("GAGAL UBAH PASSWORD: " + e.message, "error"); } finally { setIsLoading(false); } };
+  const handleResetPassword = async (email: string) => { if (!window.confirm(`KIRIM LINK RESET PASSWORD KE EMAIL: ${email}?`)) return; try { await sendPasswordResetEmail(auth, email); showNotification("EMAIL RESET PASSWORD BERHASIL DIKIRIM.", "success"); } catch (e: any) { showNotification("GAGAL MENGIRIM EMAIL RESET.", "error"); } };
+  const handleChangePassword = async (e: React.FormEvent) => { e.preventDefault(); if (newPassword !== confirmPassword) { showNotification("KONFIRMASI PASSWORD TIDAK COCOK.", "error"); return; } if (newPassword.length < 6) { showNotification("PASSWORD MINIMAL 6 KARAKTER.", "error"); return; } setIsLoading(true); try { if (auth.currentUser) { await updatePassword(auth.currentUser, newPassword); showNotification("PASSWORD BERHASIL DIUBAH.", "success"); setNewPassword(''); setConfirmPassword(''); } else { showNotification("GAGAL: USER TIDAK TERDETEKSI.", "error"); } } catch (e: any) { if (e.code === 'auth/requires-recent-login') showNotification("SESI KADALUARSA. SILAKAN LOGOUT LALU LOGIN KEMBALI UNTUK UBAH PASSWORD.", "error"); else showNotification("GAGAL UBAH PASSWORD: " + e.message, "error"); } finally { setIsLoading(false); } };
   
   const handleSyncSystemData = async () => {
       if (!isManager) return;

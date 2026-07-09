@@ -1,8 +1,8 @@
 
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
-import 'firebase/compat/storage';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, FieldValue } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
   apiKey: "AIzaSyA4z2XCxu3tNAL5IiNXfY7suu6tYszPAYQ",
@@ -13,13 +13,12 @@ export const firebaseConfig = {
   appId: "1:672061097149:web:2998766b147a4c20a6a3d4"
 };
 
-// Initialize Firebase (Compat)
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
+// Initialize Firebase (Modular v9+)
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const auth = app.auth();
-export const db = app.firestore();
-export const storage = app.storage();
-export const increment = firebase.firestore.FieldValue.increment;
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 export const ADMIN_UID = "1O2CzQEvsVOnBuDWqfbtQWHJ4RP2";
 // NEW COLLECTIONS
@@ -33,6 +32,6 @@ export const SUPPLIERS_COLLECTION = "bengkel-suppliers";
 export const PURCHASE_ORDERS_COLLECTION = "bengkel-purchase-orders";
 export const CASHIER_COLLECTION = "bengkel-cashier-transactions";
 export const ASSETS_COLLECTION = "bengkel-assets";
-export const SERVICES_MASTER_COLLECTION = "bengkel-services-master"; // NEW FOR PANEL RATE
+export const SERVICES_MASTER_COLLECTION = "bengkel-services-master";
 // DEPRECATED (Keeping reference for migration if needed)
 export const JOBS_COLLECTION = "shared-bengkel-jobs";

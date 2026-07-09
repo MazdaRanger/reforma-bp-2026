@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import firebase from 'firebase/compat/app';
+import { onAuthStateChanged, User, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, ADMIN_UID, USERS_COLLECTION } from '../services/firebase';
 import { UserProfile, UserPermissions, Settings } from '../types';
 import { initialSettingsState } from '../utils/constants';
 
 interface AuthContextType {
-  user: firebase.User | null;
+  user: User | null;
   userData: UserProfile;
   userPermissions: UserPermissions;
   settings: Settings;
@@ -19,7 +19,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<firebase.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserProfile>({ uid: '', email: '', displayName: '' });
   const [userPermissions, setUserPermissions] = useState<UserPermissions>({ role: 'Guest', hasFinanceAccess: false });
   const [settings, setSettings] = useState<Settings>(initialSettingsState);
@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize Firebase Auth Listener
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         // 1. Check if user is Super Admin
@@ -109,11 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password?: string) => {
     if (!password) throw new Error("Password required");
-    await auth.signInWithEmailAndPassword(email, password);
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
-    await auth.signOut();
+    await signOut(auth);
   };
 
   return (
