@@ -35,6 +35,7 @@ import CrcDashboardView from './components/crc/CrcDashboardView';
 import JobControlView from './components/production/JobControlView';
 import ClaimsControlView from './components/admin/ClaimsControlView'; 
 import ReportCenterView from './components/reports/ReportCenterView';
+import { MorphingSquare } from './components/ui/morphing-square';
 
 const AppContent: React.FC = () => {
   const { user, userData, userPermissions, settings: defaultSettings, loading: authLoading, logout } = useAuth();
@@ -395,7 +396,14 @@ const AppContent: React.FC = () => {
       return fJobs;
   }, [jobs, searchQuery, filterStatus, filterWorkStatus, showClosedJobs]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-indigo-600 font-medium">Memuat Sistem...</div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <MorphingSquare message="MEMUAT SISTEM..." />
+      </div>
+    );
+  }
+
   if (!user) return <LoginView />;
 
   return (

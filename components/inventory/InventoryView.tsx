@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiFilter, FiDownload, FiUpload } from 'react-icons/fi';
+import { MorphingSquare } from '../ui/morphing-square';
 import { collection, doc, deleteDoc, addDoc, updateDoc, serverTimestamp, query, limit, getDocs, orderBy } from 'firebase/firestore';
 import { db, SPAREPART_COLLECTION } from '../../services/firebase';
 import { InventoryItem, UserPermissions, Supplier } from '../../types';
@@ -139,7 +141,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({ userPermissions, showNoti
             </form>
 
             {isLoading ? (
-                <div className="p-12 flex justify-center text-ink text-[12px] font-medium uppercase tracking-widest">LOADING...</div>
+                <div className="p-12 flex justify-center">
+                   <MorphingSquare message="MEMUAT DATA INVENTORY..." />
+                </div>
             ) : items.length === 0 ? (
                 <div className="p-12 text-center text-mute text-[12px] font-medium uppercase tracking-widest">TIDAK ADA DATA DITEMUKAN.</div>
             ) : (

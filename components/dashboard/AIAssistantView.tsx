@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
+import { FiMessageSquare, FiSend, FiCpu, FiTrendingUp, FiAlertCircle } from 'react-icons/fi';
+import { MorphingSquare } from '../ui/morphing-square';
 import { Job, CashierTransaction, Settings, InventoryItem } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
 
@@ -150,9 +152,8 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
         {/* AI OUTPUT AREA */}
         <div className="relative min-h-[300px]">
             {isLoading ? (
-                <div className="bg-soft-cloud border border-hairline p-12 md:p-20 flex flex-col items-center justify-center animate-pulse">
-                    <p className="text-ink font-medium text-[24px] tracking-widest uppercase">ANALYZING...</p>
-                    <p className="text-mute text-[14px] mt-4">AI sedang menghitung redistribusi target</p>
+                <div className="flex justify-center items-center py-12">
+                   <MorphingSquare message="AI SEDANG MEMPROSES..." />
                 </div>
             ) : analysisResult ? (
                 <div className="bg-canvas border border-hairline">
