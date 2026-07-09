@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { InventoryItem, Supplier } from '../../types';
-import { Save, Loader2, Package, Info } from 'lucide-react';
 
 interface InventoryFormProps {
   initialData: Partial<InventoryItem>;
@@ -22,7 +20,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
       buyPrice: 0,
       sellPrice: 0,
       location: '',
-      isStockManaged: true, // Default true
+      isStockManaged: true,
       supplierId: '',
       supplierName: '',
       ...initialData
@@ -30,7 +28,6 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Auto-set unit defaults when switching categories if creating new
   useEffect(() => {
       if (!initialData.id) {
           setFormData(prev => ({
@@ -73,190 +70,192 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-blue-50 p-3 rounded-lg flex items-center gap-3 text-blue-800 text-sm font-medium">
-            <Package size={20}/>
-            Modul: {activeCategory === 'sparepart' ? 'Suku Cadang (Part)' : 'Bahan Baku (Consumables)'}
+    <form onSubmit={handleSubmit} className="space-y-[24px]">
+        <div className="bg-canvas border border-ink p-4 text-[12px] font-medium text-ink uppercase tracking-widest">
+            MODUL: {activeCategory === 'sparepart' ? 'SUKU CADANG (PART)' : 'BAHAN BAKU (CONSUMABLES)'}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
             <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Item *</label>
+                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">NAMA ITEM *</label>
                 <input 
                     type="text" required name="name" 
                     value={formData.name} onChange={handleChange} 
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    placeholder={activeCategory === 'sparepart' ? "Contoh: Bumper Depan CX-5" : "Contoh: Thinner A Special"}
+                    className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                    placeholder={activeCategory === 'sparepart' ? "CONTOH: BUMPER DEPAN CX-5" : "CONTOH: THINNER A SPECIAL"}
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {activeCategory === 'sparepart' ? 'Part Number (Kode)' : 'Kode Barang'}
+                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">
+                    {activeCategory === 'sparepart' ? 'PART NUMBER (KODE)' : 'KODE BARANG'}
                 </label>
                 <input 
                     type="text" name="code" 
                     value={formData.code} onChange={handleChange} 
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono uppercase"
+                    className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                     placeholder="X001-222..."
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Merk / Brand</label>
+                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">MERK / BRAND</label>
                 <input 
                     type="text" name="brand" 
                     value={formData.brand} onChange={handleChange} 
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    placeholder={activeCategory === 'sparepart' ? "Mazda Genuine Parts" : "Nippon Paint"}
+                    className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                    placeholder={activeCategory === 'sparepart' ? "MAZDA GENUINE PARTS" : "NIPPON PAINT"}
                 />
             </div>
         </div>
 
-        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Informasi Stok & Vendor</h4>
+        <div className="p-6 bg-soft-cloud border border-hairline">
+            <h4 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4 border-b border-hairline pb-4">INFORMASI STOK & VENDOR</h4>
             
-            {/* VENDOR MANAGED STOCK TOGGLE */}
             {activeCategory === 'material' && (
-                <div className="mb-4 space-y-3">
-                    <div className="bg-white p-3 rounded border border-blue-200 flex items-start gap-3">
+                <div className="mb-6 space-y-4">
+                    <div className="bg-canvas p-4 border border-hairline flex items-start gap-4">
                         <input 
                             type="checkbox" 
                             id="isStockManaged"
-                            checked={!formData.isStockManaged} // Logic flip: checked means NOT managed
+                            checked={!formData.isStockManaged} 
                             onChange={(e) => setFormData(prev => ({...prev, isStockManaged: !e.target.checked}))}
-                            className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                            className="mt-1 w-4 h-4 accent-ink"
                         />
                         <div>
-                            <label htmlFor="isStockManaged" className="block text-sm font-bold text-gray-800 cursor-pointer">
-                                Stok Dikelola Vendor (Ready Use / Tagihan Bulanan)
+                            <label htmlFor="isStockManaged" className="block text-[12px] font-medium text-ink uppercase tracking-widest cursor-pointer">
+                                STOK DIKELOLA VENDOR (READY USE / TAGIHAN BULANAN)
                             </label>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Jika dicentang, sistem tidak akan membatasi stok (bisa minus). Tagihan akan muncul di Hutang Supplier saat bahan dipakai.
+                            <p className="text-[10px] text-mute mt-1 uppercase tracking-widest leading-relaxed">
+                                JIKA DICENTANG, SISTEM TIDAK AKAN MEMBATASI STOK (BISA MINUS). TAGIHAN AKAN MUNCUL DI HUTANG SUPPLIER SAAT BAHAN DIPAKAI.
                             </p>
                         </div>
                     </div>
                     
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Vendor / Supplier Pengelola</label>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">VENDOR / SUPPLIER PENGELOLA</label>
                         <select 
                             value={formData.supplierId} 
                             onChange={handleSupplierChange}
-                            className="w-full p-2.5 border rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                         >
-                            <option value="">-- Pilih Supplier (Opsional) --</option>
+                            <option value="">-- PILIH SUPPLIER (OPSIONAL) --</option>
                             {suppliers.map(s => (
                                 <option key={s.id} value={s.id}>{s.name} - {s.category}</option>
                             ))}
                         </select>
-                        <p className="text-[10px] text-gray-400 mt-1">Wajib diisi jika stok dikelola vendor agar tagihan otomatis muncul.</p>
+                        <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">WAJIB DIISI JIKA STOK DIKELOLA VENDOR AGAR TAGIHAN OTOMATIS MUNCUL.</p>
                     </div>
                 </div>
             )}
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Stok Saat Ini</label>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">STOK SAAT INI</label>
                     <input 
                         type="number" name="stock" required
                         value={formData.stock} onChange={handleChange} 
-                        className="w-full p-2 border rounded font-bold text-gray-900"
-                        // If vendor managed, allow any number, typically user starts at 0 and it goes negative
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Satuan</label>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">SATUAN</label>
                     <select 
                         name="unit" value={formData.unit} onChange={handleChange}
-                        className="w-full p-2 border rounded bg-white"
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                     >
                         {activeCategory === 'sparepart' ? (
                             <>
-                                <option value="Pcs">Pcs</option>
-                                <option value="Set">Set</option>
-                                <option value="Unit">Unit</option>
+                                <option value="Pcs">PCS</option>
+                                <option value="Set">SET</option>
+                                <option value="Unit">UNIT</option>
                             </>
                         ) : (
                             <>
-                                <option value="Liter">Liter</option>
-                                <option value="Kaleng">Kaleng</option>
-                                <option value="Kg">Kg</option>
-                                <option value="Pcs">Pcs (Lembar/Roll)</option>
+                                <option value="Liter">LITER</option>
+                                <option value="Kaleng">KALENG</option>
+                                <option value="Kg">KG</option>
+                                <option value="Pcs">PCS (LEMBAR/ROLL)</option>
                             </>
                         )}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Min. Alert</label>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">MIN. ALERT</label>
                     <input 
                         type="number" name="minStock" 
                         value={formData.minStock} onChange={handleChange} 
-                        className="w-full p-2 border rounded"
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase disabled:opacity-50"
                         disabled={!formData.isStockManaged}
                     />
                 </div>
-                <div className="col-span-3">
-                     <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Lokasi Penyimpanan</label>
+                <div className="md:col-span-3">
+                     <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">LOKASI PENYIMPANAN</label>
                      <input 
                         type="text" name="location" 
                         value={formData.location || ''} onChange={handleChange} 
-                        className="w-full p-2 border rounded"
-                        placeholder="Contoh: Rak A-12, Gudang Cat..."
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                        placeholder="CONTOH: RAK A-12, GUDANG CAT..."
                     />
                 </div>
             </div>
         </div>
 
-        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Harga & Modal</h4>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="p-6 bg-canvas border border-hairline">
+            <h4 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4 border-b border-hairline pb-4">HARGA & MODAL</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Harga Beli (Modal)</label>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">HARGA BELI (MODAL)</label>
                     <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                        <span className="absolute left-4 top-4 text-[14px] font-medium text-mute uppercase">RP</span>
                         <input 
                             type="text" name="buyPrice" 
                             value={formData.buyPrice ? new Intl.NumberFormat('id-ID').format(formData.buyPrice) : ''} 
                             onChange={e => handlePriceChange(e, 'buyPrice')} 
-                            className="w-full p-2 pl-9 border rounded"
+                            className="w-full pl-12 p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                             placeholder="0"
                         />
                     </div>
                     {activeCategory === 'material' && (
-                         <p className="text-[10px] text-gray-500 mt-1">Masukkan harga per {formData.unit}.</p>
+                         <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">MASUKKAN HARGA PER {formData.unit}.</p>
                     )}
                 </div>
 
                 {activeCategory === 'sparepart' ? (
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Harga Jual (Est)</label>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">HARGA JUAL (EST)</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                            <span className="absolute left-4 top-4 text-[14px] font-medium text-mute uppercase">RP</span>
                             <input 
                                 type="text" name="sellPrice" 
                                 value={formData.sellPrice ? new Intl.NumberFormat('id-ID').format(formData.sellPrice) : ''} 
                                 onChange={e => handlePriceChange(e, 'sellPrice')} 
-                                className="w-full p-2 pl-9 border rounded font-bold text-emerald-700"
+                                className="w-full pl-12 p-4 border border-ink bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
                                 placeholder="0"
                             />
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center text-xs text-gray-500 italic bg-white p-2 border rounded">
-                        Bahan baku biasanya tidak dijual langsung, namun dibebankan sebagai biaya produksi.
+                    <div className="flex items-center text-[10px] text-ink uppercase tracking-widest bg-soft-cloud p-4 border border-hairline leading-relaxed">
+                        BAHAN BAKU BIASANYA TIDAK DIJUAL LANGSUNG, NAMUN DIBEBANKAN SEBAGAI BIAYA PRODUKSI.
                     </div>
                 )}
             </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2 border-t">
-            <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Batal</button>
+        <div className="flex justify-end gap-4 pt-6 border-t border-hairline">
+            <button 
+                type="button" 
+                onClick={onCancel} 
+                className="px-6 py-4 border border-ink text-ink text-[12px] font-medium uppercase tracking-widest hover:bg-soft-cloud transition-colors"
+            >
+                BATAL
+            </button>
             <button 
                 type="submit" disabled={isSubmitting}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition-colors disabled:opacity-70"
+                className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50"
             >
-                {isSubmitting ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>}
-                Simpan Item
+                {isSubmitting ? 'PROCESSING...' : 'SIMPAN ITEM'}
             </button>
         </div>
     </form>

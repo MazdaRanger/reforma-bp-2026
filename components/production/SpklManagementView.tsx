@@ -1,10 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Job, SpklItem, Supplier, UserPermissions } from '../../types';
 import { formatCurrency, formatDateIndo, cleanObject } from '../../utils/helpers';
 import { collection, updateDoc, doc, increment, arrayUnion } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
-import { Search, ExternalLink, Plus, Trash2, CheckCircle2, Clock, AlertTriangle, FileText, User, Car, Calculator, Save, XCircle, Info, Building2 } from 'lucide-react';
 
 interface SpklManagementViewProps {
   jobs: Job[];
@@ -142,99 +140,86 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="animate-fade-in pb-[48px]">
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-600 rounded-xl shadow-sm text-white">
-                    <ExternalLink size={24}/>
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">SPKL (Surat Perintah Kerja Luar)</h1>
-                    <p className="text-sm text-gray-500 font-medium">Manajemen Sublet & Pekerjaan Vendor Pihak ke-3</p>
-                </div>
-            </div>
+        <div className="border-b border-hairline pb-[24px] mb-[48px]">
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">SPKL (SUBLET)</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px]">Manajemen Sublet & Pekerjaan Vendor Pihak ke-3</p>
         </div>
 
         {/* SEARCH WORK ORDER */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="relative mb-4">
-                <Search className="absolute left-3 top-3 text-gray-400" size={18}/>
+        <div className="mb-[48px] bg-canvas border border-hairline relative">
+            <div className="relative">
                 <input 
                     type="text" 
-                    placeholder="Cari WO yang membutuhkan Sublet..."
+                    placeholder="SEARCH WO / NOPOL..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full p-4 pl-4 border-b border-hairline bg-canvas focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink"
                 />
             </div>
             
             {searchTerm && !selectedJobId && (
-                <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50/50">
+                <div className="max-h-60 overflow-y-auto divide-y divide-hairline bg-canvas">
                     {activeWOs.map(job => (
                         <div 
                             key={job.id}
                             onClick={() => { setSelectedJobId(job.id); setSearchTerm(''); }}
-                            className="p-3 border border-white bg-white rounded-lg hover:border-indigo-200 hover:bg-indigo-50 cursor-pointer flex justify-between items-center transition-all shadow-sm"
+                            className="p-4 hover:bg-soft-cloud cursor-pointer flex justify-between items-center transition-colors"
                         >
                             <div>
-                                <span className="font-black text-indigo-700">{job.woNumber}</span>
-                                <span className="mx-2 text-gray-300">|</span>
-                                <span className="font-bold text-gray-900">{job.policeNumber}</span>
-                                <div className="text-xs text-gray-500 mt-0.5">{job.customerName} - {job.carModel}</div>
+                                <span className="font-medium text-ink uppercase tracking-widest">{job.woNumber}</span>
+                                <span className="mx-2 text-mute">|</span>
+                                <span className="font-medium text-ink uppercase tracking-widest">{job.policeNumber}</span>
+                                <div className="text-[10px] text-mute mt-1 uppercase tracking-widest">{job.customerName} - {job.carModel}</div>
                             </div>
-                            <ExternalLink size={18} className="text-gray-300"/>
+                            <span className="text-[10px] font-medium text-ink uppercase tracking-widest border border-ink px-2 py-1">PILIH</span>
                         </div>
                     ))}
-                    {activeWOs.length === 0 && <p className="text-center text-gray-400 py-4 italic text-sm">Unit tidak ditemukan atau sudah closed.</p>}
+                    {activeWOs.length === 0 && <p className="p-4 text-center text-mute text-[12px] uppercase tracking-widest">UNIT TIDAK DITEMUKAN ATAU SUDAH CLOSED.</p>}
                 </div>
             )}
         </div>
 
         {selectedJob && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
                 {/* LEFT: JOB CONTEXT & NEW SPKL FORM */}
-                <div className="space-y-6">
-                    <div className="bg-indigo-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
-                        <div className="absolute -right-4 -top-4 opacity-10"><ExternalLink size={120}/></div>
-                        <div className="relative z-10">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Unit Terpilih</span>
-                            <h2 className="text-2xl font-black mt-1">{selectedJob.woNumber}</h2>
-                            <p className="text-sm opacity-80 mt-1">{selectedJob.policeNumber} | {selectedJob.carModel}</p>
-                            <div className="mt-4 pt-4 border-t border-indigo-800 flex justify-between items-center">
-                                <button onClick={() => setSelectedJobId('')} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                    <XCircle size={14}/> Ganti WO
-                                </button>
-                                <span className="text-[10px] font-bold bg-orange-500 px-2 py-0.5 rounded uppercase">WIP / Produksi</span>
-                            </div>
+                <div className="space-y-[24px]">
+                    <div className="bg-ink text-canvas p-6 border border-ink">
+                        <span className="text-[10px] font-medium uppercase tracking-widest text-mute">UNIT TERPILIH</span>
+                        <h2 className="text-[32px] font-display mt-2 leading-none">{selectedJob.woNumber}</h2>
+                        <p className="text-[14px] text-mute mt-2 uppercase tracking-widest">{selectedJob.policeNumber} | {selectedJob.carModel}</p>
+                        <div className="mt-6 pt-6 border-t border-mute/30 flex justify-between items-center">
+                            <button onClick={() => setSelectedJobId('')} className="text-[10px] font-medium border border-mute text-mute hover:text-canvas hover:border-canvas px-4 py-2 uppercase tracking-widest transition-colors">
+                                GANTI WO
+                            </button>
+                            <span className="text-[10px] font-medium bg-canvas text-ink px-3 py-1 uppercase tracking-widest">WIP / PRODUKSI</span>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-indigo-100 shadow-md">
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b">
-                            <Plus size={18} className="text-indigo-600"/> Buat SPKL Baru
-                        </h3>
-                        <form onSubmit={handleAddSpkl} className="space-y-4">
+                    <div className="bg-canvas p-6 border border-hairline">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-6 border-b border-hairline pb-4">BUAT SPKL BARU</h3>
+                        <form onSubmit={handleAddSpkl} className="space-y-6">
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase mb-1">Nama Pekerjaan Luar</label>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">NAMA PEKERJAAN LUAR</label>
                                 <input 
                                     type="text" required 
                                     value={spklForm.taskName}
                                     onChange={e => setSpklForm({...spklForm, taskName: e.target.value})}
-                                    className="w-full p-2.5 border rounded-lg focus:ring-2 ring-indigo-500 font-medium"
-                                    placeholder="Contoh: Bubut Rem, Stel Pintu..."
+                                    className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase"
+                                    placeholder="CONTOH: BUBUT REM..."
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase mb-1">Nama Vendor / Sublet</label>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">NAMA VENDOR / SUBLET</label>
                                 <input 
                                     list="vendor-list"
                                     type="text" required 
                                     value={spklForm.vendorName}
                                     onChange={e => setSpklForm({...spklForm, vendorName: e.target.value})}
-                                    className="w-full p-2.5 border rounded-lg focus:ring-2 ring-indigo-500"
-                                    placeholder="Ketik nama bengkel luar..."
+                                    className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase"
+                                    placeholder="KETIK NAMA VENDOR..."
                                 />
                                 <datalist id="vendor-list">
                                     {suppliers.filter(s => s.category === 'Jasa Luar').map(s => <option key={s.id} value={s.name}/>)}
@@ -242,115 +227,110 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase mb-1">Biaya Vendor (HPP)</label>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">BIAYA VENDOR (HPP)</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 font-bold text-gray-400">Rp</span>
+                                    <span className="absolute left-4 top-4 font-medium text-mute uppercase text-[14px]">RP</span>
                                     <input 
                                         type="text" required 
                                         value={spklForm.cost ? new Intl.NumberFormat('id-ID').format(spklForm.cost) : ''}
                                         onChange={handleCostChange}
-                                        className="w-full pl-10 p-2.5 border rounded-lg focus:ring-2 ring-indigo-500 font-black text-indigo-900"
+                                        className="w-full pl-12 p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase"
                                         placeholder="0"
                                     />
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-center justify-between">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <div className="p-4 bg-soft-cloud border border-hairline flex items-center justify-between">
+                                <label className="flex items-center gap-3 cursor-pointer select-none">
                                     <input 
                                         type="checkbox" 
                                         checked={spklForm.hasPph23} 
                                         onChange={e => setSpklForm({...spklForm, hasPph23: e.target.checked})}
-                                        className="w-4 h-4 text-orange-600 rounded"
+                                        className="w-4 h-4 accent-ink"
                                     />
-                                    <span className="text-xs font-bold text-amber-800 uppercase">Potongan PPh 23 (2%)?</span>
+                                    <span className="text-[12px] font-medium text-ink uppercase tracking-widest">POTONGAN PPh 23 (2%)?</span>
                                 </label>
                                 {spklForm.hasPph23 && (
-                                    <span className="text-xs font-black text-amber-600">-{formatCurrency(spklForm.cost * 0.02)}</span>
+                                    <span className="text-[12px] font-medium text-ink uppercase tracking-widest">-{formatCurrency(spklForm.cost * 0.02)}</span>
                                 )}
                             </div>
 
                             <button 
                                 type="submit" 
                                 disabled={isProcessing}
-                                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all transform active:scale-95 disabled:opacity-70"
+                                className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50"
                             >
-                                <Save size={18}/> TERBITKAN SPKL
+                                {isProcessing ? 'PROCESSING...' : 'TERBITKAN SPKL'}
                             </button>
                         </form>
                     </div>
                 </div>
 
                 {/* RIGHT: SPKL ITEMS LIST */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                            <h3 className="font-bold text-gray-800">Daftar Item Pekerjaan Luar (SPKL)</h3>
-                            <div className="text-xs font-bold text-indigo-600 bg-white px-2 py-1 rounded border">
-                                Total HPP Sublet: {formatCurrency((selectedJob.spklItems || []).reduce((acc, i) => acc + i.cost, 0))}
+                <div className="lg:col-span-2 space-y-[24px]">
+                    <div className="bg-canvas border border-hairline flex flex-col h-full">
+                        <div className="p-6 bg-soft-cloud border-b border-hairline flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
+                            <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">DAFTAR ITEM PEKERJAAN LUAR</h3>
+                            <div className="text-[12px] font-medium text-ink uppercase tracking-widest border border-ink px-4 py-2 bg-canvas">
+                                TOTAL HPP SUBLET: {formatCurrency((selectedJob.spklItems || []).reduce((acc, i) => acc + i.cost, 0))}
                             </div>
                         </div>
                         
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-100 text-gray-500 uppercase font-black text-[10px] tracking-widest">
+                        <div className="overflow-x-auto flex-grow">
+                            <table className="w-full text-left">
+                                <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0">
                                     <tr>
-                                        <th className="px-6 py-4">Item Pekerjaan</th>
-                                        <th className="px-6 py-4">Vendor</th>
-                                        <th className="px-6 py-4 text-right">Biaya (HPP)</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
-                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                        <th className="px-6 py-4 font-normal">ITEM PEKERJAAN</th>
+                                        <th className="px-6 py-4 font-normal">VENDOR</th>
+                                        <th className="px-6 py-4 text-right font-normal">BIAYA (HPP)</th>
+                                        <th className="px-6 py-4 text-center font-normal">STATUS</th>
+                                        <th className="px-6 py-4 text-center font-normal">AKSI</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-hairline">
                                     {(selectedJob.spklItems || []).length > 0 ? (selectedJob.spklItems || []).map((item) => (
-                                        <tr key={item.id} className={`${item.status === 'Closed' ? 'bg-emerald-50/30' : 'hover:bg-gray-50'}`}>
+                                        <tr key={item.id} className={`hover:bg-soft-cloud transition-colors ${item.status === 'Closed' ? 'opacity-75' : ''}`}>
                                             <td className="px-6 py-4">
-                                                <div className="font-bold text-gray-900">{item.taskName}</div>
-                                                <div className="text-[10px] text-gray-400">{formatDateIndo(item.createdAt)}</div>
+                                                <div className="font-medium text-ink uppercase text-[14px]">{item.taskName}</div>
+                                                <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{formatDateIndo(item.createdAt)}</div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-1.5 font-medium text-gray-700">
-                                                    <Building2 size={14} className="text-gray-400"/> {item.vendorName}
-                                                </div>
-                                                {item.hasPph23 && <span className="text-[9px] font-bold text-orange-600 border border-orange-200 px-1 rounded">PPh 23 Terpotong</span>}
+                                                <div className="font-medium text-ink uppercase text-[14px]">{item.vendorName}</div>
+                                                {item.hasPph23 && <span className="text-[10px] font-medium text-ink border border-ink px-1 py-0.5 uppercase tracking-widest mt-1 inline-block">PPh 23 Terpotong</span>}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="font-black text-gray-800">{formatCurrency(item.cost)}</div>
+                                                <div className="font-medium text-ink text-[14px]">{formatCurrency(item.cost)}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <button 
                                                     onClick={() => handleToggleSpklStatus(item)}
-                                                    className={`px-3 py-1 rounded-full text-[10px] font-black border transition-all ${item.status === 'Closed' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200'}`}
+                                                    className={`px-3 py-1 text-[10px] font-medium uppercase tracking-widest border transition-colors ${item.status === 'Closed' ? 'bg-canvas text-ink border-ink' : 'bg-ink text-canvas border-ink hover:bg-mute'}`}
                                                 >
-                                                    {item.status === 'Closed' ? 'LENGKAP (CLOSED)' : 'MASIH PROSES (OPEN)'}
+                                                    {item.status === 'Closed' ? 'LENGKAP' : 'PROSES'}
                                                 </button>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex justify-center gap-2">
-                                                    {userPermissions.role.includes('Manager') && (
-                                                        <button 
-                                                            onClick={() => handleDeleteSpkl(item)}
-                                                            className="text-red-300 hover:text-red-600 p-1.5 transition-colors"
-                                                        >
-                                                            <Trash2 size={16}/>
-                                                        </button>
-                                                    )}
-                                                </div>
+                                            <td className="px-6 py-4 text-center">
+                                                {userPermissions.role.includes('Manager') && (
+                                                    <button 
+                                                        onClick={() => handleDeleteSpkl(item)}
+                                                        className="text-[10px] font-medium uppercase tracking-widest border border-hairline text-ink hover:border-ink px-3 py-1 transition-colors"
+                                                    >
+                                                        HAPUS
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     )) : (
-                                        <tr><td colSpan={5} className="p-20 text-center text-gray-400 italic font-medium">Belum ada item pekerjaan luar untuk unit ini.</td></tr>
+                                        <tr><td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Belum ada item pekerjaan luar.</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="p-4 bg-blue-50 border-t flex items-start gap-3">
-                            <Info size={18} className="text-blue-600 mt-0.5 shrink-0"/>
-                            <div className="text-xs text-blue-800 leading-relaxed">
-                                <strong>Penting:</strong> Biaya SPKL akan otomatis masuk ke perhitungan <strong>Laba Kotor</strong> di laporan keuangan. Pastikan status sudah <strong>Closed</strong> agar tidak menghambat penerbitan Faktur Penagihan oleh departemen Finance.
-                            </div>
+                        <div className="p-6 bg-canvas border-t border-hairline">
+                            <p className="text-[12px] text-ink uppercase tracking-widest leading-relaxed">
+                                <span className="font-medium">PENTING:</span> Biaya SPKL akan otomatis masuk ke perhitungan LABA KOTOR di laporan keuangan. Pastikan status sudah CLOSED agar tidak menghambat penerbitan Faktur Penagihan oleh departemen Finance.
+                            </p>
                         </div>
                     </div>
                 </div>

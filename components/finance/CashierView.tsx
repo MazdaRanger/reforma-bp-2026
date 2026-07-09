@@ -1,16 +1,14 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Job, CashierTransaction, UserPermissions, Settings } from '../../types';
 import { collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, CASHIER_COLLECTION, SETTINGS_COLLECTION, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { formatCurrency, formatDateIndo, generateTransactionId, generateRandomId } from '../../utils/helpers';
 import { generateGatePassPDF, generateReceiptPDF, generateInvoicePDF } from '../../utils/pdfGenerator';
-import { Banknote, Search, FileText, Printer, Save, History, ArrowUpCircle, ArrowDownCircle, Ticket, CheckCircle, Wallet, Building2, Settings as SettingsIcon, AlertCircle, Calculator, ShieldCheck, Percent, Info } from 'lucide-react';
 import { initialSettingsState } from '../../utils/constants';
 
 interface CashierViewProps {
   jobs: Job[];
-  transactions: CashierTransaction[]; // REAL-TIME PROP
+  transactions: CashierTransaction[]; 
   userPermissions: UserPermissions;
   showNotification: (msg: string, type: string) => void;
 }
@@ -224,7 +222,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
           const jobRef = doc(db, SERVICE_JOBS_COLLECTION, selectedJob.id);
           const updates: any = {
               statusKendaraan: 'Sudah Diambil Pemilik', 
-              statusPekerjaan: 'Selesai', // Update visual status on Job Card to "Selesai"
+              statusPekerjaan: 'Selesai', 
               posisiKendaraan: 'Di Pemilik', 
               crcFollowUpStatus: 'Pending', 
               updatedAt: serverTimestamp(),
@@ -238,10 +236,9 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
           };
 
           // --- PICKUP KPI LOGIC ---
-          // Check if Pickup Date matches Promise Date
           if (selectedJob.pickupPromiseDate) {
-              const today = new Date().toISOString().split('T')[0]; // Current Date (YYYY-MM-DD)
-              const promiseDate = selectedJob.pickupPromiseDate; // From Database (YYYY-MM-DD)
+              const today = new Date().toISOString().split('T')[0];
+              const promiseDate = selectedJob.pickupPromiseDate; 
               
               const isSuccess = today === promiseDate;
               updates.pickupSuccess = isSuccess;
@@ -275,50 +272,43 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex justify-between items-center bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-600 rounded-xl shadow-sm text-white">
-                    <Banknote size={24}/>
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Kasir & Gatepass</h1>
-                    <p className="text-sm text-gray-500 font-medium">Input BKM (Uang Masuk), BKK (Uang Keluar), & Pajak</p>
-                </div>
-            </div>
+    <div className="animate-fade-in pb-[48px]">
+        {/* HEADER */}
+        <div className="border-b border-hairline pb-[24px] mb-[48px]">
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">CASHIER</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px]">Input BKM (Uang Masuk), BKK (Uang Keluar), & Pajak</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-fit">
-                <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <FileText size={18} className="text-indigo-600"/> Input Transaksi
-                    </h3>
-                    <div className="flex bg-gray-200 rounded-lg p-1 text-xs font-bold">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px]">
+            {/* INPUT FORM */}
+            <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col">
+                <div className="p-6 md:p-8 border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center bg-soft-cloud gap-4">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">TRANSACTION INPUT</h3>
+                    <div className="flex gap-2">
                         <button 
                             onClick={() => { setTrxType('IN'); setCategory('Pelunasan'); }}
-                            className={`px-4 py-1.5 rounded-md transition-all flex items-center gap-1 ${trxType === 'IN' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}
+                            className={`px-4 py-2 text-[12px] font-medium uppercase tracking-widest transition-colors border ${trxType === 'IN' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
                         >
-                            <ArrowDownCircle size={14}/> UANG MASUK
+                            UANG MASUK
                         </button>
                         <button 
                             onClick={() => { setTrxType('OUT'); setCategory('Kas Kecil (Petty Cash)'); }}
-                            className={`px-4 py-1.5 rounded-md transition-all flex items-center gap-1 ${trxType === 'OUT' ? 'bg-red-600 text-white shadow' : 'text-gray-600'}`}
+                            className={`px-4 py-2 text-[12px] font-medium uppercase tracking-widest transition-colors border ${trxType === 'OUT' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
                         >
-                            <ArrowUpCircle size={14}/> UANG KELUAR
+                            UANG KELUAR
                         </button>
                     </div>
                 </div>
                 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8 flex-grow flex flex-col justify-between">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Transaksi</label>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Kategori Transaksi</label>
                                 <select 
                                     value={category} 
                                     onChange={e => setCategory(e.target.value)} 
-                                    className="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 font-medium"
+                                    className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px]"
                                 >
                                     {trxType === 'IN' ? (
                                         <>
@@ -341,29 +331,28 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
 
                             {(category === 'Pelunasan' || category === 'Uang Muka') && (
                                 <div className="relative">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cari No. WO / Polisi</label>
+                                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Cari No. WO / Polisi</label>
                                     <div className="relative">
                                         <input 
                                             type="text" 
                                             value={woSearch} 
                                             onChange={e => { setWoSearch(e.target.value); setSelectedJob(null); setPaymentSummary({ totalBill: 0, totalPaid: 0, remaining: 0 }); }}
                                             placeholder="Ketik Nopol atau WO..."
-                                            className={`w-full pl-10 p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono ${selectedJob ? 'border-green-500 bg-green-50 text-green-800 font-bold' : 'border-gray-300'}`}
+                                            className={`w-full p-3 border focus:outline-none font-mono text-[14px] uppercase ${selectedJob ? 'border-ink bg-ink text-canvas' : 'border-hairline focus:border-ink'}`}
                                         />
-                                        <Search className="absolute left-3 top-3 text-gray-400" size={18}/>
-                                        {selectedJob && <CheckCircle className="absolute right-3 top-3 text-green-600" size={18}/>}
+                                        {selectedJob && <span className="absolute right-3 top-3 text-[10px] bg-canvas text-ink px-1 py-0.5">SELECTED</span>}
                                     </div>
                                     
                                     {woSearch && !selectedJob && activeJobs.length > 0 && (
-                                        <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                        <div className="absolute z-10 w-full bg-canvas border border-hairline mt-1 max-h-48 overflow-y-auto">
                                             {activeJobs.map(job => (
                                                 <div 
                                                     key={job.id} 
                                                     onClick={() => handleSelectJob(job)}
-                                                    className="p-3 hover:bg-indigo-50 cursor-pointer border-b last:border-0"
+                                                    className="p-3 hover:bg-soft-cloud cursor-pointer border-b border-hairline last:border-0"
                                                 >
-                                                    <div className="font-bold text-gray-800">{job.policeNumber}</div>
-                                                    <div className="text-xs text-gray-500">{job.woNumber} - {job.customerName}</div>
+                                                    <div className="font-medium text-ink text-[14px]">{job.policeNumber}</div>
+                                                    <div className="text-[12px] text-mute font-mono">{job.woNumber} - {job.customerName}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -372,61 +361,61 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
                             )}
 
                             {selectedJob && (
-                                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-sm space-y-3 shadow-inner">
-                                    <h4 className="font-bold text-indigo-900 border-b border-indigo-200 pb-2 mb-2 flex items-center gap-2">
-                                        <FileText size={14}/> Kontrol Dokumen & Tagihan
+                                <div className="bg-soft-cloud p-4 border border-hairline text-[14px] space-y-4">
+                                    <h4 className="font-medium text-ink uppercase tracking-widest text-[12px] border-b border-hairline pb-2 mb-2">
+                                        WO BILLING DETAIL
                                     </h4>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Pelanggan:</span>
-                                        <span className="font-bold text-gray-900 truncate max-w-[150px]">{selectedJob.customerName}</span>
+                                        <span className="text-mute">Pelanggan:</span>
+                                        <span className="font-medium text-ink truncate max-w-[150px]">{selectedJob.customerName}</span>
                                     </div>
-                                    <div className="flex justify-between border-t border-indigo-100 pt-2">
-                                        <span className="text-gray-600">Total Tagihan (Revisi):</span>
-                                        <span className="font-bold text-gray-800">{formatCurrency(paymentSummary.totalBill)}</span>
+                                    <div className="flex justify-between border-t border-hairline pt-2">
+                                        <span className="text-mute">Total Tagihan (Revisi):</span>
+                                        <span className="font-medium text-ink">{formatCurrency(paymentSummary.totalBill)}</span>
                                     </div>
                                     {paymentSummary.totalPaid > 0 && (
-                                        <div className="flex justify-between bg-white/50 p-1.5 rounded border border-indigo-100">
-                                            <span className="text-emerald-600 flex items-center gap-1 font-bold text-xs"><CheckCircle size={10}/> SUDAH DIBAYAR (HISTORI):</span>
-                                            <span className="font-bold text-emerald-600">-{formatCurrency(paymentSummary.totalPaid)}</span>
+                                        <div className="flex justify-between bg-canvas p-2 border border-hairline">
+                                            <span className="text-mute uppercase tracking-widest text-[10px]">PAID (HISTORI):</span>
+                                            <span className="font-medium text-ink">-{formatCurrency(paymentSummary.totalPaid)}</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between border-t-2 border-indigo-300 pt-2 mt-1">
-                                        <span className="text-indigo-900 font-bold">SISA KEKURANGAN:</span>
-                                        <span className="font-bold text-indigo-700 text-lg">{formatCurrency(paymentSummary.remaining)}</span>
+                                    <div className="flex justify-between border-t border-hairline pt-2 mt-1">
+                                        <span className="text-ink font-medium uppercase tracking-widest text-[12px]">REMAINING:</span>
+                                        <span className="font-display text-[20px] leading-none text-ink">{formatCurrency(paymentSummary.remaining)}</span>
                                     </div>
-                                    <div className="pt-2 border-t border-indigo-200 flex gap-2">
+                                    <div className="pt-4 border-t border-hairline flex gap-2">
                                         <button 
                                             type="button"
                                             onClick={handlePrintInvoice}
-                                            className="flex-1 bg-white border border-indigo-300 text-indigo-700 py-2 rounded text-xs font-bold hover:bg-indigo-100 flex items-center justify-center gap-1 shadow-sm transition-colors"
+                                            className="flex-1 bg-canvas border border-ink text-ink py-2 text-[12px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
                                         >
-                                            <Printer size={14}/> Faktur
+                                            INVOICE
                                         </button>
                                         <button 
                                             type="button"
                                             onClick={handlePrintGatePass}
-                                            className="flex-1 bg-gray-800 text-white py-2 rounded text-xs font-bold hover:bg-gray-900 flex items-center justify-center gap-1 shadow-sm transition-colors"
+                                            className="flex-1 bg-ink text-canvas py-2 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
                                         >
-                                            <Ticket size={14}/> Gatepass
+                                            GATEPASS
                                         </button>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {selectedJob ? 'Nominal Dibayar (Sisa Kekurangan)' : 'Nominal (Rp)'}
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">
+                                    {selectedJob ? 'Nominal Dibayar' : 'Nominal (Rp)'}
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-3 text-gray-500 font-bold">Rp</span>
+                                    <span className="absolute left-3 top-3.5 text-mute font-medium">Rp</span>
                                     <input 
                                         type="text" 
                                         required
                                         value={amount ? new Intl.NumberFormat('id-ID').format(amount) : ''} 
                                         onChange={handleAmountChange} 
-                                        className="w-full pl-10 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-xl text-right tracking-wide text-gray-800"
+                                        className="w-full pl-10 p-3 border border-hairline focus:outline-none focus:border-ink font-display text-[24px] text-right"
                                         placeholder="0"
                                     />
                                 </div>
@@ -434,151 +423,148 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
 
                             {/* WITHHOLDING TAX SECTION */}
                             {trxType === 'IN' && selectedJob && (
-                                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-4">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="p-4 bg-soft-cloud border border-hairline space-y-4">
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
                                         <input 
                                             type="checkbox" 
                                             checked={hasWithholding} 
                                             onChange={e => setHasWithholding(e.target.checked)}
-                                            className="w-4 h-4 text-amber-600 rounded"
+                                            className="w-4 h-4 accent-ink"
                                         />
-                                        <span className="text-sm font-bold text-amber-800">Potongan Pajak (Bukti Potong)?</span>
+                                        <span className="text-[12px] font-medium uppercase tracking-widest text-ink">Potongan Pajak (Bukti Potong)</span>
                                     </label>
 
                                     {hasWithholding && (
-                                        <div className="space-y-4 animate-fade-in pt-2 border-t border-amber-100">
-                                            <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-4 animate-fade-in pt-4 border-t border-hairline">
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1">Pajak Dipotong (Rp)</label>
+                                                    <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">Pajak Dipotong (Rp)</label>
                                                     <input 
                                                         type="text" 
                                                         value={withholdingAmount ? new Intl.NumberFormat('id-ID').format(withholdingAmount) : ''} 
                                                         onChange={handleWithholdingChange}
-                                                        className="w-full p-2 border border-amber-300 rounded text-sm font-bold text-amber-900"
-                                                        placeholder="Contoh: 20.000"
+                                                        className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium"
+                                                        placeholder="20.000"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1">No. Bukti Potong</label>
+                                                    <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">No. Bukti Potong</label>
                                                     <input 
                                                         type="text" 
                                                         value={taxCertificateNo} 
                                                         onChange={e => setTaxCertificateNo(e.target.value)}
-                                                        className="w-full p-2 border border-amber-300 rounded text-sm font-mono"
+                                                        className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-mono"
                                                         placeholder="BP-123XXX"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="text-[10px] font-bold text-amber-700 bg-white p-2 rounded border border-amber-100">
-                                                Total yang akan dibukukan sebagai Pelunasan: {formatCurrency(Number(amount || 0) + Number(withholdingAmount || 0))}
+                                            <div className="text-[10px] font-medium text-mute bg-canvas p-2 border border-hairline uppercase tracking-widest">
+                                                Total Pelunasan: {formatCurrency(Number(amount || 0) + Number(withholdingAmount || 0))}
                                             </div>
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
-                                    <div className="flex gap-2">
-                                        {['Cash', 'Transfer', 'EDC'].map(m => (
-                                            <button
-                                                key={m}
-                                                type="button"
-                                                onClick={() => setPaymentMethod(m as any)}
-                                                className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${paymentMethod === m ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-                                            >
-                                                {m}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {trxType === 'IN' && (paymentMethod === 'Transfer' || paymentMethod === 'EDC') && (
-                                    <div className="col-span-2 animate-fade-in">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Bank Penerima</label>
-                                        <select 
-                                            value={selectedBank} 
-                                            onChange={e => setSelectedBank(e.target.value)}
-                                            className="w-full pl-2 p-2.5 border border-indigo-300 bg-indigo-50 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-900"
+                            <div>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Metode Pembayaran</label>
+                                <div className="flex gap-2">
+                                    {['Cash', 'Transfer', 'EDC'].map(m => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setPaymentMethod(m as any)}
+                                            className={`flex-1 py-3 text-[12px] uppercase tracking-widest font-medium border transition-colors ${paymentMethod === m ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
                                         >
-                                            <option value="">-- Pilih Rekening --</option>
-                                            {settings.workshopBankAccounts.map((bank, idx) => (
-                                                <option key={idx} value={`${bank.bankName} - ${bank.accountNumber}`}>
-                                                    {bank.bankName} - {bank.accountNumber} ({bank.accountHolder})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
+                            {trxType === 'IN' && (paymentMethod === 'Transfer' || paymentMethod === 'EDC') && (
+                                <div className="animate-fade-in">
+                                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Bank Penerima</label>
+                                    <select 
+                                        value={selectedBank} 
+                                        onChange={e => setSelectedBank(e.target.value)}
+                                        className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium"
+                                    >
+                                        <option value="">-- Pilih Rekening --</option>
+                                        {settings.workshopBankAccounts.map((bank, idx) => (
+                                            <option key={idx} value={`${bank.bankName} - ${bank.accountNumber}`}>
+                                                {bank.bankName} - {bank.accountNumber} ({bank.accountHolder})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Catatan</label>
                                 <input 
                                     type="text" 
                                     value={notes} 
                                     onChange={e => setNotes(e.target.value)} 
-                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                    placeholder="Contoh: Beli Bensin, Pelunasan Invoice #..."
+                                    className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px]"
+                                    placeholder="Opsional..."
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t flex gap-3 justify-end">
+                    <div className="pt-8 mt-4 border-t border-hairline">
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className={`flex items-center gap-2 text-white px-10 py-3 rounded-xl shadow-lg font-black transition-all transform active:scale-95 ${trxType === 'IN' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            className={`w-full text-canvas py-4 uppercase tracking-widest text-[14px] font-medium transition-colors ${trxType === 'IN' ? 'bg-ink hover:bg-mute' : 'bg-ink hover:bg-mute'}`}
                         >
-                            <Save size={20}/> {loading ? 'Menyimpan...' : 'PROSES TRANSAKSI'}
+                            {loading ? 'PROCESSING...' : 'PROCESS TRANSACTION'}
                         </button>
                     </div>
                 </form>
             </div>
 
             {/* RIWAYAT (REALTIME FROM PROPS) */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[650px]">
-                <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                    <History size={18} className="text-gray-500"/>
-                    <h3 className="font-bold text-gray-800">Riwayat Transaksi (Live)</h3>
+            <div className="bg-canvas border border-hairline flex flex-col h-[700px]">
+                <div className="p-6 bg-soft-cloud border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">TRANSACTION HISTORY</h3>
                 </div>
                 <div className="overflow-y-auto flex-grow p-0">
                     {transactions.length === 0 ? (
-                        <div className="p-8 text-center text-gray-400 text-sm">Belum ada transaksi.</div>
+                        <div className="p-8 text-center text-mute text-[14px] uppercase tracking-widest mt-10">No transactions yet</div>
                     ) : (
-                        <div className="divide-y divide-gray-100">
+                        <div className="divide-y divide-hairline">
                             {transactions.slice(0, 30).map(trx => (
-                                <div key={trx.id} className="p-4 hover:bg-gray-50 transition-colors group">
-                                    <div className="flex justify-between items-start mb-1">
+                                <div key={trx.id} className="p-6 hover:bg-soft-cloud transition-colors group relative">
+                                    <div className="flex justify-between items-start mb-2">
                                         <div className="flex-1">
-                                            <p className={`text-[10px] font-black uppercase ${trx.type === 'IN' ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {trx.type === 'IN' ? 'Terima Uang' : 'Keluar Uang'} ({trx.paymentMethod})
+                                            <p className={`text-[10px] font-medium uppercase tracking-widest ${trx.type === 'IN' ? 'text-ink' : 'text-mute'}`}>
+                                                {trx.type === 'IN' ? 'IN' : 'OUT'} ({trx.paymentMethod})
                                             </p>
-                                            <p className="font-bold text-gray-800 text-sm mt-0.5">
+                                            <p className="font-medium text-ink text-[14px] mt-1">
                                                 {trx.category} 
-                                                {trx.bankName && <span className="text-indigo-600 ml-1">- {trx.bankName}</span>}
+                                                {trx.bankName && <span className="text-mute ml-1">- {trx.bankName}</span>}
                                             </p>
-                                            <span className="text-[9px] font-mono text-gray-400 bg-gray-50 px-1 rounded">{trx.transactionNumber || '-'}</span>
+                                            <span className="text-[10px] font-mono text-mute mt-1 block">{trx.transactionNumber || '-'}</span>
                                         </div>
                                         <div className="text-right">
-                                            <span className={`font-mono font-bold ${trx.type === 'IN' ? 'text-emerald-700' : 'text-red-700'}`}>
+                                            <span className={`font-mono font-medium text-[14px] ${trx.type === 'IN' ? 'text-ink' : 'text-mute'}`}>
                                                 {trx.type === 'IN' ? '+' : '-'}{formatCurrency(trx.amount)}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 mt-1">{formatDateIndo(trx.date)}</p>
+                                            <p className="text-[10px] text-mute uppercase tracking-widest mt-1 block">{formatDateIndo(trx.date)}</p>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-gray-500 truncate mb-1">
-                                        {trx.customerName && <span className="font-semibold text-indigo-900">{trx.customerName} - </span>}
+                                    <p className="text-[12px] text-mute truncate mt-2">
+                                        {trx.customerName && <span className="font-medium text-ink">{trx.customerName} / </span>}
                                         {trx.description || '-'}
                                     </p>
-                                    <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+                                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity bg-canvas">
                                         <button 
                                             onClick={() => generateReceiptPDF(trx, settings)}
-                                            className="text-xs flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded text-gray-600 hover:text-indigo-600 hover:border-indigo-200"
+                                            className="text-[10px] font-medium uppercase tracking-widest text-ink border border-ink px-3 py-1 hover:bg-ink hover:text-canvas transition-colors"
                                         >
-                                            <Printer size={12}/> Kwitansi
+                                            RECEIPT
                                         </button>
                                     </div>
                                 </div>

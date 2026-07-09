@@ -1,15 +1,13 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, doc, updateDoc, deleteDoc, addDoc, onSnapshot, query, orderBy, serverTimestamp, writeBatch, getDocs, setDoc } from 'firebase/firestore'; 
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import { db, auth, firebaseConfig, SETTINGS_COLLECTION, SERVICES_MASTER_COLLECTION, USERS_COLLECTION, SERVICE_JOBS_COLLECTION, PURCHASE_ORDERS_COLLECTION } from '../../services/firebase';
 import { Settings, UserPermissions, UserProfile, Supplier, ServiceMasterItem, Job, PurchaseOrder } from '../../types';
-import { Save, Plus, Trash2, Building, Phone, Mail, Percent, Target, Calendar, User, Users, Shield, CreditCard, MessageSquare, Database, Download, Upload, Layers, Edit2, Loader2, RefreshCw, AlertTriangle, ShieldCheck, Search, Info, Palette, Wrench, Activity, ClipboardCheck, Car, Tag, UserPlus, Key, MailCheck, Globe, CheckCircle2, Bot, Smartphone, Send, Zap, Lock, ShieldAlert, KeyRound, Star, Wallet } from 'lucide-react';
+import { formatCurrency } from '../../utils/helpers';
 import * as XLSX from 'xlsx';
 import Modal from '../ui/Modal';
 
-// ... (Interface and Props remain same)
 interface SettingsViewProps {
   currentSettings: Settings;
   refreshSettings: () => Promise<void>;
@@ -25,7 +23,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const isManager = userPermissions.role === 'Manager';
   
-  // Real-time Data States
   const [services, setServices] = useState<ServiceMasterItem[]>([]);
   const [systemUsers, setSystemUsers] = useState<UserProfile[]>([]);
 
@@ -45,7 +42,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
   
   const [newCsiInput, setNewCsiInput] = useState('');
 
-  // ... (useEffects and Handlers remain same until handleImportServices) ...
   useEffect(() => {
     setLocalSettings(currentSettings);
   }, [currentSettings]);
@@ -78,17 +74,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
   const handleAddCsiItem = () => { if (!newCsiInput.trim()) return; addItem('csiIndicators', newCsiInput); setNewCsiInput(''); };
 
   const saveSettings = async () => {
-    if (!isManager) { showNotification("Akses Ditolak: Hanya Manager yang dapat menyimpan pengaturan.", "error"); return; }
+    if (!isManager) { showNotification("AKSES DITOLAK: HANYA MANAGER YANG DAPAT MENYIMPAN PENGATURAN.", "error"); return; }
     setIsLoading(true);
     try {
       const q = await getDocs(collection(db, SETTINGS_COLLECTION));
       if (q.empty) await addDoc(collection(db, SETTINGS_COLLECTION), localSettings);
       else await updateDoc(doc(db, SETTINGS_COLLECTION, q.docs[0].id), localSettings as any);
-      showNotification("Pengaturan berhasil disimpan.", "success");
-    } catch (e: any) { showNotification("Gagal menyimpan: " + e.message, "error"); } finally { setIsLoading(false); }
+      showNotification("PENGATURAN BERHASIL DISIMPAN.", "success");
+    } catch (e: any) { showNotification("GAGAL MENYIMPAN: " + e.message, "error"); } finally { setIsLoading(false); }
   };
 
-  // ... (handleCreateUser, handleDeleteUser, Password handlers same as before) ...
   const handleCreateUser = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!isManager) return;
@@ -97,7 +92,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
       let newUid: string | null = null;
       try {
           if (userForm.password) {
-              if (userForm.password.length < 6) throw new Error("Password minimal 6 karakter.");
+              if (userForm.password.length < 6) throw new Error("PASSWORD MINIMAL 6 KARAKTER.");
               const tempAppName = `tempApp-${Date.now()}`;
               tempApp = firebase.initializeApp(firebaseConfig, tempAppName);
               const tempAuth = tempApp.auth();
@@ -107,7 +102,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           }
           const docId = newUid || userForm.email.toLowerCase();
           await setDoc(doc(db, USERS_COLLECTION, docId), { email: userForm.email.toLowerCase(), displayName: userForm.displayName, role: userForm.role, createdAt: serverTimestamp(), uid: newUid }, { merge: true }); 
-          showNotification(`User ${userForm.displayName} berhasil didaftarkan.`, "success");
+          showNotification(`USER ${userForm.displayName} BERHASIL DIDAFTARKAN.`, "success");
           setIsUserModalOpen(false);
           setUserForm({ email: '', displayName: '', role: 'Staff', password: '' });
       } catch (e: any) {
@@ -116,23 +111,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           if (e.code === 'auth/email-already-in-use') {
               try {
                   await setDoc(doc(db, USERS_COLLECTION, userForm.email.toLowerCase()), { email: userForm.email.toLowerCase(), displayName: userForm.displayName, role: userForm.role, createdAt: serverTimestamp() }, { merge: true });
-                  showNotification("Email sudah terdaftar. Hak akses diperbarui (via Email Key).", "success");
+                  showNotification("EMAIL SUDAH TERDAFTAR. HAK AKSES DIPERBARUI (VIA EMAIL KEY).", "success");
                   setIsUserModalOpen(false);
                   setUserForm({ email: '', displayName: '', role: 'Staff', password: '' });
                   return;
-              } catch (fsErr: any) { msg = "Email ada di Auth tapi gagal update Firestore: " + fsErr.message; }
+              } catch (fsErr: any) { msg = "EMAIL ADA DI AUTH TAPI GAGAL UPDATE FIRESTORE: " + fsErr.message; }
           }
-          showNotification("Gagal menambah user: " + msg, "error");
+          showNotification("GAGAL MENAMBAH USER: " + msg, "error");
       } finally { if (tempApp) await (tempApp as any).delete(); setIsLoading(false); }
   };
 
-  const handleDeleteUser = async (uid: string) => { if (!window.confirm("Hapus akses user ini?")) return; try { await deleteDoc(doc(db, USERS_COLLECTION, uid)); showNotification("User dihapus.", "success"); } catch (e) { showNotification("Gagal menghapus.", "error"); } };
-  const handleResetPassword = async (email: string) => { if (!window.confirm(`Kirim link reset password ke email: ${email}?`)) return; try { await auth.sendPasswordResetEmail(email); showNotification("Email reset password berhasil dikirim.", "success"); } catch (e: any) { showNotification("Gagal mengirim email reset.", "error"); } };
-  const handleChangePassword = async (e: React.FormEvent) => { e.preventDefault(); if (newPassword !== confirmPassword) { showNotification("Konfirmasi password tidak cocok.", "error"); return; } if (newPassword.length < 6) { showNotification("Password minimal 6 karakter.", "error"); return; } setIsLoading(true); try { if (auth.currentUser) { await auth.currentUser.updatePassword(newPassword); showNotification("Password berhasil diubah.", "success"); setNewPassword(''); setConfirmPassword(''); } else { showNotification("Gagal: User tidak terdeteksi.", "error"); } } catch (e: any) { if (e.code === 'auth/requires-recent-login') showNotification("Sesi kadaluarsa. Silakan Logout lalu Login kembali untuk ubah password.", "error"); else showNotification("Gagal ubah password: " + e.message, "error"); } finally { setIsLoading(false); } };
+  const handleDeleteUser = async (uid: string) => { if (!window.confirm("HAPUS AKSES USER INI?")) return; try { await deleteDoc(doc(db, USERS_COLLECTION, uid)); showNotification("USER DIHAPUS.", "success"); } catch (e) { showNotification("GAGAL MENGHAPUS.", "error"); } };
+  const handleResetPassword = async (email: string) => { if (!window.confirm(`KIRIM LINK RESET PASSWORD KE EMAIL: ${email}?`)) return; try { await auth.sendPasswordResetEmail(email); showNotification("EMAIL RESET PASSWORD BERHASIL DIKIRIM.", "success"); } catch (e: any) { showNotification("GAGAL MENGIRIM EMAIL RESET.", "error"); } };
+  const handleChangePassword = async (e: React.FormEvent) => { e.preventDefault(); if (newPassword !== confirmPassword) { showNotification("KONFIRMASI PASSWORD TIDAK COCOK.", "error"); return; } if (newPassword.length < 6) { showNotification("PASSWORD MINIMAL 6 KARAKTER.", "error"); return; } setIsLoading(true); try { if (auth.currentUser) { await auth.currentUser.updatePassword(newPassword); showNotification("PASSWORD BERHASIL DIUBAH.", "success"); setNewPassword(''); setConfirmPassword(''); } else { showNotification("GAGAL: USER TIDAK TERDETEKSI.", "error"); } } catch (e: any) { if (e.code === 'auth/requires-recent-login') showNotification("SESI KADALUARSA. SILAKAN LOGOUT LALU LOGIN KEMBALI UNTUK UBAH PASSWORD.", "error"); else showNotification("GAGAL UBAH PASSWORD: " + e.message, "error"); } finally { setIsLoading(false); } };
   
   const handleSyncSystemData = async () => {
       if (!isManager) return;
-      if (!window.confirm("Sinkronisasi data unit masif?")) return;
+      if (!window.confirm("SINKRONISASI DATA UNIT MASIF?")) return;
       setIsLoading(true);
       try {
           const jobsSnap = await getDocs(collection(db, SERVICE_JOBS_COLLECTION));
@@ -160,13 +155,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                   updatedCount++;
               }
           });
-          if (updatedCount > 0) { await batch.commit(); showNotification(`Berhasil merapikan ${updatedCount} data.`, "success"); } else { showNotification("Data sudah sinkron.", "success"); }
-      } catch (e: any) { showNotification("Gagal: " + e.message, "error"); } finally { setIsLoading(false); }
+          if (updatedCount > 0) { await batch.commit(); showNotification(`BERHASIL MERAPIKAN ${updatedCount} DATA.`, "success"); } else { showNotification("DATA SUDAH SINKRON.", "success"); }
+      } catch (e: any) { showNotification("GAGAL: " + e.message, "error"); } finally { setIsLoading(false); }
   };
 
-  const handleCleanupDuplicates = async () => { if (!isManager) return; setIsLoading(true); try { const seen = new Set<string>(); const toDelete: string[] = []; for (const s of services) { const key = `${s.serviceName.trim().toLowerCase()}_${s.workType}`; if (seen.has(key)) toDelete.push(s.id); else seen.add(key); } if (toDelete.length === 0) { showNotification("Tidak ada duplikat.", "success"); return; } if (window.confirm(`Hapus ${toDelete.length} duplikat?`)) { for (const id of toDelete) await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("Pembersihan selesai.", "success"); } } catch (e: any) { showNotification("Gagal: " + e.message, "error"); } finally { setIsLoading(false); } };
-  const handleSaveService = async (e: React.FormEvent) => { e.preventDefault(); if (!isManager) return; setIsLoading(true); try { const payload = { ...serviceForm, serviceCode: serviceForm.serviceCode?.toUpperCase() || '' }; if (serviceForm.id) await updateDoc(doc(db, SERVICES_MASTER_COLLECTION, serviceForm.id), payload); else await addDoc(collection(db, SERVICES_MASTER_COLLECTION), { ...payload, createdAt: serverTimestamp() }); showNotification("Data diperbarui", "success"); setServiceForm({ serviceCode: '', workType: 'KC', panelValue: 1.0 }); setIsEditingService(false); } catch (e: any) { showNotification("Gagal: " + e.message, "error"); } finally { setIsLoading(false); } };
-  const handleDeleteService = async (id: string) => { if (!isManager || !window.confirm("Hapus?")) return; try { await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("Terhapus", "success"); } catch(e) { showNotification("Gagal", "error"); } };
+  const handleCleanupDuplicates = async () => { if (!isManager) return; setIsLoading(true); try { const seen = new Set<string>(); const toDelete: string[] = []; for (const s of services) { const key = `${s.serviceName.trim().toLowerCase()}_${s.workType}`; if (seen.has(key)) toDelete.push(s.id); else seen.add(key); } if (toDelete.length === 0) { showNotification("TIDAK ADA DUPLIKAT.", "success"); return; } if (window.confirm(`HAPUS ${toDelete.length} DUPLIKAT?`)) { for (const id of toDelete) await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("PEMBERSIHAN SELESAI.", "success"); } } catch (e: any) { showNotification("GAGAL: " + e.message, "error"); } finally { setIsLoading(false); } };
+  const handleSaveService = async (e: React.FormEvent) => { e.preventDefault(); if (!isManager) return; setIsLoading(true); try { const payload = { ...serviceForm, serviceCode: serviceForm.serviceCode?.toUpperCase() || '' }; if (serviceForm.id) await updateDoc(doc(db, SERVICES_MASTER_COLLECTION, serviceForm.id), payload); else await addDoc(collection(db, SERVICES_MASTER_COLLECTION), { ...payload, createdAt: serverTimestamp() }); showNotification("DATA DIPERBARUI", "success"); setServiceForm({ serviceCode: '', workType: 'KC', panelValue: 1.0 }); setIsEditingService(false); } catch (e: any) { showNotification("GAGAL: " + e.message, "error"); } finally { setIsLoading(false); } };
+  const handleDeleteService = async (id: string) => { if (!isManager || !window.confirm("HAPUS?")) return; try { await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("TERHAPUS", "success"); } catch(e) { showNotification("GAGAL", "error"); } };
   
   const handleDownloadServiceTemplate = () => { const headers = [['Kode Jasa', 'Nama Jasa', 'Jenis Pekerjaan (KC/GTC/BP)', 'Nilai Panel', 'Harga Dasar']]; const sampleData = services.map(s => [s.serviceCode || '', s.serviceName, s.workType, s.panelValue, s.basePrice]); const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Jasa"); XLSX.writeFile(wb, "Master_Jasa_Panel.xlsx"); };
 
@@ -180,17 +175,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
               const bstr = evt.target?.result;
               const wb = XLSX.read(bstr, { type: 'binary' });
               const wsname = wb.SheetNames[0];
-              if (!wsname) throw new Error("File Excel tidak valid atau kosong.");
+              if (!wsname) throw new Error("FILE EXCEL TIDAK VALID ATAU KOSONG.");
               
               const ws = wb.Sheets[wsname];
               const data = XLSX.utils.sheet_to_json(ws);
               
-              if (!data || data.length === 0) throw new Error("Tidak ada data ditemukan dalam sheet.");
+              if (!data || data.length === 0) throw new Error("TIDAK ADA DATA DITEMUKAN DALAM SHEET.");
 
               let successCount = 0;
               const batch = writeBatch(db);
               
-              // Process in chunks if needed, but for now simple loop is ok for <500 items
               for (const row of data as any[]) {
                   const serviceName = (row['Nama Jasa'] || '').toString().trim();
                   if (serviceName) {
@@ -207,10 +201,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                   }
               }
               await batch.commit();
-              showNotification(`Import Selesai. ${successCount} data ditambahkan.`, "success");
+              showNotification(`IMPORT SELESAI. ${successCount} DATA DITAMBAHKAN.`, "success");
           } catch (err: any) { 
               console.error(err);
-              showNotification("Error: " + err.message, "error"); 
+              showNotification("ERROR: " + err.message, "error"); 
           } finally { 
               setIsLoading(false); 
               e.target.value = ''; 
@@ -219,64 +213,72 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
       reader.readAsBinaryString(file);
   };
 
-  const RestrictedOverlay = () => (!isManager ? (<div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-xl"><div className="bg-white p-4 rounded-lg shadow-lg border border-red-100 flex items-center gap-3"><Shield className="text-red-500" size={24}/><div><p className="font-bold text-gray-800">Akses Terbatas</p><p className="text-xs text-gray-500">Hanya Manager yang dapat mengubah pengaturan ini.</p></div></div></div>) : null);
+  const RestrictedOverlay = () => (!isManager ? (<div className="absolute inset-0 bg-canvas/80 flex items-center justify-center z-10"><div className="bg-canvas border border-ink p-6 text-center"><p className="font-display text-[24px] text-ink uppercase mb-2">AKSES TERBATAS</p><p className="text-[10px] text-mute font-medium uppercase tracking-widest">HANYA MANAGER YANG DAPAT MENGUBAH PENGATURAN INI.</p></div></div>) : null);
   const restrictedClass = !isManager ? "pointer-events-none opacity-80 relative" : "relative";
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Pengaturan Sistem</h1>
-          <div className="flex gap-3">
-              {isManager && (<button onClick={handleSyncSystemData} disabled={isLoading} className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2.5 rounded-lg hover:bg-amber-100 border border-amber-200 font-bold disabled:opacity-50 transition-all"><RefreshCw size={18}/> Data Doctor (Sync)</button>)}
-              <button onClick={saveSettings} disabled={isLoading || !isManager} className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 shadow-lg font-bold disabled:opacity-50">{isLoading ? <Loader2 className="animate-spin" size={20}/> : <Save size={20}/>} Simpan Perubahan</button>
+    <div className="animate-fade-in pb-[48px]">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-[48px] border-b border-hairline pb-[24px]">
+          <div>
+              <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">PENGATURAN</h1>
+              <p className="text-[16px] text-mute font-normal mt-[18px] uppercase tracking-widest">KONFIGURASI SISTEM BENGKEL.</p>
+          </div>
+          <div className="flex gap-4">
+              {isManager && (<button onClick={handleSyncSystemData} disabled={isLoading} className="border border-hairline hover:border-ink px-6 py-4 text-[12px] font-medium uppercase tracking-widest text-ink transition-colors disabled:opacity-50">SYNC DATA</button>)}
+              <button onClick={saveSettings} disabled={isLoading || !isManager} className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50">{isLoading ? 'PROCESSING...' : 'SIMPAN PERUBAHAN'}</button>
           </div>
       </div>
 
-      <div className="flex border-b border-gray-200 bg-white rounded-t-xl overflow-x-auto">
+      <div className="flex flex-wrap border-b border-hairline mb-[48px]">
           {[
-            { id: 'general', label: 'Bengkel & Target' },
-            { id: 'database', label: 'Data Master' },
-            { id: 'unit_catalog', label: 'Katalog Unit' },
-            { id: 'insurance', label: '🏦 Database Asuransi' },
-            { id: 'whatsapp', label: 'WhatsApp & Pesan' },
-            { id: 'services', label: 'Master Jasa & Panel' }
+            { id: 'general', label: 'BENGKEL & TARGET' },
+            { id: 'database', label: 'DATA MASTER' },
+            { id: 'unit_catalog', label: 'KATALOG UNIT' },
+            { id: 'insurance', label: 'DATABASE ASURANSI' },
+            { id: 'whatsapp', label: 'WHATSAPP & PESAN' },
+            { id: 'services', label: 'MASTER JASA & PANEL' }
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-4 text-sm font-bold capitalize transition-colors border-b-2 flex-shrink-0 ${activeTab === tab.id ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-4 text-[12px] font-medium uppercase tracking-widest transition-colors flex-shrink-0 ${activeTab === tab.id ? 'bg-ink text-canvas border-t border-l border-r border-ink' : 'text-mute hover:text-ink border-transparent'}`}>
               {tab.label}
             </button>
           ))}
       </div>
 
-      <div className="bg-white p-6 rounded-b-xl border border-t-0 border-gray-200 shadow-sm relative min-h-[500px]">
+      <div className="relative min-h-[500px]">
           {activeTab === 'general' && (
-              <div className={`space-y-8 ${restrictedClass}`}>
+              <div className={`space-y-[48px] ${restrictedClass}`}>
                   <RestrictedOverlay/>
-                  {/* ... (Existing General Settings) */}
-                  <section className="bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100">
-                    <h3 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2"><Globe className="text-indigo-600" size={20}/> Bahasa Tampilan</h3>
+                  <section className="bg-canvas border border-hairline p-6">
+                    <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">BAHASA TAMPILAN</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="flex gap-3"><button onClick={() => handleChange('language', 'id')} className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${localSettings.language === 'id' ? 'bg-white border-indigo-600 shadow-md ring-4 ring-indigo-50' : 'bg-gray-50 opacity-60'}`}><span className="text-3xl">🇮🇩</span><span className="font-black text-sm uppercase">Bahasa Indonesia</span></button><button onClick={() => handleChange('language', 'en')} className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${localSettings.language === 'en' ? 'bg-white border-indigo-600 shadow-md ring-4 ring-indigo-50' : 'bg-gray-50 opacity-60'}`}><span className="text-3xl">🇺🇸</span><span className="font-black text-sm uppercase">English (US)</span></button></div>
+                        <div className="flex gap-4">
+                            <button onClick={() => handleChange('language', 'id')} className={`flex-1 py-6 px-4 border transition-colors ${localSettings.language === 'id' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:bg-soft-cloud'}`}>
+                                <span className="font-medium text-[12px] uppercase tracking-widest">BAHASA INDONESIA</span>
+                            </button>
+                            <button onClick={() => handleChange('language', 'en')} className={`flex-1 py-6 px-4 border transition-colors ${localSettings.language === 'en' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:bg-soft-cloud'}`}>
+                                <span className="font-medium text-[12px] uppercase tracking-widest">ENGLISH (US)</span>
+                            </button>
+                        </div>
                     </div>
                   </section>
-                  <section>
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Building className="text-indigo-500"/> Informasi Bengkel</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><label className="block text-sm font-medium mb-1">Nama Bengkel</label><input type="text" className="w-full p-2 border rounded" value={localSettings.workshopName} onChange={e => handleChange('workshopName', e.target.value)} /></div>
-                        <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="w-full p-2 border rounded" value={localSettings.workshopEmail} onChange={e => handleChange('workshopEmail', e.target.value)} /></div>
-                        <div><label className="block text-sm font-medium mb-1">Nomor Telepon</label><input type="text" className="w-full p-2 border rounded" value={localSettings.workshopPhone} onChange={e => handleChange('workshopPhone', e.target.value)} /></div>
-                        <div><label className="block text-sm font-medium mb-1">Alamat Lengkap</label><textarea className="w-full p-2 border rounded" rows={2} value={localSettings.workshopAddress} onChange={e => handleChange('workshopAddress', e.target.value)} /></div>
+                  <section className="bg-canvas border border-hairline p-6">
+                    <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">INFORMASI BENGKEL</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
+                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA BENGKEL</label><input type="text" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.workshopName} onChange={e => handleChange('workshopName', e.target.value)} /></div>
+                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">EMAIL</label><input type="email" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.workshopEmail} onChange={e => handleChange('workshopEmail', e.target.value)} /></div>
+                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NOMOR TELEPON</label><input type="text" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.workshopPhone} onChange={e => handleChange('workshopPhone', e.target.value)} /></div>
+                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">ALAMAT LENGKAP</label><textarea className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" rows={2} value={localSettings.workshopAddress} onChange={e => handleChange('workshopAddress', e.target.value)} /></div>
                     </div>
                   </section>
-                  <section><h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Target className="text-red-500"/> Target & Pajak</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div><label className="block text-sm font-medium mb-1">PPN (%)</label><div className="relative"><input type="number" className="w-full p-2 border rounded pl-8" value={localSettings.ppnPercentage} onChange={e => handleChange('ppnPercentage', Number(e.target.value))} /><Percent size={14} className="absolute left-3 top-3 text-gray-400"/></div></div><div><label className="block text-sm font-medium mb-1">Target Bulanan (Rp)</label><input type="number" className="w-full p-2 border rounded" value={localSettings.monthlyTarget} onChange={e => handleChange('monthlyTarget', Number(e.target.value))} /></div><div><label className="block text-sm font-medium mb-1">Target Mingguan (Rp)</label><input type="number" className="w-full p-2 border rounded" value={localSettings.weeklyTarget} onChange={e => handleChange('weeklyTarget', Number(e.target.value))} /></div></div></section>
+                  <section className="bg-canvas border border-hairline p-6"><h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">TARGET & PAJAK</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]"><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PPN (%)</label><div className="relative"><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase pl-12" value={localSettings.ppnPercentage} onChange={e => handleChange('ppnPercentage', Number(e.target.value))} /><span className="absolute left-4 top-[1.15rem] text-[14px] font-medium text-mute">%</span></div></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET BULANAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.monthlyTarget} onChange={e => handleChange('monthlyTarget', Number(e.target.value))} /></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET MINGGUAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.weeklyTarget} onChange={e => handleChange('weeklyTarget', Number(e.target.value))} /></div></div></section>
                   
-                  {/* KALENDER HARI KERJA */}
-                  <section className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mt-6">
-                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar className="text-blue-500" size={20}/> Kalender Hari Kerja & Libur</h3>
-                      <div className="space-y-6">
+                  <section className="bg-canvas border border-hairline p-6">
+                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">KALENDER HARI KERJA & LIBUR</h3>
+                      <div className="space-y-[24px]">
                           <div>
-                              <label className="block text-sm font-bold mb-3 text-gray-700">Hari Kerja Operasional Rutin</label>
-                              <div className="flex flex-wrap gap-3">
-                                  {[{ id: 1, label: 'Senin' }, { id: 2, label: 'Selasa' }, { id: 3, label: 'Rabu' }, { id: 4, label: 'Kamis' }, { id: 5, label: 'Jumat' }, { id: 6, label: 'Sabtu' }, { id: 0, label: 'Minggu' }].map(day => {
+                              <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-4">HARI KERJA OPERASIONAL RUTIN</label>
+                              <div className="flex flex-wrap gap-4">
+                                  {[{ id: 1, label: 'SENIN' }, { id: 2, label: 'SELASA' }, { id: 3, label: 'RABU' }, { id: 4, label: 'KAMIS' }, { id: 5, label: 'JUMAT' }, { id: 6, label: 'SABTU' }, { id: 0, label: 'MINGGU' }].map(day => {
                                       const isWorkingDay = (localSettings.workingDaysOfWeek || [1,2,3,4,5,6]).includes(day.id);
                                       return (
                                           <button 
@@ -289,10 +291,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                                       : [...current, day.id];
                                                   handleChange('workingDaysOfWeek', newDays);
                                               }}
-                                              className={`px-5 py-2.5 rounded-full border text-sm font-bold transition-all ${
+                                              className={`px-6 py-3 border transition-colors text-[10px] font-medium uppercase tracking-widest ${
                                                   isWorkingDay
-                                                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm ring-2 ring-indigo-100'
-                                                      : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                                                      ? 'bg-ink text-canvas border-ink'
+                                                      : 'bg-canvas text-ink border-hairline hover:bg-soft-cloud'
                                               }`}
                                           >
                                               {day.label}
@@ -300,15 +302,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                       );
                                   })}
                               </div>
-                              <p className="text-xs text-gray-500 mt-2 italic">* Pengaturan ini akan digunakan untuk menghitung target jumlah hari kerja aktual setiap bulannya di Dashboard.</p>
+                              <p className="text-[10px] text-mute uppercase tracking-widest mt-4">PENGATURAN INI AKAN DIGUNAKAN UNTUK MENGHITUNG TARGET JUMLAH HARI KERJA AKTUAL SETIAP BULANNYA DI DASHBOARD.</p>
                           </div>
-                          <div className="pt-4 border-t border-gray-100">
-                              <label className="block text-sm font-bold mb-3 text-gray-700">Hari Libur Khusus / Nasional</label>
-                              <div className="flex gap-3 mb-4">
+                          <div className="pt-[24px] border-t border-hairline">
+                              <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-4">HARI LIBUR KHUSUS / NASIONAL</label>
+                              <div className="flex gap-4 mb-6">
                                   <input 
                                       type="date" 
                                       id="newHolidayInput"
-                                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                      className="px-4 py-3 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
                                   />
                                   <button 
                                       type="button"
@@ -321,21 +323,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                               (document.getElementById('newHolidayInput') as HTMLInputElement).value = '';
                                           }
                                       }}
-                                      className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+                                      className="bg-canvas border border-hairline hover:border-ink text-ink px-6 py-3 text-[10px] font-medium uppercase tracking-widest transition-colors"
                                   >
-                                      <Plus size={16}/> Tambah Libur
+                                      TAMBAH LIBUR
                                   </button>
                               </div>
-                              <div className="flex flex-wrap gap-2">
-                                  {(localSettings.internalHolidays || []).length === 0 && <span className="text-sm text-gray-400 italic">Belum ada hari libur khusus yang ditambahkan.</span>}
+                              <div className="flex flex-wrap gap-4">
+                                  {(localSettings.internalHolidays || []).length === 0 && <span className="text-[10px] text-mute uppercase tracking-widest">BELUM ADA HARI LIBUR KHUSUS YANG DITAMBAHKAN.</span>}
                                   {(localSettings.internalHolidays || []).map((h, i) => (
-                                      <span key={i} className="bg-white border border-gray-200 shadow-sm text-gray-700 px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-3">
-                                          🗓 {new Date(h).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                      <span key={i} className="bg-canvas border border-hairline text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest flex items-center gap-4">
+                                          {new Date(h).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                           <button onClick={() => {
                                               const currentHolidays = [...(localSettings.internalHolidays || [])];
                                               currentHolidays.splice(i, 1);
                                               handleChange('internalHolidays', currentHolidays);
-                                          }} className="text-red-400 hover:text-red-600 bg-red-50 p-1 rounded-full"><Trash2 size={12}/></button>
+                                          }} className="text-mute hover:text-ink">HAPUS</button>
                                       </span>
                                   ))}
                               </div>
@@ -346,125 +348,113 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           )}
 
           {activeTab === 'whatsapp' && (
-              <div className={`space-y-8 animate-fade-in ${restrictedClass}`}>
+              <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
-                  {/* ... (Existing WhatsApp Config) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <section className="bg-green-50/50 p-6 rounded-2xl border border-green-100">
-                          <h3 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-2">
-                            <MessageSquare className="text-green-600" size={20}/> Konfigurasi Pengiriman
-                          </h3>
-                          <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-[48px]">
+                      <section className="bg-canvas border border-hairline p-6">
+                          <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">KONFIGURASI PENGIRIMAN</h3>
+                          <div className="space-y-[24px]">
                               <div>
-                                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Pilih Mode WhatsApp</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-4">PILIH MODE WHATSAPP</label>
                                   <div className="flex gap-4">
                                       <button 
                                           onClick={() => handleNestedChange('whatsappConfig', 'mode', 'MANUAL')}
-                                          className={`flex-1 p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${localSettings.whatsappConfig?.mode === 'MANUAL' ? 'bg-white border-green-600 shadow-md ring-4 ring-green-50' : 'bg-gray-50 border-transparent opacity-60'}`}
+                                          className={`flex-1 p-6 border transition-colors ${localSettings.whatsappConfig?.mode === 'MANUAL' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:bg-soft-cloud'}`}
                                       >
-                                          <Smartphone className={localSettings.whatsappConfig?.mode === 'MANUAL' ? 'text-green-600' : 'text-gray-400'} size={24}/>
-                                          <div className="text-left"><p className="font-black text-xs uppercase">Manual (Personal)</p><p className="text-[10px] text-gray-500 leading-tight">Membuka Aplikasi WA Desktop/Web</p></div>
+                                          <div className="text-left"><p className="font-medium text-[12px] uppercase tracking-widest mb-2">MANUAL (PERSONAL)</p><p className="text-[10px] uppercase tracking-widest opacity-70">MEMBUKA APLIKASI WA DESKTOP/WEB</p></div>
                                       </button>
                                       <button 
                                           onClick={() => handleNestedChange('whatsappConfig', 'mode', 'API')}
-                                          className={`flex-1 p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${localSettings.whatsappConfig?.mode === 'API' ? 'bg-white border-indigo-600 shadow-md ring-4 ring-indigo-50' : 'bg-gray-50 border-transparent opacity-60'}`}
+                                          className={`flex-1 p-6 border transition-colors ${localSettings.whatsappConfig?.mode === 'API' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:bg-soft-cloud'}`}
                                       >
-                                          <Bot className={localSettings.whatsappConfig?.mode === 'API' ? 'text-indigo-600' : 'text-gray-400'} size={24}/>
-                                          <div className="text-left"><p className="font-black text-xs uppercase">Gateway API (Bot)</p><p className="text-[10px] text-gray-500 leading-tight">Pengiriman otomatis tanpa klik (Cloud)</p></div>
+                                          <div className="text-left"><p className="font-medium text-[12px] uppercase tracking-widest mb-2">GATEWAY API (BOT)</p><p className="text-[10px] uppercase tracking-widest opacity-70">PENGIRIMAN OTOMATIS TANPA KLIK (CLOUD)</p></div>
                                       </button>
                                   </div>
                               </div>
                               
                               {localSettings.whatsappConfig?.mode === 'API' && (
-                                  <div className="space-y-4 p-4 bg-white rounded-xl border border-indigo-200 animate-fade-in">
-                                      <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm mb-2">
-                                          <KeyRound size={16}/> API Credentials (Client Owned)
+                                  <div className="space-y-[16px] p-6 bg-soft-cloud border border-hairline animate-fade-in">
+                                      <div className="font-medium text-ink uppercase tracking-widest text-[12px] mb-4">
+                                          API CREDENTIALS (CLIENT OWNED)
                                       </div>
                                       <div>
-                                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pilih Provider Gateway</label>
+                                          <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PILIH PROVIDER GATEWAY</label>
                                           <select 
                                               value={localSettings.whatsappConfig?.waProvider || 'Whacenter'} 
                                               onChange={e => handleNestedChange('whatsappConfig', 'waProvider', e.target.value)}
-                                              className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                                              className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
                                           >
-                                              <option value="Whacenter">Whacenter</option>
-                                              <option value="Fonnte">Fonnte</option>
-                                              <option value="Lainnya">Lainnya (Custom)</option>
+                                              <option value="Whacenter">WHACENTER</option>
+                                              <option value="Fonnte">FONNTE</option>
+                                              <option value="Lainnya">LAINNYA (CUSTOM)</option>
                                           </select>
                                       </div>
                                       <div>
-                                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">WA API KEY / TOKEN</label>
+                                          <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">WA API KEY / TOKEN</label>
                                           <input 
                                               type="password" 
                                               value={localSettings.whatsappConfig?.waApiKey || ''}
                                               onChange={e => handleNestedChange('whatsappConfig', 'waApiKey', e.target.value)}
-                                              placeholder="Masukkan token dari provider..."
-                                              className="w-full p-2.5 border border-indigo-100 rounded-lg text-sm font-mono bg-indigo-50/30 focus:ring-2 focus:ring-indigo-500"
+                                              placeholder="MASUKKAN TOKEN DARI PROVIDER..."
+                                              className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
                                           />
-                                          <p className="text-[9px] text-gray-400 mt-1 italic">* Token ini digunakan untuk pengiriman otomatis. Client disarankan membeli kuota sendiri ke provider.</p>
+                                          <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">TOKEN INI DIGUNAKAN UNTUK PENGIRIMAN OTOMATIS. CLIENT DISARANKAN MEMBELI KUOTA SENDIRI KE PROVIDER.</p>
                                       </div>
                                   </div>
                               )}
 
-                              <div className="bg-white/60 p-4 rounded-xl border border-green-100 flex items-start gap-3">
-                                  <Info size={18} className="text-green-600 shrink-0 mt-0.5"/>
-                                  <div className="text-xs text-green-800 leading-relaxed font-medium">
-                                      <strong>Variabel Template:</strong><br/>
-                                      Gunakan placeholder berikut dalam pesan agar terisi otomatis:<br/>
-                                      <code className="bg-green-100 px-1 rounded font-bold">{"{nama}"}</code> : Nama Pelanggan<br/>
-                                      <code className="bg-green-100 px-1 rounded font-bold">{"{mobil}"}</code> : Model Kendaraan<br/>
-                                      <code className="bg-green-100 px-1 rounded font-bold">{"{nopol}"}</code> : No. Polisi<br/>
-                                      <code className="bg-green-100 px-1 rounded font-bold">{"{tgl_booking}"}</code> : Tanggal Janji
+                              <div className="bg-soft-cloud p-6 border border-hairline">
+                                  <div className="text-[12px] text-ink leading-relaxed font-medium uppercase tracking-widest">
+                                      VARIABEL TEMPLATE:<br/><br/>
+                                      GUNAKAN PLACEHOLDER BERIKUT DALAM PESAN AGAR TERISI OTOMATIS:<br/><br/>
+                                      <span className="border border-ink px-2 py-1">{"{nama}"}</span> : NAMA PELANGGAN<br/><br/>
+                                      <span className="border border-ink px-2 py-1">{"{mobil}"}</span> : MODEL KENDARAAN<br/><br/>
+                                      <span className="border border-ink px-2 py-1">{"{nopol}"}</span> : NO. POLISI<br/><br/>
+                                      <span className="border border-ink px-2 py-1">{"{tgl_booking}"}</span> : TANGGAL JANJI
                                   </div>
                               </div>
                           </div>
                       </section>
                       
-                      <section className="bg-white/60 p-6 rounded-3xl shadow-sm border border-slate-100/60 backdrop-blur-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity -mr-10 -mt-10 pointer-events-none"></div>
-                          <div className="flex items-center gap-3 mb-6">
-                              <div className="p-3 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg shadow-slate-200">
-                                  <Bot size={20} className="text-white" />
-                              </div>
-                              <h3 className="text-base font-black text-slate-800 tracking-tight uppercase bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-500">Integrasi AI Google Gemini</h3>
-                          </div>
-                          <div className="space-y-4 relative z-10">
+                      <section className="bg-canvas p-6 border border-hairline">
+                          <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">INTEGRASI AI GOOGLE GEMINI</h3>
+                          <div className="space-y-[16px]">
                               <div>
-                                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GEMINI API KEY</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">GEMINI API KEY</label>
                                   <input 
                                       type="password" 
                                       value={localSettings.geminiApiKey || ''}
                                       onChange={e => setLocalSettings({...localSettings, geminiApiKey: e.target.value})}
-                                      placeholder="Masukkan API Key Google Gemini..."
-                                      className="w-full p-2.5 border border-slate-200 rounded-lg text-sm font-mono bg-slate-50 focus:ring-2 focus:ring-slate-500 transition-all shadow-inner"
+                                      placeholder="MASUKKAN API KEY GOOGLE GEMINI..."
+                                      className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
                                   />
-                                  <p className="text-[9px] text-gray-400 mt-1 italic">* Key ini diperlukan untuk fitur AI Strategic Insight. Simpan dengan aman.</p>
+                                  <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">KEY INI DIPERLUKAN UNTUK FITUR AI STRATEGIC INSIGHT. SIMPAN DENGAN AMAN.</p>
                               </div>
                           </div>
                       </section>
 
-                      <div className="space-y-6">
-                          <div className="grid grid-cols-1 gap-6">
+                      <div className="space-y-[24px]">
+                          <div className="grid grid-cols-1 gap-[24px]">
                               <div>
-                                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2"><Calendar size={14}/> Template Pengingat Booking</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TEMPLATE PENGINGAT BOOKING</label>
                                   <textarea 
-                                      className="w-full p-4 border border-gray-200 rounded-xl text-sm min-h-[100px] focus:ring-4 focus:ring-green-50 transition-all font-medium" 
+                                      className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase min-h-[150px]" 
                                       value={localSettings.whatsappTemplates.bookingReminder}
                                       onChange={e => handleNestedChange('whatsappTemplates', 'bookingReminder', e.target.value)}
                                   />
                               </div>
                               <div>
-                                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2"><CheckCircle2 size={14}/> Template Unit Siap Ambil</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TEMPLATE UNIT SIAP AMBIL</label>
                                   <textarea 
-                                      className="w-full p-4 border border-gray-200 rounded-xl text-sm min-h-[100px] focus:ring-4 focus:ring-green-50 transition-all font-medium" 
+                                      className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase min-h-[150px]" 
                                       value={localSettings.whatsappTemplates.readyForPickup}
                                       onChange={e => handleNestedChange('whatsappTemplates', 'readyForPickup', e.target.value)}
                                   />
                               </div>
                               <div>
-                                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2"><Smartphone size={14}/> Template After Service (CSI)</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TEMPLATE AFTER SERVICE (CSI)</label>
                                   <textarea 
-                                      className="w-full p-4 border border-gray-200 rounded-xl text-sm min-h-[100px] focus:ring-4 focus:ring-green-50 transition-all font-medium" 
+                                      className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase min-h-[150px]" 
                                       value={localSettings.whatsappTemplates.afterService}
                                       onChange={e => handleNestedChange('whatsappTemplates', 'afterService', e.target.value)}
                                   />
@@ -473,48 +463,48 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
                   </div>
 
-                  <section className="bg-yellow-50/50 p-6 rounded-2xl border border-yellow-100 mt-8">
-                      <h3 className="text-lg font-bold text-yellow-900 mb-4 flex items-center gap-2">
-                          <Star className="text-yellow-600" size={20}/> Template Penilaian Pelanggan (CSI Survey)
+                  <section className="bg-canvas border border-hairline p-6 mt-[48px]">
+                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">
+                          TEMPLATE PENILAIAN PELANGGAN (CSI SURVEY)
                       </h3>
-                      <div className="flex flex-col md:flex-row gap-6">
-                          <div className="flex-1 space-y-4">
-                              <p className="text-xs text-yellow-800 leading-relaxed">
-                                  Tambahkan kriteria penilaian yang akan muncul saat tim CRC melakukan input survey kepuasan pelanggan. 
-                                  Contoh: "Kualitas Perbaikan", "Kecepatan", "Keramahan Staff".
+                      <div className="flex flex-col md:flex-row gap-[24px]">
+                          <div className="flex-1 space-y-[16px]">
+                              <p className="text-[10px] text-mute uppercase tracking-widest leading-relaxed">
+                                  TAMBAHKAN KRITERIA PENILAIAN YANG AKAN MUNCUL SAAT TIM CRC MELAKUKAN INPUT SURVEY KEPUASAN PELANGGAN. 
+                                  CONTOH: "KUALITAS PERBAIKAN", "KECEPATAN", "KERAMAHAN STAFF".
                               </p>
-                              <div className="flex gap-2">
+                              <div className="flex gap-4">
                                   <input 
                                       type="text" 
-                                      className="flex-grow p-3 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400"
-                                      placeholder="Ketik kriteria baru..."
+                                      className="flex-grow p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
+                                      placeholder="KETIK KRITERIA BARU..."
                                       value={newCsiInput}
                                       onChange={(e) => setNewCsiInput(e.target.value)}
                                       onKeyDown={(e) => e.key === 'Enter' && handleAddCsiItem()}
                                   />
                                   <button 
                                       onClick={handleAddCsiItem}
-                                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-yellow-700 transition-colors shadow-sm"
+                                      className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
                                   >
-                                      <Plus size={18}/>
+                                      TAMBAH
                                   </button>
                               </div>
                           </div>
-                          <div className="flex-1 bg-white p-4 rounded-xl border border-yellow-200 max-h-60 overflow-y-auto">
-                              <div className="flex flex-wrap gap-2">
+                          <div className="flex-1 bg-soft-cloud p-6 border border-hairline max-h-60 overflow-y-auto">
+                              <div className="flex flex-wrap gap-4">
                                   {(localSettings.csiIndicators || []).map((item, idx) => (
-                                      <div key={idx} className="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 border border-yellow-200 group">
+                                      <div key={idx} className="bg-canvas text-ink px-4 py-2 border border-hairline text-[10px] font-medium uppercase tracking-widest flex items-center gap-4 group hover:border-ink transition-colors">
                                           {item}
                                           <button 
                                               onClick={() => removeItem('csiIndicators', idx)}
-                                              className="bg-white rounded-full p-0.5 text-yellow-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                              className="text-mute hover:text-ink"
                                           >
-                                              <Trash2 size={12}/>
+                                              HAPUS
                                           </button>
                                       </div>
                                   ))}
                                   {(localSettings.csiIndicators || []).length === 0 && (
-                                      <span className="text-gray-400 text-xs italic">Belum ada kriteria penilaian.</span>
+                                      <span className="text-mute text-[10px] uppercase tracking-widest">BELUM ADA KRITERIA PENILAIAN.</span>
                                   )}
                               </div>
                           </div>
@@ -524,58 +514,57 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           )}
 
           {activeTab === 'unit_catalog' && (
-              <div className={`space-y-10 animate-fade-in ${restrictedClass}`}>
+              <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
-                  {/* ... (Existing Catalog Settings) */}
-                  <section className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-black text-gray-800 flex items-center gap-2 uppercase tracking-widest text-xs"><Car size={16} className="text-indigo-500"/> Master Merk Kendaraan</h4>
-                      <button onClick={() => addItem('carBrands', '')} className="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-indigo-700 transition-all">
-                        <Plus size={14}/> Tambah Merk
+                  <section className="bg-canvas p-6 border border-hairline">
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">MASTER MERK KENDARAAN</h4>
+                      <button onClick={() => addItem('carBrands', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
+                        TAMBAH MERK
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {(localSettings.carBrands || []).map((brand, idx) => (
-                        <div key={idx} className="flex gap-1 group">
-                          <input type="text" className="w-full p-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:ring-2 focus:ring-indigo-50" value={brand} onChange={e => handleArrayChange('carBrands', idx, e.target.value)} />
-                          <button onClick={() => removeItem('carBrands', idx)} className="text-red-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 size={16}/>
+                        <div key={idx} className="flex gap-2 group">
+                          <input type="text" className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase" value={brand} onChange={e => handleArrayChange('carBrands', idx, e.target.value)} />
+                          <button onClick={() => removeItem('carBrands', idx)} className="text-mute hover:text-ink px-3 border border-transparent group-hover:border-hairline transition-all">
+                            HAPUS
                           </button>
                         </div>
                       ))}
                     </div>
                   </section>
-                  <section className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-black text-gray-800 flex items-center gap-2 uppercase tracking-widest text-xs"><Layers size={16} className="text-blue-500"/> Katalog Model / Tipe</h4>
-                      <button onClick={() => addItem('carModels', '')} className="text-[10px] bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-blue-700 transition-all">
-                        <Plus size={14}/> Tambah Tipe
+                  <section className="bg-canvas p-6 border border-hairline">
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">KATALOG MODEL / TIPE</h4>
+                      <button onClick={() => addItem('carModels', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
+                        TAMBAH TIPE
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {(localSettings.carModels || []).map((model, idx) => (
-                        <div key={idx} className="flex gap-1 group">
-                          <input type="text" className="w-full p-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500" value={model} onChange={e => handleArrayChange('carModels', idx, e.target.value)} />
-                          <button onClick={() => removeItem('carModels', idx)} className="text-red-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 size={16}/>
+                        <div key={idx} className="flex gap-2 group">
+                          <input type="text" className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase" value={model} onChange={e => handleArrayChange('carModels', idx, e.target.value)} />
+                          <button onClick={() => removeItem('carModels', idx)} className="text-mute hover:text-ink px-3 border border-transparent group-hover:border-hairline transition-all">
+                            HAPUS
                           </button>
                         </div>
                       ))}
                     </div>
                   </section>
-                  <section className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-black text-gray-800 flex items-center gap-2 uppercase tracking-widest text-xs"><Palette size={16} className="text-purple-500"/> Katalog Warna Kendaraan</h4>
-                      <button onClick={() => addItem('carColors', '')} className="text-[10px] bg-purple-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-purple-700 transition-all">
-                        <Plus size={14}/> Tambah Warna
+                  <section className="bg-canvas p-6 border border-hairline">
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">KATALOG WARNA KENDARAAN</h4>
+                      <button onClick={() => addItem('carColors', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
+                        TAMBAH WARNA
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {(localSettings.carColors || []).map((color, idx) => (
-                        <div key={idx} className="flex gap-1 group">
-                          <input type="text" className="w-full p-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:ring-2 focus:ring-purple-500" value={color} onChange={e => handleArrayChange('carColors', idx, e.target.value)} />
-                          <button onClick={() => removeItem('carColors', idx)} className="text-red-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 size={16}/>
+                        <div key={idx} className="flex gap-2 group">
+                          <input type="text" className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase" value={color} onChange={e => handleArrayChange('carColors', idx, e.target.value)} />
+                          <button onClick={() => removeItem('carColors', idx)} className="text-mute hover:text-ink px-3 border border-transparent group-hover:border-hairline transition-all">
+                            HAPUS
                           </button>
                         </div>
                       ))}
@@ -585,63 +574,61 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           )}
 
           {activeTab === 'services' && (
-              <div className={`space-y-8 animate-fade-in ${restrictedClass}`}>
+              <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
                   
-                  {/* NEW: Input Rate Panel per Mekanik */}
-                  <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 flex items-center justify-between">
+                  <div className="bg-canvas p-6 border border-ink flex items-center justify-between">
                       <div>
-                          <h4 className="font-bold text-emerald-900 flex items-center gap-2 text-sm"><Wallet size={18}/> Standar Gaji Mekanik (Per Panel)</h4>
-                          <p className="text-xs text-emerald-700 mt-1">Nilai ini digunakan untuk menghitung estimasi gaji teknisi di Laporan Produksi.</p>
+                          <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">STANDAR GAJI MEKANIK (PER PANEL)</h4>
+                          <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">NILAI INI DIGUNAKAN UNTUK MENGHITUNG ESTIMASI GAJI TEKNISI DI LAPORAN PRODUKSI.</p>
                       </div>
                       <div className="relative">
-                          <span className="absolute left-3 top-2.5 font-bold text-emerald-500">Rp</span>
+                          <span className="absolute left-4 top-[1.15rem] font-medium text-ink text-[14px]">RP</span>
                           <input 
                               type="number" 
-                              className="w-48 pl-10 p-2.5 border border-emerald-300 rounded-lg font-black text-emerald-800 focus:ring-2 focus:ring-emerald-500"
+                              className="w-48 pl-12 p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-display text-[16px] text-ink uppercase"
                               value={localSettings.mechanicPanelRate || 0}
                               onChange={e => handleChange('mechanicPanelRate', Number(e.target.value))}
                           />
                       </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h3 className="text-lg font-bold text-gray-800">Daftar Master Jasa (Standar Panel)</h3>
-                        <div className="flex flex-wrap gap-2">
-                          <button onClick={handleCleanupDuplicates} className="flex items-center gap-1 bg-amber-50 text-amber-700 px-3 py-1.5 rounded border border-amber-200 hover:bg-amber-100 text-xs font-bold"><ShieldCheck size={14}/> Cleanup</button>
-                          <button onClick={handleDownloadServiceTemplate} className="flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-200 text-xs font-bold"><Download size={14}/> Template/Export</button>
-                          <label className="flex items-center gap-2 cursor-pointer bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded border border-emerald-200 hover:bg-emerald-100 text-xs font-bold"><Upload size={14}/> Import & Update<input disabled={!isManager} type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={handleImportServices} /></label>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-[48px]">
+                    <div className="lg:col-span-2 bg-canvas p-6 border border-hairline flex flex-col">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-[24px]">
+                        <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest">DAFTAR MASTER JASA (STANDAR PANEL)</h3>
+                        <div className="flex flex-wrap gap-4">
+                          <button onClick={handleCleanupDuplicates} className="border border-hairline hover:border-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-ink transition-colors">CLEANUP</button>
+                          <button onClick={handleDownloadServiceTemplate} className="border border-hairline hover:border-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-ink transition-colors">TEMPLATE/EXPORT</button>
+                          <label className="bg-ink text-canvas px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-mute transition-colors cursor-pointer">IMPORT & UPDATE<input disabled={!isManager} type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={handleImportServices} /></label>
                         </div>
                       </div>
-                      <div className="mb-4 relative group">
-                        <Search className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={18}/>
-                        <input type="text" placeholder="Cari..." value={serviceSearchQuery} onChange={e => setServiceSearchQuery(e.target.value)} className="w-full pl-10 p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 outline-none transition-all"/>
+                      <div className="mb-[24px]">
+                        <input type="text" placeholder="CARI..." value={serviceSearchQuery} onChange={e => setServiceSearchQuery(e.target.value)} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium uppercase text-ink transition-all"/>
                       </div>
-                      <div className="overflow-x-auto max-h-[500px] overflow-y-auto scrollbar-thin">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-gray-50 text-gray-600 uppercase sticky top-0 z-20">
+                      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                        <table className="w-full text-left">
+                          <thead className="bg-canvas border-b border-hairline text-mute uppercase font-medium text-[10px] tracking-widest sticky top-0">
                             <tr>
-                              <th className="px-4 py-3">Kode</th>
-                              <th className="px-4 py-3">Nama Pekerjaan</th>
-                              <th className="px-4 py-3">Jenis</th>
-                              <th className="px-4 py-3 text-center">Panel</th>
-                              <th className="px-4 py-3 text-right">Harga</th>
-                              <th className="px-4 py-3 text-right">Aksi</th>
+                              <th className="px-6 py-4 font-normal">KODE</th>
+                              <th className="px-6 py-4 font-normal">NAMA PEKERJAAN</th>
+                              <th className="px-6 py-4 font-normal">JENIS</th>
+                              <th className="px-6 py-4 text-center font-normal">PANEL</th>
+                              <th className="px-6 py-4 text-right font-normal">HARGA</th>
+                              <th className="px-6 py-4 text-right font-normal">AKSI</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
+                          <tbody className="divide-y divide-hairline">
                             {filteredServices.map(s => (
-                              <tr key={s.id} className="hover:bg-gray-50 group">
-                                <td className="px-4 py-2 font-mono text-xs font-bold text-gray-400">{s.serviceCode || '-'}</td>
-                                <td className="px-4 py-2 font-bold text-gray-700 uppercase">{s.serviceName}</td>
-                                <td className="px-4 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-black border ${s.workType === 'KC' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-blue-50 text-blue-700'}`}>{s.workType}</span></td>
-                                <td className="px-4 py-2 text-center font-black">{s.panelValue}</td>
-                                <td className="px-4 py-2 text-right font-black text-emerald-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(s.basePrice)}</td>
-                                <td className="px-4 py-2 flex justify-end gap-2 opacity-0 group-hover:opacity-100">
-                                  <button onClick={() => { setServiceForm(s); setIsEditingService(true); }} className="text-indigo-500 p-1"><Edit2 size={14}/></button>
-                                  <button onClick={() => handleDeleteService(s.id)} className="text-red-500 p-1"><Trash2 size={14}/></button>
+                              <tr key={s.id} className="hover:bg-soft-cloud transition-colors group">
+                                <td className="px-6 py-4 font-medium text-[14px] text-mute uppercase">{s.serviceCode || '-'}</td>
+                                <td className="px-6 py-4 font-medium text-[14px] text-ink uppercase">{s.serviceName}</td>
+                                <td className="px-6 py-4"><span className="px-2 py-1 border border-ink text-[10px] font-medium tracking-widest uppercase">{s.workType}</span></td>
+                                <td className="px-6 py-4 text-center font-medium text-[14px] text-ink">{s.panelValue}</td>
+                                <td className="px-6 py-4 text-right font-medium text-[14px] text-ink">{formatCurrency(s.basePrice)}</td>
+                                <td className="px-6 py-4 text-right flex justify-end gap-4 opacity-0 group-hover:opacity-100">
+                                  <button onClick={() => { setServiceForm(s); setIsEditingService(true); }} className="text-[10px] font-medium uppercase tracking-widest text-ink hover:underline">EDIT</button>
+                                  <button onClick={() => handleDeleteService(s.id)} className="text-[10px] font-medium uppercase tracking-widest text-ink hover:underline">HAPUS</button>
                                 </td>
                               </tr>
                             ))}
@@ -649,40 +636,40 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </table>
                       </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit flex flex-col sticky top-4">
-                      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Layers className="text-indigo-600" size={20}/> {isEditingService ? 'Edit Jasa' : 'Input Jasa Baru'}</h3>
-                      <form onSubmit={handleSaveService} className="space-y-4">
-                        <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nama Pekerjaan *</label><input disabled={!isManager} required type="text" value={serviceForm.serviceName || ''} onChange={e => setServiceForm({...serviceForm, serviceName: e.target.value})} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-50 font-bold" /></div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nilai Panel</label><input disabled={!isManager} type="number" step="0.1" value={serviceForm.panelValue || 0} onChange={e => setServiceForm({...serviceForm, panelValue: Number(e.target.value)})} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-50 font-black"/></div>
-                          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Harga Dasar</label><input disabled={!isManager} type="number" value={serviceForm.basePrice || 0} onChange={e => setServiceForm({...serviceForm, basePrice: Number(e.target.value)})} className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-indigo-50 font-black text-emerald-600"/></div>
+                    <div className="bg-canvas p-6 border border-hairline h-fit flex flex-col sticky top-4">
+                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">{isEditingService ? 'EDIT JASA' : 'INPUT JASA BARU'}</h3>
+                      <form onSubmit={handleSaveService} className="space-y-[16px]">
+                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA PEKERJAAN *</label><input disabled={!isManager} required type="text" value={serviceForm.serviceName || ''} onChange={e => setServiceForm({...serviceForm, serviceName: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" /></div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NILAI PANEL</label><input disabled={!isManager} type="number" step="0.1" value={serviceForm.panelValue || 0} onChange={e => setServiceForm({...serviceForm, panelValue: Number(e.target.value)})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"/></div>
+                          <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">HARGA DASAR</label><input disabled={!isManager} type="number" value={serviceForm.basePrice || 0} onChange={e => setServiceForm({...serviceForm, basePrice: Number(e.target.value)})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"/></div>
                         </div>
-                        <button disabled={isLoading || !isManager} type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 shadow-lg font-black">{isLoading ? 'Proses...' : 'SIMPAN DATA'}</button>
+                        <button disabled={isLoading || !isManager} type="submit" className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors mt-4">{isLoading ? 'PROSES...' : 'SIMPAN DATA'}</button>
                       </form>
 
-                      <div className="mt-8 pt-8 border-t border-gray-100">
-                          <div className="flex justify-between items-center mb-4">
-                              <h4 className="font-black text-rose-800 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                  <Palette size={14} className="text-rose-500"/> Harga Warna Spesial
+                      <div className="mt-[48px] pt-[24px] border-t border-hairline">
+                          <div className="flex justify-between items-center mb-6">
+                              <h4 className="font-medium text-ink uppercase tracking-widest text-[12px]">
+                                  HARGA WARNA SPESIAL
                               </h4>
                               <button 
                                   onClick={() => {
                                       const current = localSettings.specialColorRates || [];
                                       handleChange('specialColorRates', [...current, { colorName: '', surchargePerPanel: 0 }]);
                                   }}
-                                  className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold hover:bg-rose-600 transition-colors"
+                                  className="text-[10px] border border-hairline hover:border-ink text-ink px-3 py-2 font-medium uppercase tracking-widest transition-colors"
                               >
-                                  + TAMBAH
+                                  TAMBAH
                               </button>
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                               {(localSettings.specialColorRates || []).map((rate, idx) => (
-                                  <div key={idx} className="bg-rose-50/50 p-3 rounded-xl border border-rose-100 flex items-center gap-2 group animate-fade-in">
-                                      <div className="flex-grow space-y-1">
+                                  <div key={idx} className="bg-soft-cloud p-4 border border-hairline flex items-center gap-4 group animate-fade-in">
+                                      <div className="flex-grow space-y-2">
                                           <input 
                                               type="text" 
-                                              placeholder="Nama Warna..." 
-                                              className="w-full bg-transparent border-none p-0 text-[10px] font-black text-rose-900 uppercase focus:ring-0"
+                                              placeholder="NAMA WARNA..." 
+                                              className="w-full bg-canvas border border-hairline p-2 text-[10px] font-medium text-ink uppercase focus:outline-none focus:border-ink"
                                               value={rate.colorName}
                                               onChange={e => {
                                                   const newRates = [...localSettings.specialColorRates];
@@ -690,11 +677,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                                   handleChange('specialColorRates', newRates);
                                               }}
                                           />
-                                          <div className="flex items-center gap-1">
-                                              <span className="text-[9px] font-bold text-rose-400">Rp</span>
+                                          <div className="flex items-center gap-2">
+                                              <span className="text-[10px] font-medium text-mute">RP</span>
                                               <input 
                                                   type="number" 
-                                                  className="w-full bg-transparent border-none p-0 text-xs font-black text-emerald-600 focus:ring-0"
+                                                  className="w-full bg-canvas border border-hairline p-2 text-[12px] font-medium text-ink focus:outline-none focus:border-ink"
                                                   value={rate.surchargePerPanel}
                                                   onChange={e => {
                                                       const newRates = [...localSettings.specialColorRates];
@@ -709,19 +696,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                               const newRates = localSettings.specialColorRates.filter((_, i) => i !== idx);
                                               handleChange('specialColorRates', newRates);
                                           }}
-                                          className="text-rose-300 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          className="text-mute hover:text-ink px-2 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest text-[10px] font-medium"
                                       >
-                                          <Trash2 size={14}/>
+                                          HAPUS
                                       </button>
                                   </div>
                               ))}
                               {(!localSettings.specialColorRates || localSettings.specialColorRates.length === 0) && (
-                                  <div className="text-center py-4 text-[10px] text-gray-400 italic font-medium">Belum ada warna spesial.</div>
+                                  <div className="text-center py-4 text-[10px] text-mute uppercase tracking-widest">BELUM ADA WARNA SPESIAL.</div>
                               )}
                           </div>
-                          <div className="mt-3 p-2 bg-amber-50 rounded border border-amber-100 flex items-start gap-1.5">
-                              <Info size={12} className="text-amber-600 shrink-0 mt-0.5"/>
-                              <p className="text-[9px] text-amber-800 leading-tight">Biaya warna spesial dihitung per panel dikali nilai surcharge di atas.</p>
+                          <div className="mt-6 p-4 bg-soft-cloud border border-hairline">
+                              <p className="text-[10px] text-ink leading-relaxed uppercase tracking-widest font-medium">BIAYA WARNA SPESIAL DIHITUNG PER PANEL DIKALI NILAI SURCHARGE DI ATAS.</p>
                           </div>
                       </div>
                     </div>
@@ -730,145 +716,144 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           )}
 
           {activeTab === 'database' && (
-              <div className="space-y-10 animate-fade-in">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <div className={`bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col h-fit ${!isManager ? 'opacity-80 pointer-events-none' : ''}`}>
-                          <div className="flex justify-between items-center mb-6">
-                              <h4 className="font-bold text-gray-800 flex items-center gap-2 uppercase tracking-widest text-xs">
-                                  <Users size={16} className="text-indigo-600"/> Manajemen User & Akses
+              <div className="space-y-[48px] animate-fade-in">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-[48px]">
+                      <div className={`bg-canvas p-6 border border-hairline flex flex-col h-fit ${!isManager ? 'opacity-80 pointer-events-none' : ''}`}>
+                          <div className="flex justify-between items-center mb-[24px]">
+                              <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">
+                                  MANAJEMEN USER & AKSES
                               </h4>
-                              <button onClick={() => setIsUserModalOpen(true)} className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-black shadow-sm flex items-center gap-1 hover:bg-indigo-700 transition-all">
-                                  <UserPlus size={14}/> Tambah User
+                              <button onClick={() => setIsUserModalOpen(true)} className="bg-ink text-canvas px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-mute transition-colors">
+                                  TAMBAH USER
                               </button>
                           </div>
                           
-                          <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin pr-2">
+                          <div className="space-y-4 max-h-[400px] overflow-y-auto">
                               {systemUsers.map(user => (
-                                  <div key={user.uid} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
-                                      <div className="flex items-center gap-3">
-                                          <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black border border-indigo-100 shadow-sm">
+                                  <div key={user.uid} className="bg-canvas p-4 border border-hairline flex justify-between items-center group hover:border-ink transition-colors">
+                                      <div className="flex items-center gap-4">
+                                          <div className="w-12 h-12 border border-ink flex items-center justify-center text-ink font-display text-[24px]">
                                               {(user.displayName || 'U')[0].toUpperCase()}
                                           </div>
                                           <div>
-                                              <p className="text-sm font-black text-gray-800 uppercase tracking-tighter leading-none">{user.displayName || 'User'}</p>
-                                              <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">{user.role || 'Staff'}</p>
+                                              <p className="text-[14px] font-medium text-ink uppercase">{user.displayName || 'USER'}</p>
+                                              <p className="text-[10px] text-mute font-medium mt-1 uppercase tracking-widest">{user.role || 'STAFF'}</p>
                                           </div>
                                       </div>
-                                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <button onClick={() => handleResetPassword(user.email!)} className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors" title="Kirim Email Reset Password">
-                                              <MailCheck size={16}/>
+                                      <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => handleResetPassword(user.email!)} className="text-[10px] font-medium uppercase tracking-widest text-ink hover:underline">
+                                              RESET PW
                                           </button>
-                                          <button onClick={() => handleDeleteUser(user.uid)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus User">
-                                              <Trash2 size={16}/>
+                                          <button onClick={() => handleDeleteUser(user.uid)} className="text-[10px] font-medium uppercase tracking-widest text-ink hover:underline">
+                                              HAPUS
                                           </button>
                                       </div>
                                   </div>
                               ))}
                           </div>
-                          {!isManager && <div className="mt-4 p-3 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100 flex items-center gap-2"><ShieldAlert size={14}/> Hanya Manager yang dapat mendaftarkan/menghapus user.</div>}
+                          {!isManager && <div className="mt-[24px] p-4 bg-soft-cloud border border-ink text-ink text-[10px] font-medium uppercase tracking-widest">HANYA MANAGER YANG DAPAT MENDAFTARKAN/MENGHAPUS USER.</div>}
                       </div>
 
-                      <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm h-fit">
-                          <h4 className="font-bold text-gray-800 flex items-center gap-2 uppercase tracking-widest text-xs mb-6">
-                              <Lock size={16} className="text-indigo-600"/> Keamanan Akun Anda
+                      <div className="bg-canvas p-6 border border-hairline h-fit">
+                          <h4 className="font-medium text-ink uppercase tracking-widest text-[14px] mb-[24px]">
+                              KEAMANAN AKUN ANDA
                           </h4>
-                          <form onSubmit={handleChangePassword} className="space-y-4">
-                              <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-2">
-                                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Akun Terdaftar</p>
-                                  <p className="text-sm font-bold text-indigo-900 mt-1">{auth.currentUser?.email}</p>
+                          <form onSubmit={handleChangePassword} className="space-y-[16px]">
+                              <div className="p-4 bg-soft-cloud border border-hairline mb-4">
+                                  <p className="text-[10px] font-medium text-mute uppercase tracking-widest">AKUN TERDAFTAR</p>
+                                  <p className="text-[14px] font-medium text-ink mt-2 uppercase">{auth.currentUser?.email}</p>
                               </div>
                               <div>
-                                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PASSWORD BARU</label>
                                   <input 
                                       type="password" required 
                                       value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                      className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:bg-white transition-all outline-none font-bold"
+                                      className="w-full p-4 bg-canvas border border-hairline rounded-none focus:outline-none focus:border-ink font-medium text-ink"
                                       placeholder="••••••••"
                                   />
                               </div>
                               <div>
-                                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Konfirmasi Password Baru</label>
+                                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">KONFIRMASI PASSWORD BARU</label>
                                   <input 
                                       type="password" required 
                                       value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                                      className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:bg-white transition-all outline-none font-bold"
+                                      className="w-full p-4 bg-canvas border border-hairline rounded-none focus:outline-none focus:border-ink font-medium text-ink"
                                       placeholder="••••••••"
                                   />
                               </div>
-                              <button type="submit" disabled={isLoading} className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                                  {isLoading ? <Loader2 className="animate-spin" size={18}/> : <RefreshCw size={18}/>}
-                                  GANTI PASSWORD
+                              <button type="submit" disabled={isLoading} className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors mt-4">
+                                  {isLoading ? 'PROCESSING...' : 'GANTI PASSWORD'}
                               </button>
                           </form>
                       </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className={`bg-gray-50 p-6 rounded-2xl border border-gray-200 ${restrictedClass}`}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-[48px]">
+                    <div className={`bg-canvas p-6 border border-hairline ${restrictedClass}`}>
                         <RestrictedOverlay/>
-                        <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-bold text-gray-700 flex items-center gap-2 uppercase tracking-widest text-xs">
-                                <Wrench size={16} className="text-gray-500"/> Daftar Mekanik Produksi
+                        <div className="flex justify-between items-center mb-[24px]">
+                            <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">
+                                DAFTAR MEKANIK PRODUKSI
                             </h4>
-                            <button onClick={() => addItem('mechanicNames', '')} className="text-xs bg-white text-indigo-700 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all flex items-center gap-1">
-                                <Plus size={14}/> Tambah Mekanik
+                            <button onClick={() => addItem('mechanicNames', '')} className="border border-hairline hover:border-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-ink transition-colors">
+                                TAMBAH MEKANIK
                             </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto scrollbar-thin pr-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
                             {(localSettings.mechanicNames || []).map((mech, idx) => (
-                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-white p-1 rounded-xl border border-gray-100 shadow-sm focus-within:border-indigo-300 transition-all">
-                                    <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-sm font-black text-gray-800 uppercase" value={mech} onChange={e => handleArrayChange('mechanicNames', idx, e.target.value)} />
-                                    <button onClick={() => removeItem('mechanicNames', idx)} className="shrink-0 text-red-300 hover:text-red-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 rounded-lg">
-                                        <Trash2 size={16}/>
+                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors">
+                                    <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-[12px] font-medium text-ink uppercase" value={mech} onChange={e => handleArrayChange('mechanicNames', idx, e.target.value)} />
+                                    <button onClick={() => removeItem('mechanicNames', idx)} className="shrink-0 text-mute hover:text-ink px-3 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium uppercase tracking-widest">
+                                        HAPUS
                                     </button>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <div className={`bg-gray-50 p-6 rounded-2xl border border-gray-200 ${restrictedClass}`}>
+                    <div className={`bg-canvas p-6 border border-hairline ${restrictedClass}`}>
                         <RestrictedOverlay/>
-                        <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-bold text-gray-700 flex items-center gap-2 uppercase tracking-widest text-xs">
-                                <ShieldCheck size={16} className="text-indigo-500"/> Daftar Role / Hak Akses
+                        <div className="flex justify-between items-center mb-[24px]">
+                            <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">
+                                DAFTAR ROLE / HAK AKSES
                             </h4>
-                            <button onClick={() => addItem('roleOptions', '')} className="text-xs bg-white text-indigo-700 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all flex items-center gap-1">
-                                <Plus size={14}/> Tambah Role
+                            <button onClick={() => addItem('roleOptions', '')} className="border border-hairline hover:border-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-ink transition-colors">
+                                TAMBAH ROLE
                             </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto scrollbar-thin pr-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
                             {(localSettings.roleOptions || []).map((role, idx) => (
-                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-white p-1 rounded-xl border border-gray-100 shadow-sm focus-within:border-indigo-300 transition-all">
-                                    <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-sm font-black text-indigo-700 uppercase" value={role} onChange={e => handleArrayChange('roleOptions', idx, e.target.value)} />
-                                    <button onClick={() => removeItem('roleOptions', idx)} className="shrink-0 text-red-300 hover:text-red-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 rounded-lg">
-                                        <Trash2 size={16}/>
+                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors">
+                                    <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-[12px] font-medium text-ink uppercase" value={role} onChange={e => handleArrayChange('roleOptions', idx, e.target.value)} />
+                                    <button onClick={() => removeItem('roleOptions', idx)} className="shrink-0 text-mute hover:text-ink px-3 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium uppercase tracking-widest">
+                                        HAPUS
                                     </button>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-4 p-3 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100">
-                           <Info size={14} className="inline mr-1"/> Daftar role ini akan muncul sebagai pilihan saat mendaftarkan staff baru.
+                        <div className="mt-[24px] p-4 bg-soft-cloud text-ink text-[10px] font-medium uppercase tracking-widest border border-hairline">
+                           DAFTAR ROLE INI AKAN MUNCUL SEBAGAI PILIHAN SAAT MENDAFTARKAN STAFF BARU.
                         </div>
                     </div>
                   </div>
 
-                  <div className={`bg-gray-50 p-6 rounded-2xl border border-gray-200 ${restrictedClass}`}>
+                  <div className={`bg-canvas p-6 border border-hairline ${restrictedClass}`}>
                       <RestrictedOverlay/>
-                      <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-bold text-gray-700 flex items-center gap-2 uppercase tracking-widest text-xs">
-                              <Calendar size={16} className="text-rose-500"/> Pengaturan Kalender Kerja (Libur Internal/Nasional)
+                      <div className="flex justify-between items-center mb-[24px]">
+                          <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">
+                              PENGATURAN KALENDER KERJA (LIBUR INTERNAL/NASIONAL)
                           </h4>
                       </div>
-                      <p className="text-xs text-gray-500 mb-4">
-                          Hari Minggu secara otomatis dihitung sebagai hari libur. Silakan tambahkan tanggal khusus (format YYYY-MM-DD) yang dihitung sebagai hari libur untuk keperluan akurasi perhitungan SLA dan Performa Mingguan.
+                      <p className="text-[10px] text-mute uppercase tracking-widest leading-relaxed mb-[24px]">
+                          HARI MINGGU SECARA OTOMATIS DIHITUNG SEBAGAI HARI LIBUR. SILAKAN TAMBAHKAN TANGGAL KHUSUS (FORMAT YYYY-MM-DD) YANG DIHITUNG SEBAGAI HARI LIBUR UNTUK KEPERLUAN AKURASI PERHITUNGAN SLA DAN PERFORMA MINGGUAN.
                       </p>
                       
-                      <div className="flex flex-col md:flex-row gap-4 mb-4">
-                          <div className="flex items-center gap-2 w-full md:w-auto">
+                      <div className="flex flex-col md:flex-row gap-4 mb-[24px]">
+                          <div className="flex items-center gap-4 w-full md:w-auto">
                               <input 
                                   type="date" 
                                   id="newHolidayInput"
-                                  className="w-full md:w-auto p-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:ring-2 focus:ring-rose-500"
+                                  className="w-full md:w-auto p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase"
                               />
                               <button 
                                   onClick={() => {
@@ -881,28 +866,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                           el.value = '';
                                       }
                                   }}
-                                  className="shrink-0 text-xs bg-rose-600 text-white px-4 py-2.5 rounded-lg font-bold border border-rose-600 hover:bg-rose-700 shadow-sm transition-all flex items-center gap-2"
+                                  className="shrink-0 bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
                               >
-                                  <Plus size={14}/> Tambah Tanggal
+                                  TAMBAH TANGGAL
                               </button>
                           </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto scrollbar-thin">
+                      <div className="flex flex-wrap gap-4 max-h-[300px] overflow-y-auto">
                           {(localSettings.internalHolidays || []).map((dateStr, idx) => (
-                              <div key={idx} className="flex items-center gap-2 bg-white p-2 px-3 rounded-xl border border-rose-100 shadow-sm transition-all">
-                                  <span className="text-sm font-black text-rose-700">{dateStr}</span>
+                              <div key={idx} className="flex items-center gap-4 bg-canvas p-4 border border-hairline transition-colors">
+                                  <span className="text-[14px] font-medium text-ink">{dateStr}</span>
                                   <button onClick={() => {
                                       const newHolidays = [...(localSettings.internalHolidays || [])];
                                       newHolidays.splice(idx, 1);
                                       handleChange('internalHolidays', newHolidays);
-                                  }} className="text-rose-300 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors">
-                                      <Trash2 size={14}/>
+                                  }} className="text-[10px] font-medium text-mute hover:text-ink uppercase tracking-widest">
+                                      HAPUS
                                   </button>
                               </div>
                           ))}
                           {(!localSettings.internalHolidays || localSettings.internalHolidays.length === 0) && (
-                              <div className="w-full text-center py-4 text-xs text-gray-400 italic">Belum ada hari libur khusus yang ditambahkan.</div>
+                              <div className="w-full text-center py-8 text-[10px] text-mute uppercase tracking-widest">BELUM ADA HARI LIBUR KHUSUS YANG DITAMBAHKAN.</div>
                           )}
                       </div>
                   </div>
@@ -910,54 +895,49 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           )}
 
           {activeTab === 'insurance' && (
-              <div className={`space-y-6 animate-fade-in ${restrictedClass}`}>
+              <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
 
-                  {/* Header */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div>
-                          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><ShieldCheck className="text-indigo-600" size={20}/> Database Asuransi & Aturan Diskon</h3>
-                          <p className="text-xs text-gray-500 mt-1">Nilai diskon yang ditetapkan di sini akan <strong>otomatis diterapkan</strong> saat membuat estimasi baru berdasarkan nama asuransi unit kendaraan.</p>
+                          <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest">DATABASE ASURANSI & ATURAN DISKON</h3>
+                          <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">NILAI DISKON YANG DITETAPKAN DI SINI AKAN OTOMATIS DITERAPKAN SAAT MEMBUAT ESTIMASI BARU BERDASARKAN NAMA ASURANSI UNIT KENDARAAN.</p>
                       </div>
                       <button
                           onClick={() => {
                               const current = localSettings.insuranceOptions || [];
                               handleChange('insuranceOptions', [...current, { name: '', jasa: 0, part: 0 }]);
                           }}
-                          className="flex-shrink-0 flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-indigo-700 shadow-md transition-all active:scale-95"
+                          className="flex-shrink-0 bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
                       >
-                          <Plus size={16}/> Tambah Asuransi
+                          TAMBAH ASURANSI
                       </button>
                   </div>
 
-                  {/* Info Banner */}
-                  <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
-                      <Info size={18} className="text-blue-600 shrink-0 mt-0.5"/>
-                      <div className="text-xs text-blue-800 leading-relaxed">
-                          <strong>Cara Kerja Auto-Fill:</strong> Ketika SA membuka form estimasi untuk unit dengan asuransi <em>"Garda Oto Ins"</em>, sistem akan otomatis mengisi kolom Diskon Jasa dan Diskon Part sesuai angka yang tersimpan di sini. SA tetap dapat mengubah nilai tersebut secara manual jika diperlukan.
+                  <div className="flex items-start gap-4 bg-soft-cloud border border-hairline p-6">
+                      <div className="text-[10px] text-ink leading-relaxed uppercase tracking-widest font-medium">
+                          CARA KERJA AUTO-FILL: KETIKA SA MEMBUKA FORM ESTIMASI UNTUK UNIT DENGAN ASURANSI "GARDA OTO INS", SISTEM AKAN OTOMATIS MENGISI KOLOM DISKON JASA DAN DISKON PART SESUAI ANGKA YANG TERSIMPAN DI SINI. SA TETAP DAPAT MENGUBAH NILAI TERSEBUT SECARA MANUAL JIKA DIPERLUKAN.
                       </div>
                   </div>
 
-                  {/* Table */}
-                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-canvas border border-hairline overflow-hidden">
                       <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                              <thead className="bg-gray-50 border-b border-gray-100">
+                          <table className="w-full text-left">
+                              <thead className="bg-soft-cloud border-b border-hairline text-mute uppercase font-medium text-[10px] tracking-widest">
                                   <tr>
-                                      <th className="px-5 py-3.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest w-8">#</th>
-                                      <th className="px-5 py-3.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Asuransi / Rekanan</th>
-                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-indigo-500 uppercase tracking-widest w-52">Diskon Jasa (%)</th>
-                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-orange-500 uppercase tracking-widest w-52">Diskon Part (%)</th>
-                                      <th className="px-5 py-3.5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest w-20">Hapus</th>
+                                      <th className="px-6 py-4 font-normal w-12">#</th>
+                                      <th className="px-6 py-4 font-normal">NAMA ASURANSI / REKANAN</th>
+                                      <th className="px-6 py-4 text-center font-normal w-64">DISKON JASA (%)</th>
+                                      <th className="px-6 py-4 text-center font-normal w-64">DISKON PART (%)</th>
+                                      <th className="px-6 py-4 text-center font-normal w-24">AKSI</th>
                                   </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-50">
+                              <tbody className="divide-y divide-hairline">
                                   {(localSettings.insuranceOptions || []).map((ins, idx) => (
-                                      <tr key={idx} className="hover:bg-gray-50/60 transition-colors group">
-                                          <td className="px-5 py-4 text-xs font-bold text-gray-300">{idx + 1}</td>
+                                      <tr key={idx} className="hover:bg-soft-cloud transition-colors group">
+                                          <td className="px-6 py-4 text-[14px] font-medium text-mute">{idx + 1}</td>
 
-                                          {/* Nama Asuransi */}
-                                          <td className="px-5 py-4">
+                                          <td className="px-6 py-4">
                                               <input
                                                   type="text"
                                                   value={ins.name}
@@ -966,86 +946,65 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                                       updated[idx] = { ...updated[idx], name: e.target.value };
                                                       handleChange('insuranceOptions', updated);
                                                   }}
-                                                  placeholder="Nama asuransi..."
-                                                  className="w-full p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm font-bold text-gray-800 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all outline-none placeholder-gray-300"
+                                                  placeholder="NAMA ASURANSI..."
+                                                  className="w-full p-4 bg-canvas border border-hairline focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase"
                                               />
                                           </td>
 
-                                          {/* Diskon Jasa */}
-                                          <td className="px-5 py-4">
-                                              <div className="flex flex-col gap-1.5">
-                                                  <div className="flex items-center gap-2">
-                                                      <input
-                                                          type="number"
-                                                          min="0"
-                                                          max="100"
-                                                          value={ins.jasa}
-                                                          onChange={e => {
-                                                              const updated = [...(localSettings.insuranceOptions || [])];
-                                                              updated[idx] = { ...updated[idx], jasa: Math.min(100, Math.max(0, Number(e.target.value))) };
-                                                              handleChange('insuranceOptions', updated);
-                                                          }}
-                                                          className="w-20 p-2 border border-indigo-100 bg-indigo-50/50 rounded-lg text-sm font-black text-indigo-700 text-center focus:ring-2 focus:ring-indigo-300 outline-none"
-                                                      />
-                                                      <span className="text-indigo-400 font-bold text-xs">%</span>
-                                                      <div className="flex-1 h-2 bg-indigo-100 rounded-full overflow-hidden">
-                                                          <div
-                                                              className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-300"
-                                                              style={{ width: `${Math.min(ins.jasa, 100)}%` }}
-                                                          />
-                                                      </div>
-                                                  </div>
+                                          <td className="px-6 py-4">
+                                              <div className="flex items-center gap-4">
+                                                  <input
+                                                      type="number"
+                                                      min="0"
+                                                      max="100"
+                                                      value={ins.jasa}
+                                                      onChange={e => {
+                                                          const updated = [...(localSettings.insuranceOptions || [])];
+                                                          updated[idx] = { ...updated[idx], jasa: Math.min(100, Math.max(0, Number(e.target.value))) };
+                                                          handleChange('insuranceOptions', updated);
+                                                      }}
+                                                      className="w-24 p-4 border border-hairline bg-canvas text-[14px] font-medium text-ink text-center focus:outline-none focus:border-ink"
+                                                  />
+                                                  <span className="text-mute font-medium text-[14px]">%</span>
                                               </div>
                                           </td>
 
-                                          {/* Diskon Part */}
-                                          <td className="px-5 py-4">
-                                              <div className="flex flex-col gap-1.5">
-                                                  <div className="flex items-center gap-2">
-                                                      <input
-                                                          type="number"
-                                                          min="0"
-                                                          max="100"
-                                                          value={ins.part}
-                                                          onChange={e => {
-                                                              const updated = [...(localSettings.insuranceOptions || [])];
-                                                              updated[idx] = { ...updated[idx], part: Math.min(100, Math.max(0, Number(e.target.value))) };
-                                                              handleChange('insuranceOptions', updated);
-                                                          }}
-                                                          className="w-20 p-2 border border-orange-100 bg-orange-50/50 rounded-lg text-sm font-black text-orange-700 text-center focus:ring-2 focus:ring-orange-300 outline-none"
-                                                      />
-                                                      <span className="text-orange-400 font-bold text-xs">%</span>
-                                                      <div className="flex-1 h-2 bg-orange-100 rounded-full overflow-hidden">
-                                                          <div
-                                                              className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full transition-all duration-300"
-                                                              style={{ width: `${Math.min(ins.part, 100)}%` }}
-                                                          />
-                                                      </div>
-                                                  </div>
+                                          <td className="px-6 py-4">
+                                              <div className="flex items-center gap-4">
+                                                  <input
+                                                      type="number"
+                                                      min="0"
+                                                      max="100"
+                                                      value={ins.part}
+                                                      onChange={e => {
+                                                          const updated = [...(localSettings.insuranceOptions || [])];
+                                                          updated[idx] = { ...updated[idx], part: Math.min(100, Math.max(0, Number(e.target.value))) };
+                                                          handleChange('insuranceOptions', updated);
+                                                      }}
+                                                      className="w-24 p-4 border border-hairline bg-canvas text-[14px] font-medium text-ink text-center focus:outline-none focus:border-ink"
+                                                  />
+                                                  <span className="text-mute font-medium text-[14px]">%</span>
                                               </div>
                                           </td>
 
-                                          {/* Hapus */}
-                                          <td className="px-5 py-4 text-center">
+                                          <td className="px-6 py-4 text-center">
                                               <button
                                                   onClick={() => {
                                                       const updated = (localSettings.insuranceOptions || []).filter((_, i) => i !== idx);
                                                       handleChange('insuranceOptions', updated);
                                                   }}
-                                                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                                  title="Hapus"
+                                                  className="text-[10px] font-medium uppercase tracking-widest text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity"
                                               >
-                                                  <Trash2 size={15}/>
+                                                  HAPUS
                                               </button>
                                           </td>
                                       </tr>
                                   ))}
                                   {(localSettings.insuranceOptions || []).length === 0 && (
                                       <tr>
-                                          <td colSpan={5} className="py-16 text-center">
-                                              <ShieldCheck size={40} className="mx-auto text-gray-200 mb-3"/>
-                                              <p className="text-sm font-bold text-gray-400">Belum ada data asuransi.</p>
-                                              <p className="text-xs text-gray-300 mt-1">Klik "Tambah Asuransi" untuk mulai mengisi database.</p>
+                                          <td colSpan={5} className="py-[48px] text-center">
+                                              <p className="text-[12px] font-medium text-mute uppercase tracking-widest">BELUM ADA DATA ASURANSI.</p>
+                                              <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">KLIK "TAMBAH ASURANSI" UNTUK MULAI MENGISI DATABASE.</p>
                                           </td>
                                       </tr>
                                   )}
@@ -1053,52 +1012,48 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                           </table>
                       </div>
 
-                      {/* Footer Summary */}
                       {(localSettings.insuranceOptions || []).length > 0 && (
-                          <div className="bg-gray-50 border-t border-gray-100 px-5 py-3 flex items-center justify-between">
-                              <span className="text-xs text-gray-400 font-medium">{(localSettings.insuranceOptions || []).length} rekanan asuransi terdaftar</span>
-                              <span className="text-[10px] bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                                  <CheckCircle2 size={11}/> Aktif — otomatis diterapkan ke Estimasi
+                          <div className="bg-soft-cloud border-t border-hairline px-6 py-4 flex items-center justify-between">
+                              <span className="text-[10px] text-mute font-medium uppercase tracking-widest">{(localSettings.insuranceOptions || []).length} REKANAN ASURANSI TERDAFTAR</span>
+                              <span className="text-[10px] bg-canvas border border-ink text-ink font-medium px-4 py-2 uppercase tracking-widest">
+                                  AKTIF — OTOMATIS DITERAPKAN KE ESTIMASI
                               </span>
                           </div>
                       )}
                   </div>
 
-                  {/* Save reminder */}
-                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                      <Save size={14} className="text-amber-600 shrink-0"/>
-                      <p className="text-xs text-amber-800 font-medium">Jangan lupa klik <strong>"Simpan Perubahan"</strong> di bagian atas halaman setelah selesai mengedit.</p>
+                  <div className="flex items-center gap-4 p-6 bg-canvas border border-ink">
+                      <p className="text-[10px] text-ink font-medium uppercase tracking-widest">JANGAN LUPA KLIK "SIMPAN PERUBAHAN" DI BAGIAN ATAS HALAMAN SETELAH SELESAI MENGEDIT.</p>
                   </div>
               </div>
           )}
       </div>
 
-      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title="Daftarkan User Baru">
-          <form onSubmit={handleCreateUser} className="space-y-5">
-              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 flex items-start gap-3 mb-4">
-                  <Info className="text-amber-600 mt-1 shrink-0" size={20}/>
-                  <p className="text-xs text-amber-800 leading-relaxed font-medium">Password awal wajib diisi untuk membuat akun login baru. Jika user sudah punya akun, password ini akan diabaikan.</p>
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title="DAFTARKAN USER BARU">
+          <form onSubmit={handleCreateUser} className="space-y-[24px]">
+              <div className="bg-soft-cloud p-6 border border-hairline mb-[24px]">
+                  <p className="text-[10px] text-ink leading-relaxed font-medium uppercase tracking-widest">PASSWORD AWAL WAJIB DIISI UNTUK MEMBUAT AKUN LOGIN BARU. JIKA USER SUDAH PUNYA AKUN, PASSWORD INI AKAN DIABAIKAN.</p>
               </div>
               <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Aktif (Login ID) *</label>
-                  <input type="email" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 font-bold" placeholder="user@reforma.com"/>
+                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">EMAIL AKTIF (LOGIN ID) *</label>
+                  <input type="email" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" placeholder="USER@REFORMA.COM"/>
               </div>
               <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password Awal (Min 6 Karakter) *</label>
-                  <input type="text" required value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 font-bold" placeholder="Password123"/>
+                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PASSWORD AWAL (MIN 6 KARAKTER) *</label>
+                  <input type="text" required value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" placeholder="PASSWORD123"/>
               </div>
               <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap Tampilan *</label>
-                  <input type="text" required value={userForm.displayName} onChange={e => setUserForm({...userForm, displayName: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 font-bold uppercase" placeholder="Nama Staff..."/>
+                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA LENGKAP TAMPILAN *</label>
+                  <input type="text" required value={userForm.displayName} onChange={e => setUserForm({...userForm, displayName: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" placeholder="NAMA STAFF..."/>
               </div>
               <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Hak Akses / Role *</label>
-                  <select required value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-indigo-50 font-bold">
+                  <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">HAK AKSES / ROLE *</label>
+                  <select required value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase">
                       {localSettings.roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
               </div>
-              <button type="submit" disabled={isLoading} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black shadow-xl hover:bg-indigo-700 flex items-center justify-center gap-2 transform active:scale-95 transition-all">
-                  {isLoading ? <Loader2 className="animate-spin" size={20}/> : <><UserPlus size={20}/> SIMPAN & AKTIFKAN AKSES</>}
+              <button type="submit" disabled={isLoading} className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors mt-4">
+                  {isLoading ? 'PROCESSING...' : 'DAFTARKAN USER'}
               </button>
           </form>
       </Modal>

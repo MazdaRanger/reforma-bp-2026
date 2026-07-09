@@ -3,10 +3,6 @@ import { Job, Settings, UserPermissions, MechanicAssignment, InventoryItem } fro
 import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { formatPoliceNumber, formatDateIndo, formatCurrency } from '../../utils/helpers';
-import { 
-    Hammer, Clock, CheckCircle, User, 
-    Calendar, ChevronRight, Search, Wrench, BarChart2, MessageSquare, Info, AlertCircle, PackageSearch, CheckCircle2, Crown, Timer, CalendarClock, CalendarDays, Save, X, Layers, History
-} from 'lucide-react';
 import Modal from '../ui/Modal';
 
 interface JobControlViewProps {
@@ -102,11 +98,11 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           }
       });
 
-      if (readyCount === parts.length) return { label: 'PART READY', color: 'bg-emerald-100 text-emerald-700' };
-      if (readyCount > 0) return { label: 'PARTIAL READY', color: 'bg-blue-100 text-blue-700' };
-      if (indentCount > 0) return { label: 'PART INDENT', color: 'bg-red-100 text-red-700' };
-      if (onOrderCount > 0) return { label: 'ON ORDER', color: 'bg-orange-100 text-orange-700' };
-      return { label: 'NEED ORDER', color: 'bg-gray-100 text-gray-600' };
+      if (readyCount === parts.length) return { label: 'PART READY', style: 'text-ink border-ink' };
+      if (readyCount > 0) return { label: 'PARTIAL READY', style: 'text-ink border-ink' };
+      if (indentCount > 0) return { label: 'PART INDENT', style: 'text-mute border-mute' };
+      if (onOrderCount > 0) return { label: 'ON ORDER', style: 'text-mute border-mute' };
+      return { label: 'NEED ORDER', style: 'text-mute border-mute opacity-50' };
   };
 
   const boardData = useMemo(() => {
@@ -262,16 +258,13 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
       showNotification("Request terkirim ke Admin. Unit dipindah ke Persiapan.", "success");
   };
 
-  // --- NEW ASSIGNMENT LOGIC WITH PANEL COUNT ---
   const handleAssignMechanic = async (job: Job, mechanicName: string) => {
       let currentStage = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
       
-      // Calculate total panels from Estimation for reference
       const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
       
-      // Prompt for Panel Count
       const inputPanel = prompt(`Masukkan jumlah panel yang dikerjakan oleh ${mechanicName} untuk tahap ${currentStage}?`, totalPanelValue.toString());
-      if (inputPanel === null) return; // Cancelled
+      if (inputPanel === null) return; 
       const assignedPanels = parseFloat(inputPanel) || 0;
 
       const currentAssignments = [...(job.assignedMechanics || [])];
@@ -281,7 +274,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           name: mechanicName, 
           stage: currentStage, 
           assignedAt: new Date().toISOString(),
-          panelCount: assignedPanels // Save specific panel count
+          panelCount: assignedPanels 
       };
 
       if (existingIdx >= 0) currentAssignments[existingIdx] = assignment;
@@ -292,16 +285,12 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
       showNotification(`Assigned ${mechanicName} (${assignedPanels} Panels).`, "success");
   };
 
-  // --- REPORT AGGREGATION ---
   const aggregatedReport = useMemo(() => {
       const report: Record<string, { totalUnit: number, totalPanel: number, details: any[] }> = {};
       const start = new Date(reportStartDate);
       const end = new Date(reportEndDate);
       end.setHours(23, 59, 59);
 
-      // Filter jobs: Closed or Active within range based on assignment date or closing date
-      // For payroll, we usually look at completed jobs or assignments made in period
-      // Let's iterate all jobs and check assignments within date range
       jobs.forEach(job => {
           if (!job.assignedMechanics) return;
           
@@ -310,7 +299,6 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
               if (assignDate >= start && assignDate <= end) {
                   if (!report[asg.name]) report[asg.name] = { totalUnit: 0, totalPanel: 0, details: [] };
                   
-                  // Use specific panel count if available, else 0 (or fallback logic if needed)
                   const panels = asg.panelCount || 0; 
                   
                   report[asg.name].totalUnit++;
@@ -329,126 +317,141 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
   }, [jobs, reportStartDate, reportEndDate]);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-4 h-[calc(100vh-100px)] flex flex-col">
+    <div className="animate-fade-in pb-[48px] h-full flex flex-col">
         {/* HEADER & FILTER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/80 backdrop-blur-lg p-4 rounded-xl border border-white/60 shadow-lg shadow-indigo-100/50 shrink-0">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-200 text-white"><Hammer size={24}/></div>
-                <div><h1 className="text-2xl font-bold text-slate-800">Job Control Board</h1><p className="text-sm text-slate-500 font-medium">Monitoring Produksi & Gaji Mekanik</p></div>
+        <div className="border-b border-hairline pb-[24px] mb-[24px] flex flex-col md:flex-row justify-between items-start md:items-end gap-4 shrink-0">
+            <div>
+                <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">JOB CONTROL</h1>
+                <p className="text-[16px] text-mute font-normal mt-[18px]">Monitoring Produksi & Gaji Mekanik</p>
             </div>
-            <div className="flex items-center gap-3">
-                <div className="relative"><Search className="absolute left-3 top-2.5 text-slate-400" size={18}/><input type="text" placeholder="Cari Unit / Nopol..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-100 w-64 shadow-sm"/></div>
-                <button onClick={() => setShowProductivityReport(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-200"><BarChart2 size={16}/> Laporan Gaji (Panel)</button>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="relative flex-1 md:w-64">
+                    <input 
+                        type="text" 
+                        placeholder="SEARCH NOPOL..." 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink"
+                    />
+                </div>
+                <button 
+                    onClick={() => setShowProductivityReport(true)} 
+                    className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors whitespace-nowrap"
+                >
+                    LAPORAN GAJI
+                </button>
             </div>
         </div>
 
         {/* MECHANIC LOAD BAR */}
-        <div className="flex gap-4 overflow-x-auto pb-2 shrink-0 scrollbar-thin">
+        <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 scrollbar-hide border-b border-hairline mb-[24px]">
             {(settings.mechanicNames || []).map(mech => (
-                <div key={mech} className="bg-white/80 backdrop-blur-md px-3 py-2 rounded-xl border border-white/60 shadow-sm flex items-center gap-3 min-w-[150px]">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600"><User size={14}/></div>
-                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Load Stall</p><p className="text-xs font-bold text-slate-800">{mech}</p></div>
-                    <div className={`ml-auto px-2 py-0.5 rounded text-xs font-bold ${mechanicWorkload[mech] > 2 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{mechanicWorkload[mech] || 0}</div>
+                <div key={mech} className="bg-canvas border border-hairline px-4 py-3 flex items-center gap-4 min-w-[180px] shrink-0">
+                    <div>
+                        <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">LOAD STALL</p>
+                        <p className="text-[14px] font-medium text-ink uppercase tracking-widest">{mech}</p>
+                    </div>
+                    <div className={`ml-auto px-3 py-1 border text-[12px] font-medium ${mechanicWorkload[mech] > 2 ? 'border-ink text-ink bg-soft-cloud' : 'border-hairline text-ink'}`}>
+                        {mechanicWorkload[mech] || 0}
+                    </div>
                 </div>
             ))}
         </div>
 
         {/* KANBAN BOARD */}
-        <div className="flex-grow overflow-x-auto pb-4">
-            <div className="flex gap-4 h-full min-w-max px-2">
+        <div className="flex-grow overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
+            <div className="flex gap-6 h-full min-w-max">
                 {STAGES.map((stage) => {
                     const jobsInStage = boardData[stage] || [];
                     const isPersiapan = stage === "Persiapan Kendaraan";
                     const isFinal = stage === "Selesai (Tunggu Pengambilan)";
                     
                     return (
-                        <div key={stage} className={`w-80 flex flex-col h-full rounded-2xl border border-white/40 shadow-inner ${isPersiapan ? 'bg-amber-50/50 backdrop-blur-sm' : isFinal ? 'bg-emerald-50/50 backdrop-blur-sm' : 'bg-slate-100/50 backdrop-blur-sm'}`}>
-                            <div className="p-3 border-b border-slate-200/50 bg-white/60 rounded-t-2xl flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
-                                <div className="flex items-center gap-2">
-                                    {isPersiapan ? <PackageSearch size={16} className="text-amber-500"/> : isFinal ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Wrench size={16} className="text-slate-400"/>}
-                                    <h3 className={`font-bold text-sm uppercase ${isPersiapan ? 'text-amber-700' : isFinal ? 'text-emerald-700' : 'text-slate-700'}`}>{stage}</h3>
-                                </div>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isFinal ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>{jobsInStage.length}</span>
+                        <div key={stage} className="w-[340px] flex flex-col h-full bg-soft-cloud border border-hairline">
+                            <div className="p-4 border-b border-hairline bg-canvas flex justify-between items-center sticky top-0 z-10">
+                                <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest">{stage}</h3>
+                                <span className="text-[10px] font-medium px-2 py-1 border border-ink text-ink">{jobsInStage.length}</span>
                             </div>
-                            <div className="p-2 flex-grow overflow-y-auto space-y-3 scrollbar-thin">
+                            <div className="p-4 flex-grow overflow-y-auto space-y-4 scrollbar-hide">
                                 {jobsInStage.map(job => {
                                     const isAdminPending = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan);
-                                    
-                                    // Get Mechanic info specific to THIS stage if exists
                                     const stageAssignment = job.assignedMechanics?.find(a => a.stage === (isAdminPending ? 'Persiapan Kendaraan' : job.statusPekerjaan || 'Bongkar'));
                                     const currentPIC = stageAssignment?.name;
                                     const picPanels = stageAssignment?.panelCount;
-
                                     const { daysRunning, daysRemaining } = getJobProgress(job);
                                     const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
                                     const partStatus = getPartStatus(job);
                                     
                                     return (
-                                        <div key={job.id} className={`bg-white p-3 rounded-xl shadow-sm border-l-4 transition-all hover:shadow-lg hover:-translate-y-1 relative ${job.isVVIP ? 'border-l-yellow-400 ring-2 ring-yellow-200' : isAdminPending ? 'border-l-amber-500 ring-1 ring-amber-100' : isFinal ? 'border-l-emerald-500' : 'border-l-blue-500'}`}>
-                                            {job.isVVIP && <div className="absolute -top-2 -right-2 bg-yellow-400 text-white p-1 rounded-full shadow-sm z-10"><Crown size={14} fill="currentColor"/></div>}
+                                        <div key={job.id} className={`bg-canvas border p-4 transition-colors relative ${job.isVVIP ? 'border-ink shadow-[4px_4px_0_0_#111111]' : isAdminPending ? 'border-mute/50' : isFinal ? 'border-hairline opacity-75' : 'border-hairline hover:border-ink'}`}>
+                                            {job.isVVIP && <div className="absolute top-0 right-0 bg-ink text-canvas text-[8px] font-medium uppercase tracking-widest px-2 py-1">VVIP</div>}
                                             
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="font-extrabold text-slate-800 text-sm tracking-tight">{job.policeNumber}</span>
-                                                <div className="flex gap-1">
-                                                    <button onClick={() => toggleVVIP(job)} className={`p-1 rounded transition-colors ${job.isVVIP ? 'text-yellow-500 bg-yellow-50' : 'text-slate-300 hover:text-yellow-500'}`} title="Set VVIP"><Crown size={14}/></button>
-                                                    <button onClick={() => openScheduleModal(job)} className="p-1 hover:bg-slate-100 rounded transition-colors text-blue-600" title="Atur Jadwal"><CalendarDays size={14}/></button>
-                                                    <button onClick={() => setViewHistoryJob(job)} className="p-1 hover:bg-slate-100 rounded transition-colors"><History size={14} className="text-slate-400"/></button>
+                                            <div className="flex justify-between items-start mb-4 border-b border-hairline pb-4">
+                                                <div>
+                                                    <span className="font-display text-[24px] text-ink leading-none">{job.policeNumber}</span>
+                                                    <p className="text-[10px] font-medium text-mute uppercase tracking-widest mt-2 truncate max-w-[200px]">{job.carModel} | {job.customerName}</p>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <button onClick={() => openScheduleModal(job)} className="text-[10px] border border-hairline hover:border-ink px-2 py-1 uppercase tracking-widest text-ink transition-colors">SCHED</button>
+                                                    <button onClick={() => toggleVVIP(job)} className="text-[10px] border border-hairline hover:border-ink px-2 py-1 uppercase tracking-widest text-ink transition-colors">VVIP</button>
                                                 </div>
                                             </div>
-                                            <p className="text-xs font-bold text-slate-500 mb-2 truncate uppercase">{job.carModel} | {job.customerName}</p>
                                             
-                                            <div className="flex justify-between items-center text-xs text-slate-500 mb-2 border-b border-slate-100 pb-1">
-                                                <div className="flex items-center gap-1"><User size={12}/> {job.namaSA || 'No SA'}</div>
-                                                <div className="font-bold bg-slate-100 px-1.5 py-0.5 rounded">{totalPanelValue.toFixed(1)} Panels</div>
+                                            <div className="flex justify-between items-center text-[10px] font-medium text-mute uppercase tracking-widest mb-4">
+                                                <div className="border border-hairline px-2 py-1">SA: {job.namaSA || 'NO SA'}</div>
+                                                <div className="border border-hairline px-2 py-1">{totalPanelValue.toFixed(1)} PNL</div>
                                             </div>
 
-                                            {/* Progress Indicators */}
                                             {!isAdminPending && !isFinal && (
-                                                <div className="flex gap-2 my-2">
-                                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${daysRunning > 14 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                                        <Timer size={12}/> {daysRunning} Hari Jalan
+                                                <div className="flex gap-2 mb-4">
+                                                    <div className="flex-1 text-center border border-hairline px-2 py-1 text-[10px] font-medium text-ink uppercase tracking-widest">
+                                                        {daysRunning} D RUN
                                                     </div>
                                                     {daysRemaining !== null && (
-                                                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${daysRemaining < 0 ? 'bg-red-50 text-red-600 border-red-100' : daysRemaining < 3 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                                                            <CalendarClock size={12}/> {daysRemaining < 0 ? `Telat ${Math.abs(daysRemaining)} Hr` : `Sisa ${daysRemaining} Hr`}
+                                                        <div className={`flex-1 text-center border px-2 py-1 text-[10px] font-medium uppercase tracking-widest ${daysRemaining < 0 ? 'border-ink text-ink bg-soft-cloud' : 'border-hairline text-mute'}`}>
+                                                            {daysRemaining < 0 ? `LATE ${Math.abs(daysRemaining)} D` : `LEFT ${daysRemaining} D`}
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
 
                                             {isAdminPending && (
-                                                <div className="space-y-2 mb-2">
-                                                    <div className="px-2 py-1 bg-amber-50 rounded border border-amber-100 text-[10px] font-bold text-amber-700 uppercase">PENDING: {job.statusKendaraan}</div>
-                                                    {/* PART STATUS BADGE FOR PENDING JOBS */}
+                                                <div className="space-y-2 mb-4">
+                                                    <div className="px-2 py-1 bg-soft-cloud border border-hairline text-[10px] font-medium text-ink uppercase tracking-widest text-center truncate">
+                                                        PENDING: {job.statusKendaraan}
+                                                    </div>
                                                     {partStatus && (
-                                                        <div className={`px-2 py-1 rounded border text-[10px] font-bold flex items-center gap-1 ${partStatus.color}`}>
-                                                            <PackageSearch size={12}/> {partStatus.label}
+                                                        <div className={`px-2 py-1 border text-[10px] font-medium uppercase tracking-widest text-center ${partStatus.style}`}>
+                                                            {partStatus.label}
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
                                             
-                                            <div className="mb-3">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">PIC (Teknisi):</label>
+                                            <div className="mb-4 bg-soft-cloud p-3 border border-hairline">
+                                                <label className="text-[10px] font-medium text-mute uppercase tracking-widest block mb-2">PIC STALL</label>
                                                 {currentPIC ? (
-                                                    <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded p-1.5 cursor-pointer hover:bg-indigo-100" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
-                                                        <User size={12} className="text-indigo-600"/>
-                                                        <span className="text-xs font-bold text-indigo-700 truncate">{currentPIC}</span>
-                                                        {picPanels && <span className="text-[10px] bg-white px-1 rounded border border-indigo-200 ml-auto">{picPanels} Pnl</span>}
+                                                    <div className="flex items-center justify-between cursor-pointer border border-ink bg-canvas px-3 py-2" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
+                                                        <span className="text-[12px] font-medium text-ink uppercase tracking-widest truncate">{currentPIC}</span>
+                                                        {picPanels && <span className="text-[10px] font-medium text-ink uppercase tracking-widest">{picPanels} PNL</span>}
                                                     </div>
                                                 ) : (
-                                                    <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full py-1 border border-dashed border-slate-300 rounded text-xs text-slate-400 hover:text-indigo-600 flex items-center justify-center gap-1"><Wrench size={12}/> Tunjuk Mekanik</button>
+                                                    <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full py-2 border border-hairline hover:border-ink text-[10px] font-medium text-ink uppercase tracking-widest transition-colors bg-canvas">ASSIGN MECHANIC</button>
                                                 )}
                                                 {assigningJobId === job.id && (
-                                                    <div className="mt-2 grid grid-cols-2 gap-1 bg-slate-50 p-2 rounded border border-slate-200 shadow-inner z-20 relative animate-pop-in">
-                                                        {(settings.mechanicNames || []).map(m => <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-1.5 border rounded text-left truncate transition-colors ${currentPIC === m ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-indigo-50'}`}>{m}</button>)}
+                                                    <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in">
+                                                        {(settings.mechanicNames || []).map(m => (
+                                                            <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${currentPIC === m ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
+                                                                {m}
+                                                            </button>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex justify-between items-center pt-2 border-t border-slate-100 mt-2">
-                                                <button onClick={() => handleMoveStage(job, 'prev')} disabled={isPersiapan} className={`p-1.5 rounded-lg border transition-all ${isPersiapan ? 'opacity-0' : 'bg-orange-50 text-orange-600 border-orange-200'}`}><ChevronRight size={18} className="rotate-180"/></button>
-                                                {!isAdminPending && <button onClick={() => handleRequestAddition(job)} className="p-1.5 rounded-lg border border-red-100 bg-red-50 text-red-600" title="Request Tambahan"><AlertCircle size={18}/></button>}
-                                                <button onClick={() => handleMoveStage(job, 'next')} disabled={isFinal} className={`rounded-lg p-1.5 shadow-md transform active:scale-95 transition-all ${isFinal ? 'bg-slate-300 text-white opacity-20' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}><ChevronRight size={18}/></button>
+                                            <div className="flex justify-between items-center pt-4 border-t border-hairline">
+                                                <button onClick={() => handleMoveStage(job, 'prev')} disabled={isPersiapan} className="border border-hairline hover:border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest transition-colors disabled:opacity-30">&lt; REWORK</button>
+                                                {!isAdminPending && <button onClick={() => handleRequestAddition(job)} className="border border-hairline hover:border-ink text-ink px-2 py-2 text-[10px] font-medium uppercase tracking-widest transition-colors">ADD</button>}
+                                                <button onClick={() => handleMoveStage(job, 'next')} disabled={isFinal} className="bg-ink text-canvas hover:bg-mute px-4 py-2 text-[10px] font-medium uppercase tracking-widest transition-colors disabled:opacity-30">NEXT &gt;</button>
                                             </div>
                                         </div>
                                     );
@@ -464,62 +467,52 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
         <Modal 
             isOpen={scheduleModal.isOpen} 
             onClose={() => setScheduleModal({ isOpen: false, job: null, startDate: '', endDate: '' })} 
-            title={scheduleModal.targetStage ? "Mulai Produksi (Start Timer)" : "Atur Jadwal Perbaikan"}
-            maxWidth="max-w-md"
+            title={scheduleModal.targetStage ? "MULAI PRODUKSI (START TIMER)" : "ATUR JADWAL PERBAIKAN"}
         >
             <div className="space-y-6">
                 {scheduleModal.targetStage && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3">
-                        <Info className="text-blue-600 shrink-0 mt-0.5" size={20}/>
-                        <div>
-                            <p className="text-sm font-bold text-blue-800">Unit Memasuki Tahap Produksi</p>
-                            <p className="text-xs text-blue-600 mt-1">Timer durasi pengerjaan akan dimulai dari tanggal ini.</p>
-                        </div>
+                    <div className="bg-soft-cloud border border-hairline p-4">
+                        <p className="text-[12px] font-medium text-ink uppercase tracking-widest">Unit Memasuki Tahap Produksi</p>
+                        <p className="text-[10px] text-mute uppercase tracking-widest mt-1">Timer durasi pengerjaan akan dimulai dari tanggal ini.</p>
                     </div>
                 )}
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Mulai Perbaikan (Start Date)</label>
-                        <div className="relative">
-                            <input 
-                                type="date" 
-                                required
-                                value={scheduleModal.startDate} 
-                                onChange={e => setScheduleModal({...scheduleModal, startDate: e.target.value})}
-                                className="w-full p-3 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
-                            <Calendar className="absolute right-3 top-3 text-slate-400 pointer-events-none" size={18}/>
-                        </div>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Mulai Perbaikan (Start Date)</label>
+                        <input 
+                            type="date" 
+                            required
+                            value={scheduleModal.startDate} 
+                            onChange={e => setScheduleModal({...scheduleModal, startDate: e.target.value})}
+                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                        />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Estimasi Selesai (Target Date)</label>
-                        <div className="relative">
-                            <input 
-                                type="date" 
-                                required
-                                value={scheduleModal.endDate} 
-                                onChange={e => setScheduleModal({...scheduleModal, endDate: e.target.value})}
-                                className="w-full p-3 border border-slate-300 rounded-xl font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
-                            <CalendarClock className="absolute right-3 top-3 text-indigo-400 pointer-events-none" size={18}/>
-                        </div>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Estimasi Selesai (Target Date)</label>
+                        <input 
+                            type="date" 
+                            required
+                            value={scheduleModal.endDate} 
+                            onChange={e => setScheduleModal({...scheduleModal, endDate: e.target.value})}
+                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                        />
                     </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-4 pt-6 border-t border-hairline">
                     <button 
                         onClick={() => setScheduleModal({ isOpen: false, job: null, startDate: '', endDate: '' })} 
-                        className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+                        className="flex-1 py-4 border border-ink text-[12px] font-medium text-ink uppercase tracking-widest hover:bg-soft-cloud transition-colors"
                     >
-                        Batal
+                        BATAL
                     </button>
                     <button 
                         onClick={handleSaveSchedule} 
-                        className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                        className="flex-[2] py-4 bg-ink text-canvas text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
                     >
-                        <Save size={18}/> {scheduleModal.targetStage ? "Mulai & Pindah" : "Simpan Jadwal"}
+                        {scheduleModal.targetStage ? "MULAI & PINDAH" : "SIMPAN JADWAL"}
                     </button>
                 </div>
             </div>
@@ -529,85 +522,83 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
         <Modal 
             isOpen={showProductivityReport} 
             onClose={() => setShowProductivityReport(false)} 
-            title="Laporan Gaji Mekanik Berbasis Panel"
+            title="LAPORAN GAJI MEKANIK BERBASIS PANEL"
             maxWidth="max-w-7xl"
         >
             <div className="space-y-6">
-                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white border border-slate-300 rounded-lg p-2 flex items-center gap-2">
-                            <Calendar size={16} className="text-slate-500"/>
-                            <input type="date" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} className="bg-transparent text-sm font-bold outline-none"/>
-                            <span className="text-slate-400">-</span>
-                            <input type="date" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} className="bg-transparent text-sm font-bold outline-none"/>
+                <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2 border border-hairline bg-soft-cloud p-2">
+                            <input type="date" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} className="bg-transparent text-[12px] font-medium uppercase tracking-widest text-ink outline-none"/>
+                            <span className="text-mute">-</span>
+                            <input type="date" value={reportEndDate} onChange={e => setReportEndDate(e.target.value)} className="bg-transparent text-[12px] font-medium uppercase tracking-widest text-ink outline-none"/>
                         </div>
-                        <div className="text-sm">
-                            <p className="text-slate-500">Tarif Standar:</p>
-                            <p className="font-black text-indigo-600">{formatCurrency(settings.mechanicPanelRate || 0)} / Panel</p>
+                        <div>
+                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest">Tarif Standar:</p>
+                            <p className="text-[14px] font-medium text-ink">{formatCurrency(settings.mechanicPanelRate || 0)} / PANEL</p>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Estimasi Gaji Periode Ini</p>
-                        <p className="text-2xl font-black text-emerald-600">
+                    <div className="md:text-right">
+                        <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">Total Estimasi Gaji Periode Ini</p>
+                        <p className="text-[32px] font-display text-ink leading-none">
                             {formatCurrency(Object.values(aggregatedReport).reduce((acc: number, curr: any) => acc + (curr.totalPanel * (settings.mechanicPanelRate || 0)), 0) as number)}
                         </p>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-800 text-white uppercase text-xs font-bold">
+                <div className="overflow-x-auto bg-canvas border border-hairline">
+                    <table className="w-full text-left">
+                        <thead className="bg-soft-cloud text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
                             <tr>
-                                <th className="p-4">Nama Mekanik</th>
-                                <th className="p-4 text-center">Total Unit</th>
-                                <th className="p-4 text-center">Total Panel</th>
-                                <th className="p-4 text-right">Tarif</th>
-                                <th className="p-4 text-right">Total Gaji</th>
+                                <th className="px-6 py-4 font-normal">Nama Mekanik</th>
+                                <th className="px-6 py-4 text-center font-normal">Total Unit</th>
+                                <th className="px-6 py-4 text-center font-normal">Total Panel</th>
+                                <th className="px-6 py-4 text-right font-normal">Tarif</th>
+                                <th className="px-6 py-4 text-right font-normal">Total Gaji</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-hairline">
                             {Object.entries(aggregatedReport).map(([name, data]: [string, { totalUnit: number, totalPanel: number, details: any[] }]) => (
-                                <tr key={name} className="hover:bg-slate-50">
-                                    <td className="p-4">
-                                        <div className="font-bold text-slate-900">{name}</div>
-                                        <div className="text-xs text-slate-500 mt-1">
-                                            {data.details.length} Assignment Record
+                                <tr key={name} className="hover:bg-soft-cloud transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="text-[14px] font-medium text-ink uppercase tracking-widest">{name}</div>
+                                        <div className="text-[10px] text-mute mt-1 uppercase tracking-widest">
+                                            {data.details.length} ASSIGNMENTS
                                         </div>
                                     </td>
-                                    <td className="p-4 text-center font-bold text-slate-700">{data.totalUnit}</td>
-                                    <td className="p-4 text-center">
-                                        <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-bold border border-indigo-100">
-                                            {data.totalPanel.toFixed(1)} Pnl
+                                    <td className="px-6 py-4 text-center font-medium text-ink">{data.totalUnit}</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="border border-ink text-ink px-2 py-1 text-[12px] font-medium">
+                                            {data.totalPanel.toFixed(1)} PNL
                                         </span>
                                     </td>
-                                    <td className="p-4 text-right text-slate-500">{formatCurrency(settings.mechanicPanelRate || 0)}</td>
-                                    <td className="p-4 text-right font-black text-emerald-600">
+                                    <td className="px-6 py-4 text-right text-mute text-[14px]">{formatCurrency(settings.mechanicPanelRate || 0)}</td>
+                                    <td className="px-6 py-4 text-right font-medium text-ink text-[14px]">
                                         {formatCurrency(data.totalPanel * (settings.mechanicPanelRate || 0))}
                                     </td>
                                 </tr>
                             ))}
                             {Object.keys(aggregatedReport).length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-slate-400 italic">Tidak ada data pekerjaan pada periode ini.</td>
+                                    <td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Tidak ada data pekerjaan pada periode ini.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
                 
-                {/* DETAIL EXPANSION (Simple List for now) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                     {Object.entries(aggregatedReport).map(([name, data]: [string, { totalUnit: number, totalPanel: number, details: any[] }]) => (
-                        <div key={name} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm h-60 overflow-y-auto scrollbar-thin">
-                            <h5 className="font-bold text-slate-800 border-b pb-2 mb-2 sticky top-0 bg-white">Detail: {name}</h5>
-                            <ul className="space-y-2">
+                        <div key={name} className="bg-canvas border border-hairline p-6 h-64 overflow-y-auto scrollbar-hide">
+                            <h5 className="font-medium text-ink uppercase tracking-widest text-[14px] border-b border-hairline pb-4 mb-4 sticky top-0 bg-canvas">DETAIL: {name}</h5>
+                            <ul className="space-y-4">
                                 {data.details.map((d: any, idx: number) => (
-                                    <li key={idx} className="text-xs border-b border-slate-50 pb-1 last:border-0">
-                                        <div className="flex justify-between font-bold">
+                                    <li key={idx} className="border-b border-hairline pb-4 last:border-0 last:pb-0">
+                                        <div className="flex justify-between font-medium text-ink text-[12px] uppercase tracking-widest mb-1">
                                             <span>{d.nopol}</span>
-                                            <span className="text-indigo-600">{d.panels} Pnl</span>
+                                            <span className="border border-ink px-1">{d.panels} PNL</span>
                                         </div>
-                                        <div className="text-slate-500">{formatDateIndo(d.date)} - {d.stage}</div>
+                                        <div className="text-mute text-[10px] uppercase tracking-widest">{formatDateIndo(d.date)} - {d.stage}</div>
                                     </li>
                                 ))}
                             </ul>

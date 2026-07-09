@@ -2,7 +2,6 @@
 import React from 'react';
 import { Job, Settings, UserPermissions } from '../../types';
 import { formatDateIndo, exportToCsv, formatCurrency } from '../../utils/helpers';
-import { Search, Filter, Download } from 'lucide-react';
 
 interface MainDashboardProps {
   allData: Job[];
@@ -32,8 +31,6 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
 
   const handleExportGeneralData = () => {
       const dataToExport = allData.map(job => {
-           const revenueJasa = job.hargaJasa || 0;
-           const revenuePart = job.hargaPart || 0;
            const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
 
           return {
@@ -51,34 +48,25 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
       exportToCsv('Laporan_Data_Unit.csv', dataToExport);
   };
 
-  // LOGIC INTEGRATION: Mapping visual status to System Logic (Admin Control vs Job Control)
   const getStatusConfig = (statusKendaraan: string, statusPekerjaan: string) => {
-      if (!statusKendaraan) return { color: 'bg-muted text-textSecondary', ribbon: '' };
+      let ribbon = '';
+      if (!statusKendaraan) return { ribbon };
 
-      // 1. ADMIN CLAIM CONTROL STAGES (Prioritas Administrasi)
-      if (statusKendaraan.includes('Banding Harga')) return { color: 'bg-red-50 text-destructive border-red-100', ribbon: 'NEGOTIATION' };
-      if (statusKendaraan.includes('Tunggu SPK')) return { color: 'bg-orange-50 text-orange-700 border-orange-100', ribbon: 'WAITING SPK' };
-      if (statusKendaraan.includes('Tunggu Estimasi')) return { color: 'bg-yellow-50 text-yellow-700 border-yellow-100', ribbon: 'ESTIMATING' };
-      
-      // 2. LOGISTIC STAGES
-      if (statusKendaraan.includes('Tunggu Part')) return { color: 'bg-blue-50 text-blue-700 border-blue-100', ribbon: 'WAITING PART' };
-      
-      // 3. JOB CONTROL STAGES (Produksi Aktif)
-      if (statusKendaraan === 'Work In Progress') {
-          // Sub-status berdasarkan progress teknis
-          if (statusPekerjaan === 'Quality Control') return { color: 'bg-purple-50 text-purple-700 border-purple-100', ribbon: 'FINAL QC' };
-          if (statusPekerjaan === 'Finishing') return { color: 'bg-teal-50 text-teal-700 border-teal-100', ribbon: 'FINISHING' };
-          return { color: 'bg-primary/10 text-primary border-primary/20', ribbon: 'PRODUCTION' };
+      if (statusKendaraan.includes('Banding Harga')) ribbon = 'NEGOTIATION';
+      else if (statusKendaraan.includes('Tunggu SPK')) ribbon = 'WAITING SPK';
+      else if (statusKendaraan.includes('Tunggu Estimasi')) ribbon = 'ESTIMATING';
+      else if (statusKendaraan.includes('Tunggu Part')) ribbon = 'WAITING PART';
+      else if (statusKendaraan === 'Work In Progress') {
+          if (statusPekerjaan === 'Quality Control') ribbon = 'FINAL QC';
+          else if (statusPekerjaan === 'Finishing') ribbon = 'FINISHING';
+          else ribbon = 'PRODUCTION';
       }
+      else if (statusKendaraan.includes('Rawat Jalan')) ribbon = 'OUT-PATIENT';
+      else if (statusKendaraan.includes('Booking')) ribbon = 'BOOKED';
+      else if (statusKendaraan.includes('Selesai (Tunggu Pengambilan)')) ribbon = 'READY-TO-GO';
+      else if (statusKendaraan.includes('Sudah Diambil') || statusKendaraan.includes('Selesai')) ribbon = 'DELIVERED';
 
-      if (statusKendaraan.includes('Rawat Jalan')) return { color: 'bg-cyan-50 text-cyan-700 border-cyan-100', ribbon: 'OUT-PATIENT' };
-      if (statusKendaraan.includes('Booking')) return { color: 'bg-sky-50 text-sky-700 border-sky-100', ribbon: 'BOOKED' };
-      
-      // 4. FINISHED / CRC STAGES
-      if (statusKendaraan.includes('Selesai (Tunggu Pengambilan)')) return { color: 'bg-emerald-50 text-emerald-700 border-emerald-100', ribbon: 'READY-TO-GO' };
-      if (statusKendaraan.includes('Sudah Diambil') || statusKendaraan.includes('Selesai')) return { color: 'bg-secondary text-textPrimary border-border', ribbon: 'DELIVERED' };
-
-      return { color: 'bg-muted text-textSecondary border-border', ribbon: '' };
+      return { ribbon };
   };
 
   const handleDelete = (job: Job) => {
@@ -88,113 +76,117 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <div className="animate-fade-in pb-[48px]">
+      
+      {/* FILTER & CONTROLS */}
+      <div className="bg-canvas border border-hairline p-6 mb-[48px]">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="flex-grow w-full lg:w-auto">
-                <div className="flex flex-wrap gap-3 items-center">
-                    <div className="relative flex-grow max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder={lang === 'id' ? "Cari No. Polisi, Pelanggan..." : "Search Plate, Customer..."}
-                            value={searchQuery} 
-                            onChange={e => setSearchQuery(e.target.value.toUpperCase())} 
-                            className="pl-10 p-2 border border-border rounded-md bg-card text-textPrimary w-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm"
-                        />
-                    </div>
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                    <input 
+                        type="text" 
+                        placeholder={lang === 'id' ? "Cari No. Polisi, Pelanggan..." : "Search Plate, Customer..."}
+                        value={searchQuery} 
+                        onChange={e => setSearchQuery(e.target.value.toUpperCase())} 
+                        className="p-3 border border-hairline bg-canvas text-ink w-full md:w-[320px] focus:outline-none focus:border-ink transition-colors text-[14px] uppercase placeholder-mute"
+                    />
                     
-                    <div className="flex items-center gap-2">
-                        <Filter size={18} className="text-textSecondary" />
-                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2.5 border border-border rounded-md bg-card text-sm text-textPrimary">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-3 border border-hairline bg-canvas text-[14px] text-ink uppercase focus:outline-none focus:border-ink flex-1 md:flex-none">
                             <option value="">{lang === 'id' ? 'Status Kendaraan' : 'Unit Status'}</option>
                             {(settings.statusKendaraanOptions || []).map(opt => <option key={opt}>{opt}</option>)}
                         </select>
-                        <select value={filterWorkStatus} onChange={e => setFilterWorkStatus(e.target.value)} className="p-2.5 border border-border rounded-md bg-card text-sm text-textPrimary">
+                        <select value={filterWorkStatus} onChange={e => setFilterWorkStatus(e.target.value)} className="p-3 border border-hairline bg-canvas text-[14px] text-ink uppercase focus:outline-none focus:border-ink flex-1 md:flex-none">
                             <option value="">{lang === 'id' ? 'Status Pekerjaan' : 'Work Progress'}</option>
                             {(settings.statusPekerjaanOptions || []).map(opt => <option key={opt}>{opt}</option>)}
                         </select>
                     </div>
                 </div>
                 
-                <div className="mt-3 flex items-center gap-2">
-                     <label className="flex items-center gap-2 text-sm text-textSecondary cursor-pointer select-none">
-                        <div className="relative">
-                            <input type="checkbox" checked={showClosedJobs} onChange={(e) => setShowClosedJobs(e.target.checked)} className="sr-only" />
-                            <div className={`block w-10 h-6 rounded-full ${showClosedJobs ? 'bg-primary' : 'bg-muted'}`}></div>
-                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showClosedJobs ? 'transform translate-x-4' : ''}`}></div>
-                        </div>
+                <div className="mt-6 flex items-center">
+                     <label className="flex items-center gap-3 text-[14px] font-medium text-ink uppercase tracking-widest cursor-pointer select-none">
+                        <input 
+                            type="checkbox" 
+                            checked={showClosedJobs} 
+                            onChange={(e) => setShowClosedJobs(e.target.checked)} 
+                            className="w-5 h-5 border-hairline accent-ink cursor-pointer" 
+                        />
                         {lang === 'id' ? 'Tampilkan Closed WO' : 'Show Closed WO'}
                     </label>
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full lg:w-auto">
-                <button onClick={handleExportGeneralData} className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-secondary text-textPrimary font-semibold py-2.5 px-5 rounded-md hover:bg-muted shadow-sm border border-border">
-                    <Download size={16} /> <span className="hidden sm:inline">Export CSV</span>
-                </button>
-            </div>
+            <button onClick={handleExportGeneralData} className="w-full lg:w-auto px-8 py-3 bg-ink text-canvas text-[14px] font-medium uppercase tracking-widest hover:opacity-80 transition-opacity">
+                EXPORT CSV
+            </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* JOB CARDS */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-[24px]">
         {allData.map((job) => {
            const config = getStatusConfig(job.statusKendaraan, job.statusPekerjaan);
            const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
            
            return (
-              <div key={job.id} className="bg-card rounded-md shadow-sm border border-border overflow-hidden hover:shadow-md transition-all group flex flex-col">
+              <div key={job.id} className="bg-canvas border border-hairline flex flex-col hover:border-ink transition-colors">
                   
-                  <div className="p-4 flex-grow">
-                      <div className="flex justify-between items-start mb-4">
+                  <div className="p-6 md:p-8 flex-grow">
+                      <div className="flex justify-between items-start mb-6">
                           <div>
-                              <h3 className="text-lg font-bold text-textPrimary tracking-tight">{job.policeNumber}</h3>
-                              <p className="text-xs font-medium text-textSecondary uppercase tracking-wide mt-0.5">{job.carModel} • {job.warnaMobil}</p>
+                              <h3 className="text-[28px] font-medium text-ink tracking-tight leading-[1.1]">{job.policeNumber}</h3>
+                              <p className="text-[12px] font-medium text-mute uppercase tracking-widest mt-2">{job.carModel} • {job.warnaMobil}</p>
                           </div>
                           {config.ribbon && (
-                              <span className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md border ${config.color}`}>
+                              <span className="px-4 py-1.5 text-[10px] font-medium uppercase tracking-widest bg-ink text-canvas rounded-full shrink-0 ml-4">
                                   {config.ribbon}
                               </span>
                           )}
                       </div>
 
-                      <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-sm">
-                              <span className="font-semibold text-textPrimary">{job.customerName}</span>
-                              <span className="text-xs text-textSecondary font-medium truncate">| {job.namaAsuransi}</span>
+                      <div className="space-y-4 mb-8">
+                          <div className="flex items-center justify-between text-[14px] border-b border-hairline pb-2">
+                              <span className="font-medium text-ink uppercase truncate mr-4">{job.customerName}</span>
+                              <span className="text-[12px] text-mute uppercase whitespace-nowrap">{job.namaAsuransi}</span>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                              <span className="bg-muted px-2 py-0.5 rounded text-textSecondary font-semibold">SA: {job.namaSA || '-'}</span>
-                              <span className="font-bold text-primary">{totalPanelValue.toFixed(1)} PANEL</span>
+                          <div className="flex items-center justify-between text-[12px]">
+                              <span className="bg-soft-cloud px-3 py-1 text-ink font-medium uppercase tracking-widest">SA: {job.namaSA || '-'}</span>
+                              <span className="font-medium text-ink tracking-widest uppercase">{totalPanelValue.toFixed(1)} PANEL</span>
                           </div>
                       </div>
 
-                      <div className="bg-muted/50 rounded-md p-3 border border-border/50">
-                          <div className="flex justify-between items-center mb-1.5">
-                              <span className="text-[10px] font-medium text-textSecondary uppercase">{lang === 'id' ? 'Status Kontrol' : 'Control Status'}</span>
-                              <span className="text-[10px] font-medium text-textSecondary uppercase">{lang === 'id' ? 'Pekerjaan' : 'Work Progress'}</span>
+                      <div className="bg-soft-cloud p-4 border border-hairline">
+                          <div className="flex justify-between items-center mb-2">
+                              <span className="text-[10px] font-medium text-mute uppercase tracking-widest">{lang === 'id' ? 'Status' : 'Status'}</span>
+                              <span className="text-[10px] font-medium text-mute uppercase tracking-widest">{lang === 'id' ? 'Progress' : 'Progress'}</span>
                           </div>
                           <div className="flex justify-between items-center">
-                              <span className={`text-[11px] font-semibold uppercase ${config.color.replace('bg-', 'text-').split(' ')[1]}`}>{job.statusKendaraan}</span>
-                              <span className="text-[11px] font-semibold text-textPrimary">{job.statusPekerjaan}</span>
+                              <span className="text-[12px] font-medium uppercase text-ink truncate mr-4">{job.statusKendaraan || '-'}</span>
+                              <span className="text-[12px] font-medium uppercase text-ink text-right">{job.statusPekerjaan || '-'}</span>
                           </div>
                       </div>
                   </div>
 
-                  <div className="bg-muted/30 p-3.5 border-t border-border flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                          <button onClick={() => openModal('create_estimation', job)} className="px-3 py-1.5 bg-card border border-border text-textPrimary hover:bg-muted text-xs font-semibold rounded-md transition-colors shadow-sm">Detail</button>
-                          {userPermissions.role === 'Manager' && <button onClick={() => handleDelete(job)} className="px-3 py-1.5 bg-red-50 text-destructive border border-red-100 text-xs font-semibold rounded-md hover:bg-red-100 transition-colors shadow-sm">Hapus</button>}
+                  <div className="p-6 md:p-8 pt-0 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <button onClick={() => openModal('create_estimation', job)} className="px-6 py-2.5 bg-canvas border border-ink text-ink hover:bg-ink hover:text-canvas text-[12px] font-medium tracking-widest uppercase rounded-full transition-colors">
+                              DETAIL
+                          </button>
+                          {userPermissions.role === 'Manager' && (
+                              <button onClick={() => handleDelete(job)} className="px-6 py-2.5 bg-canvas border border-hairline text-mute hover:text-ink hover:border-ink text-[12px] font-medium tracking-widest uppercase rounded-full transition-colors">
+                                  HAPUS
+                              </button>
+                          )}
                       </div>
                       <div className="text-right">
-                          <div className="text-[9px] font-medium text-textSecondary uppercase tracking-wider mb-0.5">Total Bill</div>
-                          <div className="text-sm font-bold text-textPrimary">{formatCurrency(job.estimateData?.grandTotal || 0)}</div>
+                          <div className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">TOTAL BILL</div>
+                          <div className="text-[20px] font-medium text-ink">{formatCurrency(job.estimateData?.grandTotal || 0)}</div>
                       </div>
                   </div>
               </div>
            );
         })}
-        {allData.length === 0 && <div className="col-span-full py-20 text-center text-gray-400 italic">No data found.</div>}
+        {allData.length === 0 && <div className="col-span-full py-20 text-center text-mute uppercase tracking-widest text-[14px]">No data found.</div>}
       </div>
     </div>
   );

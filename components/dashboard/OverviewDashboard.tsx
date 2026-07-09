@@ -17,17 +17,17 @@ interface OverviewProps {
 }
 
 const StatCard = ({ title, value, subValue, trend, info }: any) => (
-  <div className="bg-card p-5 rounded-md shadow-sm border border-border flex flex-col justify-between">
+  <div className="bg-canvas p-6 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-hairline last:border-0 md:last:border-r-0">
     <div>
-        <p className="text-[11px] font-medium text-textSecondary uppercase tracking-widest">{title}</p>
-        <h3 className="text-3xl font-bold text-textPrimary mt-1.5 tracking-tight">{value}</h3>
+        <p className="text-[14px] font-medium text-mute uppercase tracking-widest">{title}</p>
+        <h3 className="text-[32px] font-medium text-ink mt-2 tracking-tight">{value}</h3>
     </div>
     {(subValue || info) && (
-        <div className="mt-4 pt-3 border-t border-border/50">
+        <div className="mt-8 pt-4 border-t border-hairline">
             {subValue && (
-                <p className="text-xs font-medium text-textSecondary">{trend === 'up' ? '↗ ' : ''}{subValue}</p>
+                <p className="text-[14px] font-medium text-mute">{trend === 'up' ? '↗ ' : ''}{subValue}</p>
             )}
-            {info && <p className="text-[10px] text-textSecondary mt-0.5 italic">{info}</p>}
+            {info && <p className="text-[14px] text-mute mt-1 italic">{info}</p>}
         </div>
     )}
   </div>
@@ -36,11 +36,9 @@ const StatCard = ({ title, value, subValue, trend, info }: any) => (
 const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, settings, onNavigate }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeWeek, setActiveWeek] = useState<number | 'total'>(1);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [activeWeek, setActiveWeek] = useState<number | 'total'>('total');
   const lang = settings.language || 'id';
 
-  // Helper untuk parsing tanggal (Timestamp Firebase atau Date Object) agar robust
   const parseDate = (dateInput: any): Date => {
       if (!dateInput) return new Date();
       if (dateInput instanceof Date) return dateInput;
@@ -50,38 +48,37 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       return isNaN(parsed.getTime()) ? new Date() : parsed;
   };
 
-  // TRANSLATIONS
   const t = (key: string) => {
       const dict: any = {
           id: {
-              title: "Overview Dashboard",
-              subtitle: "Pantau performa operasional & finansial bengkel anda.",
+              title: "OVERVIEW",
+              subtitle: "Pantau performa operasional & finansial bengkel anda",
               card_db: "Total Database",
-              card2: "Work In Progress (WIP)",
+              card2: "Work In Progress",
               card2_sub: "Unit sedang dikerjakan",
-              card3: "Unit Siap Ambil",
+              card3: "Siap Ambil",
               card3_sub: "Menunggu penyerahan",
-              card4: "Revenue (Terfaktur)",
+              card4: "Revenue",
               card4_sub: "Total bill periode ini",
               row1: "Unit Terfaktur",
               row2: "Total Produksi Panel",
-              row3: "Gross Profit (Real)",
+              row3: "Gross Profit",
               chart1: "Distribusi Produksi Aktif",
               chart2: "Rasio Faktur"
           },
           en: {
-              title: "Overview Dashboard",
-              subtitle: "Monitor your workshop's operational & financial performance.",
+              title: "OVERVIEW",
+              subtitle: "Monitor operational & financial performance",
               card_db: "Total Database",
-              card2: "Work In Progress (WIP)",
-              card2_sub: "Active jobs on floor",
+              card2: "Work In Progress",
+              card2_sub: "Active jobs",
               card3: "Ready for Delivery",
               card3_sub: "Waiting for handover",
-              card4: "Revenue (Invoiced)",
+              card4: "Revenue",
               card4_sub: "Total bill this period",
               row1: "Invoiced Units",
               row2: "Production Panels",
-              row3: "Gross Profit (Realized)",
+              row3: "Gross Profit",
               chart1: "Active Production Stages",
               chart2: "Invoice Ratio"
           }
@@ -90,7 +87,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
   };
 
   const stats = useMemo(() => {
-    // 1. WIP Stats
     const activeJobsList = allJobs.filter(j => j.woNumber && !j.isClosed && !j.isDeleted);
     const activeJobsCount = activeJobsList.length;
     
@@ -100,7 +96,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         (j.statusKendaraan === 'Selesai (Tunggu Pengambilan)' || j.statusPekerjaan?.includes('Selesai'))
     ).length;
 
-    // --- WEEKLY LOGIC ---
     const getWeekBounds = (year: number, month: number, week: number) => {
         const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
         let firstSundayDate = 1;
@@ -125,7 +120,7 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         const { start, end } = getWeekBounds(selectedYear, selectedMonth, week);
         if (start > end) return 0;
         
-        const workingDaysOfWeek = settings.workingDaysOfWeek || [1,2,3,4,5,6]; // Mon-Sat
+        const workingDaysOfWeek = settings.workingDaysOfWeek || [1,2,3,4,5,6];
         let workingDays = 0;
         
         for (let d = start; d <= end; d++) {
@@ -162,7 +157,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     allJobs.forEach(j => {
         if (j.isDeleted) return;
 
-        // Weekly Entry
         if (j.actualStartDate) {
             const entryDate = parseDate(j.actualStartDate);
             const w = getWeekNumber(entryDate, selectedYear, selectedMonth);
@@ -172,7 +166,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
             }
         }
 
-        // Weekly Out
         const isOut = j.statusKendaraan?.includes('Sudah Diambil') || j.isClosed;
         const outDateRaw = j.closedAt || j.updatedAt;
         if (isOut && outDateRaw) {
@@ -184,7 +177,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
             }
         }
 
-        // Weekly Revenue Nett & Costs
         if (j.hasInvoice) {
             const invDateRaw = j.closedAt || j.createdAt;
             const invDate = parseDate(invDateRaw);
@@ -208,7 +200,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         }
     });
 
-    // 2. Filtered Stats
     const periodJobs = allJobs.filter(j => {
         if (j.isDeleted) return false;
         const refDate = j.closedAt || j.createdAt; 
@@ -259,9 +250,8 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     datasets: [{
       label: 'Units',
       data: Object.values(stats.statusCounts),
-      backgroundColor: 'rgba(79, 70, 229, 0.8)',
-      borderRadius: 8,
-      hoverBackgroundColor: 'rgba(79, 70, 229, 1)',
+      backgroundColor: '#111111',
+      hoverBackgroundColor: '#39393b',
     }]
   };
 
@@ -269,145 +259,142 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       labels: ['Invoiced', 'Active'],
       datasets: [{
           data: [stats.totalInvoicedUnits, stats.activeJobsCount],
-          backgroundColor: ['#10B981', '#6366F1'],
+          backgroundColor: ['#111111', '#cacacb'],
           borderWidth: 0,
-          cutout: '70%'
+          cutout: '75%'
       }]
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="animate-fade-in pb-[48px]">
+      
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-card border border-border p-6 md:p-8 rounded-md shadow-sm relative overflow-hidden">
-          
-          <div className="relative z-10 flex-grow">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-textPrimary">{t('title')}</h1>
-            <p className="text-sm text-textSecondary font-medium mt-1">{t('subtitle')}</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-[48px] border-b border-hairline pb-[24px]">
+          <div>
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">{t('title')}</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px]">{t('subtitle')}</p>
           </div>
 
-          {/* Database Unit Info (Text Only) */}
-          <div className="relative z-10 flex flex-col items-end md:mr-6 md:border-r border-border md:pr-6">
-              <p className="text-[11px] font-medium text-textSecondary uppercase tracking-widest">{t('card_db')}</p>
-              <p className="text-3xl font-bold text-textPrimary tracking-tight mt-0.5">{totalUnits}</p>
-          </div>
+          <div className="flex flex-col md:flex-row items-end gap-6 mt-6 md:mt-0">
+              <div className="flex flex-col items-end pr-6">
+                  <p className="text-[14px] font-medium text-mute uppercase tracking-widest">{t('card_db')}</p>
+                  <p className="text-[32px] font-medium text-ink tracking-tight">{totalUnits}</p>
+              </div>
 
-          <div className="flex items-center gap-3 bg-muted/50 p-1.5 rounded-md border border-border relative z-10">
-              <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-sm font-semibold focus:ring-0 cursor-pointer py-1.5 text-textPrimary">
-                  {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
-                      <option key={i} value={i}>{m}</option>
-                  ))}
-              </select>
-              <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-sm font-semibold focus:ring-0 cursor-pointer border-l border-border pl-3 py-1.5 text-textPrimary">
-                  {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+              <div className="flex items-center gap-2 bg-soft-cloud rounded-full px-4 py-2">
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
+                      {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
+                          <option key={i} value={i}>{m}</option>
+                      ))}
+                  </select>
+                  <span className="text-mute">/</span>
+                  <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
+                      {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+              </div>
           </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-[48px]">
         <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} />
         <StatCard title={t('card3')} value={stats.completedWaiting} subValue={t('card3_sub')} />
         <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card p-5 rounded-md border border-border shadow-sm flex flex-col justify-between">
-              <p className="text-[11px] font-medium text-textSecondary uppercase tracking-widest">{t('row1')}</p>
-              <h4 className="text-3xl font-bold text-textPrimary tracking-tight mt-1.5">{stats.totalInvoicedUnits}</h4>
-          </div>
-          <div className="bg-card p-5 rounded-md border border-border shadow-sm flex flex-col justify-between">
-              <p className="text-[11px] font-medium text-textSecondary uppercase tracking-widest">{t('row2')}</p>
-              <h4 className="text-3xl font-bold text-textPrimary tracking-tight mt-1.5">{stats.totalPanels.toFixed(1)}</h4>
-          </div>
-          <div className="bg-card p-5 rounded-md border border-border shadow-sm flex flex-col justify-between">
-              <p className="text-[11px] font-medium text-textSecondary uppercase tracking-widest">{t('row3')}</p>
-              <h4 className="text-3xl font-bold text-primary tracking-tight mt-1.5">{formatCurrency(stats.grossProfit)}</h4>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-[48px]">
+          <StatCard title={t('row1')} value={stats.totalInvoicedUnits} />
+          <StatCard title={t('row2')} value={stats.totalPanels.toFixed(1)} />
+          <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} />
       </div>
 
       {/* WEEKLY SIDEBAR SECTION */}
-      <div className="bg-card p-5 rounded-md shadow-sm border border-border flex h-auto md:h-[400px] transition-all">
-          {/* Sidebar */}
-          <div 
-              className={`flex flex-col gap-2 transition-all duration-300 ease-in-out border-r border-border pr-4 ${isSidebarHovered ? 'w-56' : 'w-16'}`}
-              onMouseEnter={() => setIsSidebarHovered(true)}
-              onMouseLeave={() => setIsSidebarHovered(false)}
-          >
-              <div className="mb-2 pl-2 h-10 flex items-center">
-                  <span className={`ml-3 text-xs font-bold text-textPrimary tracking-widest uppercase whitespace-nowrap transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-                      Performa
-                  </span>
-              </div>
+      <div className="flex flex-col md:flex-row bg-canvas border border-hairline mb-[48px]">
+          <div className="flex flex-row md:flex-col border-b md:border-b-0 md:border-r border-hairline md:w-[220px] shrink-0 p-6 md:p-8 gap-4 overflow-x-auto">
+              <h3 className="hidden md:block text-[16px] font-medium text-ink mb-[18px]">PERFORMA</h3>
               {[1, 2, 3, 4, 5].map((w) => (
                   <button
                       key={w}
-                      onMouseEnter={() => setActiveWeek(w)}
-                      className={`flex items-center p-2.5 rounded-md transition-all duration-300 whitespace-nowrap overflow-hidden group ${activeWeek === w ? 'bg-primary text-white shadow-sm' : 'hover:bg-muted/50 text-textSecondary'}`}
+                      onClick={() => setActiveWeek(w)}
+                      className={cn(
+                          "text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap",
+                          activeWeek === w ? "bg-ink text-canvas" : "text-ink bg-canvas hover:bg-soft-cloud"
+                      )}
                   >
-                      <span className={`font-semibold text-sm min-w-[24px] text-center transition-colors ${activeWeek === w ? 'text-white' : 'text-textSecondary group-hover:text-primary'}`}>M{w}</span>
-                      <span className={`ml-4 text-sm font-medium transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0'}`}>Minggu ke - {w}</span>
+                      Minggu {w}
                   </button>
               ))}
-              <div className="flex-grow"></div>
               <button
-                  onMouseEnter={() => setActiveWeek('total')}
-                  className={`flex items-center p-2.5 rounded-md transition-all duration-300 whitespace-nowrap overflow-hidden group ${activeWeek === 'total' ? 'bg-secondary text-textPrimary shadow-sm' : 'hover:bg-muted/50 text-textSecondary'}`}
+                  onClick={() => setActiveWeek('total')}
+                  className={cn(
+                      "text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap",
+                      activeWeek === 'total' ? "bg-ink text-canvas" : "text-ink bg-canvas hover:bg-soft-cloud"
+                  )}
               >
-                  <span className={`font-bold text-sm min-w-[24px] text-center transition-colors ${activeWeek === 'total' ? 'text-textPrimary' : 'text-textSecondary group-hover:text-textPrimary'}`}>T</span>
-                  <span className={`ml-4 text-sm font-medium transition-opacity duration-300 ${isSidebarHovered ? 'opacity-100' : 'opacity-0 w-0'}`}>Grand Total</span>
+                  Total Keseluruhan
               </button>
           </div>
           
-          {/* Content Area */}
-          <div className="flex-1 pl-6 md:pl-8 overflow-y-auto flex flex-col justify-center">
-              <div className="mb-6">
-                  <h3 className="text-xl font-bold text-textPrimary tracking-tight">
-                      {activeWeek === 'total' ? 'Total Keseluruhan' : `Detail Minggu ke - ${activeWeek}`}
+          <div className="flex-1 p-6 md:p-12">
+              <div className="mb-[24px]">
+                  <h3 className="text-[32px] font-medium text-ink tracking-tight mb-2">
+                      {activeWeek === 'total' ? 'TOTAL KESELURUHAN' : `DETAIL MINGGU ${activeWeek}`}
                   </h3>
-                  <p className="text-xs text-textSecondary font-medium mt-1 flex items-center gap-2">
-                      Total Hari Kerja: <span className="text-primary font-semibold">{stats.weeklyData[activeWeek].workingDays} Hari</span>
+                  <p className="text-[16px] text-mute font-normal">
+                      Total Hari Kerja: <span className="text-ink font-medium">{stats.weeklyData[activeWeek].workingDays} Hari</span>
                   </p>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-                  {/* Unit Stats */}
-                  <div className="bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">Unit Masuk</p>
-                      <p className="text-xl font-bold text-textPrimary">{stats.weeklyData[activeWeek].entry}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-[24px]">
+                  <div className="bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Unit Masuk</p>
+                      <p className="text-[24px] font-medium text-ink">{stats.weeklyData[activeWeek].entry}</p>
                   </div>
-                  <div className="bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">Unit Keluar</p>
-                      <p className="text-xl font-bold text-textPrimary">{stats.weeklyData[activeWeek].out}</p>
+                  <div className="bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Unit Keluar</p>
+                      <p className="text-[24px] font-medium text-ink">{stats.weeklyData[activeWeek].out}</p>
                   </div>
                   
-                  {/* Revenue Stats */}
-                  <div className="col-span-2 bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">Total Jasa Nett</p>
-                      <p className="text-xl font-bold text-textPrimary">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
+                  <div className="col-span-2 bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Total Jasa Nett</p>
+                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
                   </div>
-                  <div className="col-span-2 bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">Total Part Nett</p>
-                      <p className="text-xl font-bold text-textPrimary">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
+                  <div className="col-span-2 bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Total Part Nett</p>
+                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
                   </div>
 
-                  {/* Expenses Stats */}
-                  <div className="col-span-2 bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">HPP Bahan</p>
-                      <p className="text-xl font-bold text-textPrimary">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
+                  <div className="col-span-2 bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">HPP Bahan</p>
+                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
                   </div>
-                  <div className="col-span-2 bg-muted/30 p-4 rounded-md border border-border">
-                      <p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest mb-1">HPP Part</p>
-                      <p className="text-xl font-bold text-textPrimary">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
+                  <div className="col-span-2 bg-soft-cloud p-6">
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">HPP Part</p>
+                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
                   </div>
               </div>
           </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-card p-6 rounded-md shadow-sm border border-border">
-              <div className="flex justify-between items-center mb-6"><h3 className="text-sm font-semibold text-textSecondary uppercase tracking-widest">{t('chart1')}</h3><button onClick={() => onNavigate('job_control')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">Kanban Board &rarr;</button></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px]">
+          <div className="lg:col-span-2 bg-canvas p-6 border border-hairline">
+              <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest">{t('chart1')}</h3>
+                  <button onClick={() => onNavigate('job_control')} className="text-[14px] font-medium text-ink hover:underline">
+                      Kanban Board &rarr;
+                  </button>
+              </div>
               <div className="h-72"><Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
           </div>
-          <div className="bg-card p-6 rounded-md shadow-sm border border-border flex flex-col"><h3 className="text-sm font-semibold text-textSecondary uppercase tracking-widest mb-6">{t('chart2')}</h3><div className="flex-grow flex items-center justify-center relative"><div className="h-48 w-48"><Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } } }} /></div><div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><p className="text-2xl font-bold tracking-tight text-textPrimary mt-4">{stats.totalInvoicedUnits}</p><p className="text-[10px] font-medium text-textSecondary uppercase tracking-widest">Closing</p></div></div></div>
+          <div className="bg-canvas p-6 border border-hairline flex flex-col">
+              <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest mb-8">{t('chart2')}</h3>
+              <div className="flex-grow flex items-center justify-center relative">
+                  <div className="h-48 w-48"><Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } } }} /></div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <p className="text-[32px] font-medium tracking-tight text-ink">{stats.totalInvoicedUnits}</p>
+                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest">Closing</p>
+                  </div>
+              </div>
+          </div>
       </div>
     </div>
   );

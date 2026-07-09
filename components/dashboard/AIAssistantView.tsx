@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Job, CashierTransaction, Settings, InventoryItem } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
-import { Sparkles, BrainCircuit, TrendingUp, AlertTriangle, Zap, MessageSquare, Send, Loader2, Target, Lightbulb, ShieldAlert, BarChart3, X, ChevronRight } from 'lucide-react';
 
 interface AIAssistantProps {
   jobs: Job[];
@@ -33,7 +31,6 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
 
           const ai = new GoogleGenAI({ apiKey });
           
-          // Calculate Realized GP (Invoiced Only) for the current month
           const now = new Date();
           const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
           const totalWeeksInMonth = Math.ceil(daysInMonth / 7);
@@ -54,12 +51,10 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
 
           const realizedGP = invoicedJobsThisMonth.reduce((acc, j) => acc + calculateGP(j), 0);
           
-          // Dynamic Catch-up Target
           const remainingMonthlyTarget = Math.max(settings.monthlyTarget - realizedGP, 0);
           const adjustedWeeklyTarget = remainingMonthlyTarget / remainingWeeks;
           const isCatchUpActive = adjustedWeeklyTarget > (settings.monthlyTarget / 4);
 
-          // Calculate Potential GP from WIP (To guide AI on what to push for closing)
           const wipJobs = jobs.filter(j => !j.isClosed && j.woNumber && !j.isDeleted);
           const potentialGP = wipJobs.reduce((acc, j) => acc + calculateGP(j), 0);
 
@@ -102,113 +97,83 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="animate-fade-in pb-[48px]">
         {/* HEADER AI */}
-        <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-black p-10 rounded-[40px] text-white shadow-2xl relative overflow-hidden border border-white/10">
-            <div className="absolute top-0 right-0 p-12 opacity-10 animate-pulse">
-                <BrainCircuit size={300}/>
-            </div>
-            <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="inline-flex items-center gap-2 bg-indigo-500/20 px-4 py-2 rounded-full border border-indigo-500/30 backdrop-blur-md">
-                        <Sparkles className="text-indigo-400" size={16}/>
-                        <span className="text-xs font-black tracking-widest uppercase">Accumulative Profit Intelligence</span>
-                    </div>
-                    <div className="inline-flex items-center gap-2 bg-amber-500/20 px-4 py-2 rounded-full border border-amber-500/50 backdrop-blur-md animate-pulse">
-                        <AlertTriangle className="text-amber-400" size={16}/>
-                        <span className="text-xs font-black text-amber-200 tracking-widest uppercase">Under Construction</span>
-                    </div>
+        <div className="border-b border-hairline pb-[24px] mb-[48px]">
+            <div className="flex items-center gap-4 mb-[18px]">
+                <div className="inline-flex items-center gap-2 bg-ink text-canvas px-4 py-1.5 rounded-none">
+                    <span className="text-[12px] font-medium tracking-widest uppercase">Accumulative Profit Intelligence</span>
                 </div>
-                <h1 className="text-5xl font-black tracking-tighter leading-none">
-                    AI Business <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Profit Strategist</span>
-                </h1>
-                <p className="text-indigo-200/70 mt-4 max-w-xl font-medium text-lg">
-                    Asisten cerdas ReForma yang menganalisa **Catch-up Target** secara dinamis untuk memastikan kekurangan profit di pekan lalu terbayar di pekan ini.
-                </p>
+                <div className="inline-flex items-center gap-2 bg-soft-cloud text-ink px-4 py-1.5 rounded-none border border-hairline">
+                    <span className="text-[12px] font-medium tracking-widest uppercase">Under Construction</span>
+                </div>
             </div>
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">AI STRATEGIST</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px] max-w-3xl">
+                Asisten cerdas ReForma yang menganalisa Catch-up Target secara dinamis untuk memastikan kekurangan profit di pekan lalu terbayar di pekan ini.
+            </p>
         </div>
 
         {/* AI ACTIONS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] mb-[48px]">
             <button 
                 onClick={() => runAIScreening('trouble')}
                 disabled={isLoading}
-                className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all text-left group relative overflow-hidden"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
             >
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <ShieldAlert size={120}/>
-                </div>
-                <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform">
-                    <AlertTriangle size={32}/>
-                </div>
-                <h3 className="text-xl font-black text-gray-900">Catch-Up Strategy</h3>
-                <p className="text-sm text-gray-500 mt-2 font-medium">Analisa beban target akumulatif & taktik penyelesaian cepat.</p>
+                <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 01</span>
+                <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Catch-Up<br/>Strategy</h3>
+                <p className="text-[14px] text-mute font-normal mt-auto pt-4">Analisa beban target akumulatif & taktik penyelesaian cepat.</p>
             </button>
 
             <button 
                 onClick={() => runAIScreening('promo')}
                 disabled={isLoading}
-                className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all text-left group relative overflow-hidden"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
             >
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <Zap size={120}/>
-                </div>
-                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform">
-                    <Lightbulb size={32}/>
-                </div>
-                <h3 className="text-xl font-black text-gray-900">Margin Recovery</h3>
-                <p className="text-sm text-gray-500 mt-2 font-medium">Ciptakan promo margin tinggi untuk menutup gap target bulanan.</p>
+                <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 02</span>
+                <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Margin<br/>Recovery</h3>
+                <p className="text-[14px] text-mute font-normal mt-auto pt-4">Ciptakan promo margin tinggi untuk menutup gap target bulanan.</p>
             </button>
 
             <button 
                 onClick={() => runAIScreening('target')}
                 disabled={isLoading}
-                className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all text-left group relative overflow-hidden"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
             >
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <BarChart3 size={120}/>
-                </div>
-                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform">
-                    <Target size={32}/>
-                </div>
-                <h3 className="text-xl font-black text-gray-900">Goal Accelerator</h3>
-                <p className="text-sm text-gray-500 mt-2 font-medium">Rencana harian mendesak untuk konversi WIP menjadi Faktur.</p>
+                <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 03</span>
+                <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Goal<br/>Accelerator</h3>
+                <p className="text-[14px] text-mute font-normal mt-auto pt-4">Rencana harian mendesak untuk konversi WIP menjadi Faktur.</p>
             </button>
         </div>
 
         {/* AI OUTPUT AREA */}
-        <div className="relative">
+        <div className="relative min-h-[300px]">
             {isLoading ? (
-                <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-20 flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 animate-pulse">
-                    <div className="relative">
-                        <BrainCircuit className="text-indigo-600 animate-bounce" size={64}/>
-                        <Sparkles className="text-indigo-400 absolute -top-4 -right-4 animate-spin" size={24}/>
-                    </div>
-                    <p className="text-indigo-900 font-black mt-6 text-xl tracking-tight">AI sedang menghitung redistribusi target...</p>
+                <div className="bg-soft-cloud border border-hairline p-12 md:p-20 flex flex-col items-center justify-center animate-pulse">
+                    <p className="text-ink font-medium text-[24px] tracking-widest uppercase">ANALYZING...</p>
+                    <p className="text-mute text-[14px] mt-4">AI sedang menghitung redistribusi target</p>
                 </div>
             ) : analysisResult ? (
-                <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-pop-in ring-8 ring-indigo-50">
-                    <div className="bg-indigo-900 p-6 text-white flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <Sparkles className="text-indigo-300" size={24}/>
-                            <h3 className="font-black uppercase tracking-widest text-sm">Catch-Up Strategy Analysis</h3>
-                        </div>
-                        <button onClick={() => setAnalysisResult(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                            <X size={20}/>
+                <div className="bg-canvas border border-hairline">
+                    <div className="border-b border-hairline p-6 flex justify-between items-center bg-soft-cloud">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Analysis Report</h3>
+                        <button onClick={() => setAnalysisResult(null)} className="text-[12px] font-medium text-mute uppercase tracking-widest hover:text-ink transition-colors">
+                            CLOSE [X]
                         </button>
                     </div>
-                    <div className="p-10">
-                        <div className="prose prose-indigo max-w-none">
-                            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-medium text-lg">
+                    <div className="p-8 md:p-12">
+                        <div className="prose prose-sm max-w-none">
+                            <div className="whitespace-pre-wrap text-ink font-normal text-[16px] leading-relaxed">
                                 {analysisResult.split('\n').map((line, i) => {
                                     if (line.trim().startsWith('**') || line.trim().startsWith('###')) {
-                                        return <h4 key={i} className="text-indigo-900 font-black text-2xl mt-8 mb-4 border-l-4 border-indigo-600 pl-4">{line.replace(/\*|#/g, '')}</h4>
+                                        return <h4 key={i} className="text-ink font-medium text-[24px] uppercase mt-8 mb-4 border-b border-hairline pb-2">{line.replace(/\*|#/g, '')}</h4>
                                     }
                                     if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
                                         return (
-                                            <div key={i} className="flex gap-3 mb-2 items-start">
-                                                <div className="p-1 bg-indigo-100 text-indigo-600 rounded mt-1.5"><ChevronRight size={14}/></div>
-                                                <span className="text-gray-700">{line.substring(1).trim()}</span>
+                                            <div key={i} className="flex gap-4 mb-3 items-start">
+                                                <span className="text-mute mt-1">—</span>
+                                                <span className="text-ink">{line.substring(1).trim()}</span>
                                             </div>
                                         );
                                     }
@@ -219,30 +184,25 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
                     </div>
                 </div>
             ) : (
-                <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[40px] p-20 flex flex-col items-center justify-center opacity-40">
-                    <BrainCircuit size={64} className="text-gray-400 mb-6"/>
-                    <p className="text-gray-600 font-black text-xl">Aktifkan Strategi Recovery Profit</p>
+                <div className="bg-canvas border border-hairline p-12 md:p-20 flex flex-col items-center justify-center text-center">
+                    <p className="text-mute font-medium text-[16px] uppercase tracking-widest">Select an analysis module above to begin</p>
                 </div>
             )}
         </div>
         
         {/* UNDER CONSTRUCTION MODAL */}
         {showUnderConstruction && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden text-center animate-pop-in">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
-                    <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertTriangle size={40} />
-                    </div>
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Fitur Dalam Pengembangan</h2>
-                    <p className="text-gray-600 mb-8 font-medium">
-                        Menu AI Strategic Insight saat ini berstatus <strong>Under Construction</strong>. Anda tetap dapat melakukan uji coba integrasi API Gemini, namun fungsionalitas dan prompt mungkin belum 100% sempurna.
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/90 backdrop-blur-sm">
+                <div className="bg-canvas border border-hairline p-8 md:p-12 max-w-lg w-full text-center">
+                    <h2 className="text-[32px] font-display text-ink uppercase mb-4 leading-none">UNDER CONSTRUCTION</h2>
+                    <p className="text-[16px] text-mute mb-12 font-normal leading-relaxed">
+                        Menu AI Strategic Insight saat ini berstatus dalam pengembangan. Anda tetap dapat melakukan uji coba integrasi API Gemini, namun fungsionalitas dan prompt mungkin belum sepenuhnya optimal.
                     </p>
                     <button 
                         onClick={() => setShowUnderConstruction(false)}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-200"
+                        className="w-full bg-ink text-canvas font-medium py-4 px-6 uppercase tracking-widest text-[14px] hover:bg-mute transition-colors"
                     >
-                        Saya Mengerti, Lanjutkan
+                        PROCEED
                     </button>
                 </div>
             </div>

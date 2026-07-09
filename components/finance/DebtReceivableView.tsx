@@ -1,17 +1,15 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Job, PurchaseOrder, CashierTransaction, UserPermissions, Settings } from '../../types';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, CASHIER_COLLECTION, SETTINGS_COLLECTION } from '../../services/firebase';
 import { formatCurrency, formatDateIndo, cleanObject, generateTransactionId } from '../../utils/helpers';
 import { generateReceiptPDF } from '../../utils/pdfGenerator';
-import { Scale, ArrowUpRight, ArrowDownLeft, Filter, Wallet, Building2, User, FileText, CheckCircle, Clock, AlertTriangle, Save } from 'lucide-react';
 import Modal from '../ui/Modal';
 
 interface DebtReceivableViewProps {
   jobs: Job[];
-  purchaseOrders: PurchaseOrder[]; // REAL-TIME PROP
-  transactions: CashierTransaction[]; // REAL-TIME PROP
+  purchaseOrders: PurchaseOrder[]; 
+  transactions: CashierTransaction[]; 
   userPermissions: UserPermissions;
   showNotification: (msg: string, type: string) => void;
 }
@@ -26,13 +24,13 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState<{
-      type: 'IN' | 'OUT'; // IN = Terima Piutang, OUT = Bayar Hutang
-      refId: string; // Job ID or PO ID
-      refNumber: string; // WO or PO Number
+      type: 'IN' | 'OUT'; 
+      refId: string; 
+      refNumber: string; 
       totalBill: number;
       alreadyPaid: number;
-      name: string; // Customer or Supplier Name
-      category: string; // 'Pelunasan' or 'Vendor'
+      name: string; 
+      category: string; 
   } | null>(null);
   
   const [paymentForm, setPaymentForm] = useState({
@@ -45,7 +43,6 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
   useEffect(() => {
     const fetchData = async () => {
         try {
-            // Settings for Bank Accounts
             const setSnap = await getDocs(collection(db, SETTINGS_COLLECTION));
             if (!setSnap.empty) setSettings(setSnap.docs[0].data() as Settings);
         } catch (e) {
@@ -55,23 +52,19 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
     fetchData();
   }, []);
 
-  // Helper for formatting
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value.replace(/\D/g, '');
       setPaymentForm(prev => ({ ...prev, amount: raw ? parseInt(raw, 10) : 0 }));
   };
 
-  // --- DATA PROCESSING: RECEIVABLES (PIUTANG) ---
   const receivables = useMemo(() => {
-      // Logic: Closed Jobs OR Active Jobs with WO.
       return jobs.filter(j => j.woNumber && !j.isDeleted).map(job => {
           const totalBill = job.estimateData?.grandTotal || 0;
           const paidAmount = transactions
-              .filter(t => t.refJobId === job.id && t.type === 'IN') // Only counting IN (Payments received)
+              .filter(t => t.refJobId === job.id && t.type === 'IN') 
               .reduce((acc, t) => acc + (t.amount || 0), 0);
           
           const remaining = totalBill - paidAmount;
-          // Status logic
           let status = 'UNPAID';
           if (paidAmount >= totalBill && totalBill > 0) status = 'PAID';
           else if (paidAmount > 0) status = 'PARTIAL';
@@ -83,18 +76,16 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
               remaining,
               paymentStatus: status
           };
-      }).filter(r => r.remaining > 1000); // Filter out fully paid (allow small rounding diff)
+      }).filter(r => r.remaining > 1000); 
   }, [jobs, transactions]);
 
-  // --- DATA PROCESSING: PAYABLES (HUTANG) ---
   const payables = useMemo(() => {
-      // Logic: POs with status 'Received' or 'Partial' or 'Ordered'.
       return purchaseOrders.filter(po => 
           ['Received', 'Partial', 'Ordered'].includes(po.status) && po.totalAmount > 0
       ).map(po => {
           const totalBill = po.totalAmount;
           const paidAmount = transactions
-              .filter(t => t.refPoId === po.id && t.type === 'OUT') // Only counting OUT (Payments made)
+              .filter(t => t.refPoId === po.id && t.type === 'OUT') 
               .reduce((acc, t) => acc + t.amount, 0);
           
           const remaining = totalBill - paidAmount;
@@ -112,11 +103,9 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
       }).filter(p => p.remaining > 1000);
   }, [purchaseOrders, transactions]);
 
-  // --- AGGREGATES ---
   const totalReceivable = receivables.reduce((acc, r) => acc + r.remaining, 0);
   const totalPayable = payables.reduce((acc, p) => acc + p.remaining, 0);
 
-  // --- HANDLERS ---
   const handleOpenPayment = (target: any, type: 'IN' | 'OUT') => {
       setPaymentTarget({
           type,
@@ -128,7 +117,7 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
           category: type === 'IN' ? 'Pelunasan' : 'Vendor'
       });
       setPaymentForm({
-          amount: target.remaining, // Default to full remaining
+          amount: target.remaining, 
           method: 'Transfer',
           bankName: settings?.workshopBankAccounts?.[0]?.bankName ? `${settings.workshopBankAccounts[0].bankName} - ${settings.workshopBankAccounts[0].accountNumber}` : '',
           notes: ''
@@ -142,15 +131,13 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
       
       const amt = Number(paymentForm.amount);
       if (amt <= 0) { showNotification("Jumlah pembayaran tidak valid", "error"); return; }
-      if (amt > (paymentTarget.totalBill - paymentTarget.alreadyPaid + 1000)) { // 1000 tolerance
+      if (amt > (paymentTarget.totalBill - paymentTarget.alreadyPaid + 1000)) { 
           if(!window.confirm("Jumlah pembayaran melebihi sisa tagihan. Lanjutkan?")) return;
       }
 
       try {
-          // Generate ID - SYNCHRONOUS
           const transactionNumber = generateTransactionId(paymentTarget.type);
 
-          // 1. Prepare Base Payload (Cleaned first)
           const baseData: any = {
               createdBy: userPermissions.role,
               type: paymentTarget.type,
@@ -168,7 +155,6 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
 
           const cleanedPayload = cleanObject(baseData);
 
-          // 2. Add Timestamp (Server side)
           const finalPayload = {
               ...cleanedPayload,
               date: serverTimestamp(),
@@ -177,7 +163,6 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
 
           await addDoc(collection(db, CASHIER_COLLECTION), finalPayload);
           
-          // Auto Print Proof (Using safe Date object for immediate print)
           if (settings) {
               generateReceiptPDF({...finalPayload, date: new Date(), id: 'TEMP'} as CashierTransaction, settings);
           }
@@ -191,222 +176,221 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Scale size={24} className="text-indigo-600"/> Hutang & Piutang
-                </h1>
-                <p className="text-sm text-gray-500 font-medium">Manajemen Tagihan Supplier & Klaim Asuransi/Customer (Live)</p>
-            </div>
+    <div className="animate-fade-in pb-[48px]">
+        {/* HEADER */}
+        <div className="border-b border-hairline pb-[24px] mb-[48px]">
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">DEBT & RECEIVABLE</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px]">Manajemen Tagihan Supplier & Klaim Asuransi/Customer (Live)</p>
         </div>
 
         {/* SUMMARY CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl border border-green-100 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start relative z-10">
-                    <div>
-                        <p className="text-sm font-bold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-2">
-                            <ArrowDownLeft size={16}/> Total Piutang (Receivables)
-                        </p>
-                        <h2 className="text-3xl font-black text-gray-900">{formatCurrency(totalReceivable)}</h2>
-                        <p className="text-xs text-gray-500 mt-2">{receivables.length} Invoice Belum Lunas</p>
-                    </div>
-                    <div className="p-3 bg-green-200 rounded-full text-green-700 opacity-80"><Wallet size={24}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] mb-[48px]">
+            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors">
+                <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">
+                    Total Piutang (Receivables)
+                </p>
+                <div>
+                    <h2 className="text-[48px] font-display text-ink leading-none">{formatCurrency(totalReceivable)}</h2>
+                    <p className="text-[12px] font-medium text-mute uppercase tracking-widest mt-4">
+                        {receivables.length} Invoice Belum Lunas
+                    </p>
                 </div>
             </div>
 
-            <div className="bg-gradient-to-br from-white to-red-50 p-6 rounded-xl border border-red-100 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start relative z-10">
-                    <div>
-                        <p className="text-sm font-bold text-red-700 uppercase tracking-wider mb-1 flex items-center gap-2">
-                            <ArrowUpRight size={16}/> Total Hutang (Payables)
-                        </p>
-                        <h2 className="text-3xl font-black text-gray-900">{formatCurrency(totalPayable)}</h2>
-                        <p className="text-xs text-gray-500 mt-2">{payables.length} PO Belum Lunas</p>
-                    </div>
-                    <div className="p-3 bg-red-200 rounded-full text-red-700 opacity-80"><Building2 size={24}/></div>
+            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors">
+                <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">
+                    Total Hutang (Payables)
+                </p>
+                <div>
+                    <h2 className="text-[48px] font-display text-ink leading-none">{formatCurrency(totalPayable)}</h2>
+                    <p className="text-[12px] font-medium text-mute uppercase tracking-widest mt-4">
+                        {payables.length} PO Belum Lunas
+                    </p>
                 </div>
             </div>
         </div>
 
         {/* TABS */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex border-b border-gray-200">
-                <button 
-                    onClick={() => setActiveTab('receivable')}
-                    className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'receivable' ? 'bg-white border-b-2 border-indigo-600 text-indigo-700' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                >
-                    <User size={18}/> Piutang Usaha (Invoice Keluar)
-                </button>
-                <button 
-                    onClick={() => setActiveTab('payable')}
-                    className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'payable' ? 'bg-white border-b-2 border-red-600 text-red-700' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                >
-                    <Building2 size={18}/> Hutang Supplier (Tagihan PO)
-                </button>
-            </div>
-
-            {/* CONTENT: RECEIVABLES */}
-            {activeTab === 'receivable' && (
-                <div className="p-0 animate-fade-in">
-                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <Filter size={16} className="text-gray-400"/>
-                            <select value={filterIns} onChange={e => setFilterIns(e.target.value)} className="text-sm border rounded p-1.5">
-                                <option value="ALL">Semua Pihak</option>
-                                <option value="Asuransi">Hanya Asuransi</option>
-                                <option value="Umum">Hanya Umum/Pribadi</option>
-                            </select>
-                        </div>
-                        <span className="text-xs text-gray-500 italic">Menampilkan unit closed/aktif dengan sisa tagihan.</span>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-100 text-gray-600 uppercase font-bold text-xs">
-                                <tr>
-                                    <th className="px-6 py-3">No. WO / Polisi</th>
-                                    <th className="px-6 py-3">Pihak Tertagih</th>
-                                    <th className="px-6 py-3 text-right">Total Invoice</th>
-                                    <th className="px-6 py-3 text-right">Sudah Bayar</th>
-                                    <th className="px-6 py-3 text-right">Sisa Tagihan</th>
-                                    <th className="px-6 py-3 text-center">Progress</th>
-                                    <th className="px-6 py-3 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {receivables
-                                    .filter(r => {
-                                        if (filterIns === 'ALL') return true;
-                                        if (filterIns === 'Asuransi') return r.namaAsuransi !== 'Umum / Pribadi';
-                                        return r.namaAsuransi === 'Umum / Pribadi';
-                                    })
-                                    .map(job => (
-                                    <tr key={job.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-indigo-700">{job.woNumber}</div>
-                                            <div className="text-xs font-mono text-gray-500">{job.policeNumber}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">{job.namaAsuransi}</div>
-                                            <div className="text-xs text-gray-500">{job.customerName}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-medium">{formatCurrency(job.totalBill)}</td>
-                                        <td className="px-6 py-4 text-right text-emerald-600 font-medium">{formatCurrency(job.paidAmount)}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-red-600">{formatCurrency(job.remaining)}</td>
-                                        <td className="px-6 py-4 w-32">
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(job.paidAmount/job.totalBill)*100}%` }}></div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button 
-                                                onClick={() => handleOpenPayment(job, 'IN')}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
-                                            >
-                                                Terima
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {receivables.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-gray-400">Tidak ada piutang.</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* CONTENT: PAYABLES */}
-            {activeTab === 'payable' && (
-                <div className="p-0 animate-fade-in">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-100 text-gray-600 uppercase font-bold text-xs">
-                                <tr>
-                                    <th className="px-6 py-3">No. Purchase Order</th>
-                                    <th className="px-6 py-3">Supplier</th>
-                                    <th className="px-6 py-3 text-right">Total Tagihan</th>
-                                    <th className="px-6 py-3 text-right">Sudah Bayar</th>
-                                    <th className="px-6 py-3 text-right">Sisa Hutang</th>
-                                    <th className="px-6 py-3 text-center">Status Barang</th>
-                                    <th className="px-6 py-3 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {payables.map(po => (
-                                    <tr key={po.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-mono font-bold text-gray-800">
-                                            {po.poNumber}
-                                            <div className="text-[10px] text-gray-400 font-normal">{formatDateIndo(po.createdAt)}</div>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-gray-700">{po.supplierName}</td>
-                                        <td className="px-6 py-4 text-right font-medium">{formatCurrency(po.totalAmount)}</td>
-                                        <td className="px-6 py-4 text-right text-emerald-600 font-medium">{formatCurrency(po.paidAmount)}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-red-600">{formatCurrency(po.remaining)}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`px-2 py-1 rounded text-[10px] font-bold border ${po.status === 'Received' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                                                {po.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button 
-                                                onClick={() => handleOpenPayment(po, 'OUT')}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
-                                            >
-                                                Bayar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {payables.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-gray-400">Tidak ada hutang supplier (PO Received).</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+        <div className="flex gap-6 md:gap-8 border-b border-hairline mb-[48px]">
+            <button 
+                onClick={() => setActiveTab('receivable')}
+                className={`pb-4 text-[14px] font-medium uppercase tracking-widest transition-colors ${activeTab === 'receivable' ? 'border-b-2 border-ink text-ink' : 'text-mute hover:text-ink'}`}
+            >
+                Piutang Usaha (Invoice Keluar)
+            </button>
+            <button 
+                onClick={() => setActiveTab('payable')}
+                className={`pb-4 text-[14px] font-medium uppercase tracking-widest transition-colors ${activeTab === 'payable' ? 'border-b-2 border-ink text-ink' : 'text-mute hover:text-ink'}`}
+            >
+                Hutang Supplier (Tagihan PO)
+            </button>
         </div>
+
+        {/* CONTENT: RECEIVABLES */}
+        {activeTab === 'receivable' && (
+            <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="p-6 bg-soft-cloud border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <select 
+                            value={filterIns} 
+                            onChange={e => setFilterIns(e.target.value)} 
+                            className="bg-transparent border border-hairline px-4 py-2 text-[12px] font-medium uppercase tracking-widest text-ink focus:outline-none w-full md:w-auto"
+                        >
+                            <option value="ALL">Semua Pihak</option>
+                            <option value="Asuransi">Hanya Asuransi</option>
+                            <option value="Umum">Hanya Umum/Pribadi</option>
+                        </select>
+                    </div>
+                    <span className="text-[12px] text-mute uppercase tracking-widest">Sisa tagihan aktif</span>
+                </div>
+                
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[12px] border-b border-hairline">
+                            <tr>
+                                <th className="px-6 py-4 font-normal">No. WO / Polisi</th>
+                                <th className="px-6 py-4 font-normal">Pihak Tertagih</th>
+                                <th className="px-6 py-4 text-right font-normal">Total Invoice</th>
+                                <th className="px-6 py-4 text-right font-normal">Sudah Bayar</th>
+                                <th className="px-6 py-4 text-right font-normal">Sisa Tagihan</th>
+                                <th className="px-6 py-4 text-center font-normal">Progress</th>
+                                <th className="px-6 py-4 text-center font-normal">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
+                            {receivables
+                                .filter(r => {
+                                    if (filterIns === 'ALL') return true;
+                                    if (filterIns === 'Asuransi') return r.namaAsuransi !== 'Umum / Pribadi';
+                                    return r.namaAsuransi === 'Umum / Pribadi';
+                                })
+                                .map(job => (
+                                <tr key={job.id} className="hover:bg-soft-cloud transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="text-[14px] font-medium text-ink">{job.woNumber}</div>
+                                        <div className="text-[12px] font-mono text-mute mt-1">{job.policeNumber}</div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-[14px] font-medium text-ink">{job.namaAsuransi}</div>
+                                        <div className="text-[12px] text-mute mt-1">{job.customerName}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-[14px] text-ink">{formatCurrency(job.totalBill)}</td>
+                                    <td className="px-6 py-4 text-right text-[14px] text-ink opacity-70">{formatCurrency(job.paidAmount)}</td>
+                                    <td className="px-6 py-4 text-right text-[14px] font-bold text-ink">{formatCurrency(job.remaining)}</td>
+                                    <td className="px-6 py-4 w-32">
+                                        <div className="w-full bg-hairline h-1">
+                                            <div className="bg-ink h-1" style={{ width: `${(job.paidAmount/job.totalBill)*100}%` }}></div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button 
+                                            onClick={() => handleOpenPayment(job, 'IN')}
+                                            className="bg-canvas border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                        >
+                                            TERIMA
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {receivables.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-mute text-[12px] uppercase tracking-widest">Tidak ada piutang.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )}
+
+        {/* CONTENT: PAYABLES */}
+        {activeTab === 'payable' && (
+            <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="p-6 bg-soft-cloud border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">HUTANG SUPPLIER</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[12px] border-b border-hairline">
+                            <tr>
+                                <th className="px-6 py-4 font-normal">No. PO</th>
+                                <th className="px-6 py-4 font-normal">Supplier</th>
+                                <th className="px-6 py-4 text-right font-normal">Total Tagihan</th>
+                                <th className="px-6 py-4 text-right font-normal">Sudah Bayar</th>
+                                <th className="px-6 py-4 text-right font-normal">Sisa Hutang</th>
+                                <th className="px-6 py-4 text-center font-normal">Status</th>
+                                <th className="px-6 py-4 text-center font-normal">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
+                            {payables.map(po => (
+                                <tr key={po.id} className="hover:bg-soft-cloud transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="text-[14px] font-mono font-medium text-ink">{po.poNumber}</div>
+                                        <div className="text-[10px] text-mute font-medium uppercase tracking-widest mt-1">{formatDateIndo(po.createdAt)}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-[14px] font-medium text-ink">{po.supplierName}</td>
+                                    <td className="px-6 py-4 text-right text-[14px] text-ink">{formatCurrency(po.totalAmount)}</td>
+                                    <td className="px-6 py-4 text-right text-[14px] text-ink opacity-70">{formatCurrency(po.paidAmount)}</td>
+                                    <td className="px-6 py-4 text-right text-[14px] font-bold text-ink">{formatCurrency(po.remaining)}</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-3 py-1 border border-hairline text-[10px] font-medium uppercase tracking-widest ${po.status === 'Received' ? 'text-ink' : 'text-mute'}`}>
+                                            {po.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button 
+                                            onClick={() => handleOpenPayment(po, 'OUT')}
+                                            className="bg-canvas border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                        >
+                                            BAYAR
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {payables.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-mute text-[12px] uppercase tracking-widest">Tidak ada hutang supplier.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )}
 
         {/* PAYMENT MODAL */}
         <Modal
             isOpen={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
-            title={`Input Pembayaran ${paymentTarget?.type === 'IN' ? 'Piutang' : 'Hutang'}`}
+            title={`INPUT PEMBAYARAN ${paymentTarget?.type === 'IN' ? 'PIUTANG' : 'HUTANG'}`}
         >
             {paymentTarget && (
-                <form onSubmit={handleSubmitPayment} className="space-y-4">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm">
-                        <div className="flex justify-between mb-1">
-                            <span className="text-gray-500">Referensi Dokumen:</span>
-                            <span className="font-bold text-gray-900">{paymentTarget.refNumber}</span>
+                <form onSubmit={handleSubmitPayment} className="space-y-6">
+                    <div className="bg-soft-cloud p-6 border border-hairline space-y-4">
+                        <div className="flex justify-between items-center border-b border-hairline pb-2">
+                            <span className="text-[12px] font-medium text-mute uppercase tracking-widest">Referensi Dokumen:</span>
+                            <span className="text-[14px] font-medium text-ink">{paymentTarget.refNumber}</span>
                         </div>
-                        <div className="flex justify-between mb-1">
-                            <span className="text-gray-500">{paymentTarget.type === 'IN' ? 'Customer/Asuransi' : 'Supplier'}:</span>
-                            <span className="font-bold text-gray-900">{paymentTarget.name}</span>
+                        <div className="flex justify-between items-center border-b border-hairline pb-2">
+                            <span className="text-[12px] font-medium text-mute uppercase tracking-widest">{paymentTarget.type === 'IN' ? 'Customer/Asuransi' : 'Supplier'}:</span>
+                            <span className="text-[14px] font-medium text-ink">{paymentTarget.name}</span>
                         </div>
-                        <div className="flex justify-between pt-2 border-t mt-2">
-                            <span className="text-gray-500">Sisa Tagihan:</span>
-                            <span className="font-bold text-red-600 text-lg">{formatCurrency(paymentTarget.totalBill - paymentTarget.alreadyPaid)}</span>
+                        <div className="flex justify-between items-center pt-2">
+                            <span className="text-[12px] font-medium text-ink uppercase tracking-widest">Sisa Tagihan:</span>
+                            <span className="text-[20px] font-display text-ink">{formatCurrency(paymentTarget.totalBill - paymentTarget.alreadyPaid)}</span>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nominal Pembayaran (Rp)</label>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Nominal Pembayaran (Rp)</label>
                         <input 
                             type="text" 
                             required 
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg font-bold text-gray-900"
+                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-display text-[24px] text-ink text-right"
                             value={paymentForm.amount ? new Intl.NumberFormat('id-ID').format(paymentForm.amount) : ''}
                             onChange={handleAmountChange}
                             placeholder="0"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Metode</label>
+                            <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Metode</label>
                             <select 
-                                className="w-full p-2 border border-gray-300 rounded-lg"
+                                className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink"
                                 value={paymentForm.method}
                                 onChange={e => setPaymentForm({...paymentForm, method: e.target.value})}
                             >
@@ -416,10 +400,10 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
                             </select>
                         </div>
                         {(paymentForm.method === 'Transfer' || paymentForm.method === 'EDC') && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Penerima/Sumber</label>
+                            <div className="animate-fade-in">
+                                <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Bank Penerima/Sumber</label>
                                 <select 
-                                    className="w-full p-2 border border-gray-300 rounded-lg"
+                                    className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink"
                                     value={paymentForm.bankName}
                                     onChange={e => setPaymentForm({...paymentForm, bankName: e.target.value})}
                                 >
@@ -433,20 +417,20 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Catatan</label>
                         <input 
                             type="text" 
-                            className="w-full p-2 border border-gray-300 rounded-lg"
-                            placeholder="Contoh: Pelunasan Termin 1..."
+                            className="w-full p-3 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] text-ink"
+                            placeholder="Opsional..."
                             value={paymentForm.notes}
                             onChange={e => setPaymentForm({...paymentForm, notes: e.target.value})}
                         />
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-4">
-                        <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">Batal</button>
-                        <button type="submit" className={`px-6 py-2 rounded-lg text-white font-bold shadow-md ${paymentTarget.type === 'IN' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                            Simpan Pembayaran
+                    <div className="flex gap-4 pt-6 border-t border-hairline">
+                        <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="flex-1 py-4 text-[12px] font-medium text-ink uppercase tracking-widest border border-ink hover:bg-soft-cloud transition-colors">BATAL</button>
+                        <button type="submit" className="flex-1 py-4 text-[12px] font-medium text-canvas bg-ink uppercase tracking-widest hover:bg-mute transition-colors">
+                            SIMPAN TRANSAKSI
                         </button>
                     </div>
                 </form>

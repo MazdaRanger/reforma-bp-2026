@@ -1,11 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Job, Settings, InventoryItem } from '../../types';
 import { formatDateIndo, formatCurrency, formatWaNumber, cleanObject } from '../../utils/helpers';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
-// Added Car to imports to fix "Cannot find name 'Car'" error
-import { MessageSquare, Phone, CheckCircle, Calendar, Star, Send, XCircle, Clock, Search, User, Megaphone, CheckSquare, Square, Zap, Package, Wrench, Loader2, Save, Filter, Users, Trash2, ClipboardCheck, Info, AlertCircle, CheckCircle2, Ticket, Car } from 'lucide-react';
 import Modal from '../ui/Modal';
 
 interface CrcDashboardViewProps {
@@ -22,7 +19,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
         tab_followup: "Follow Up Service",
         tab_broadcast: "Broadcast & Promo",
         tab_history: "Riwayat Feedback",
-        ready_title: "Daftar Unit Selesai Perbaikan",
+        ready_title: "DAFTAR UNIT SELESAI PERBAIKAN",
         ready_subtitle: "Hubungi pelanggan untuk mengonfirmasi pengambilan unit.",
         btn_wa_ready: "Konfirmasi Janji Ambil",
         stats_ready: "Unit Selesai"
@@ -33,7 +30,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
         tab_followup: "Service Follow Up",
         tab_broadcast: "Broadcast & Promo",
         tab_history: "Feedback History",
-        ready_title: "Completed Vehicle List",
+        ready_title: "COMPLETED VEHICLE LIST",
         ready_subtitle: "Contact customers to confirm vehicle collection.",
         btn_wa_ready: "Confirm Pickup Date",
         stats_ready: "Finished Units"
@@ -47,31 +44,24 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
   const lang = settings.language || 'id';
   const t = (key: string) => DICTIONARY[lang][key] || key;
 
-  // Feedback Modal State
   const [feedbackModal, setFeedbackModal] = useState<{ isOpen: boolean, job: Job | null }>({ isOpen: false, job: null });
   const [csiRatings, setCsiRatings] = useState<Record<string, number>>({});
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [followUpStatus, setFollowUpStatus] = useState<'Contacted' | 'Unreachable'>('Contacted');
 
-  // Booking Execution Modal
   const [bookingModal, setBookingModal] = useState<{ isOpen: boolean, job: Job | null }>({ isOpen: false, job: null });
   const [bookingDateInput, setBookingDateInput] = useState('');
   
-  // Pickup Execution Modal (NEW)
   const [pickupModal, setPickupModal] = useState<{ isOpen: boolean, job: Job | null }>({ isOpen: false, job: null });
   const [pickupDateInput, setPickupDateInput] = useState('');
 
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Broadcast State
   const [broadcastMessage, setBroadcastMessage] = useState(settings.whatsappTemplates?.promoBroadcast || 'Halo Bpk/Ibu {nama}, kami memiliki promo spesial untuk pemilik {mobil} di Mazda Ranger. Hubungi kami segera untuk info lebih lanjut!');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [filterYear, setFilterYear] = useState('');
   const [filterModel, setFilterModel] = useState('');
 
-  // --- DATA PROCESSING ---
-  
-  // NEW: Filter for Ready for Pickup units
   const readyPickupJobs = useMemo(() => {
       const term = searchTerm.toLowerCase();
       return jobs.filter(j => 
@@ -121,7 +111,6 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
           const isPending = !j.crcFollowUpStatus || j.crcFollowUpStatus === 'Pending';
           return isClosed && isPending && (j.policeNumber.toLowerCase().includes(term) || j.customerName.toLowerCase().includes(term));
       }).sort((a,b) => {
-          // Priority sort: Latest Closing OR Latest Update (GatePass)
           const timeA = a.closedAt?.seconds || a.updatedAt?.seconds || 0;
           const timeB = b.closedAt?.seconds || b.updatedAt?.seconds || 0;
           return timeB - timeA;
@@ -171,12 +160,11 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
       
       const displayDate = overrideDate ? formatDateIndo(overrideDate) : (job.tanggalBooking || '(Belum Ditentukan)');
       
-      // Replace Placeholders
       let message = template
         .replace(/{nama}/g, job.customerName)
         .replace(/{mobil}/g, job.carModel)
         .replace(/{nopol}/g, job.policeNumber)
-        .replace(/{tgl_booking}/g, displayDate); // Used for both Booking and Ready date if mapped
+        .replace(/{tgl_booking}/g, displayDate);
 
       return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   };
@@ -230,8 +218,8 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
           await updateDoc(jobRef, {
               tanggalBooking: bookingDateInput,
               statusKendaraan: 'Booking Masuk',
-              isBookingContacted: true, // Flag as Contacted by CRC for KPI
-              bookingSuccess: false, // Reset success metric
+              isBookingContacted: true, 
+              bookingSuccess: false, 
               updatedAt: serverTimestamp()
           });
           const link = generateWaLink(bookingModal.job, 'booking', bookingDateInput);
@@ -254,14 +242,12 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
       try {
           const jobRef = doc(db, SERVICE_JOBS_COLLECTION, pickupModal.job.id);
           
-          // Save Promised Date & Flag as Contacted
           await updateDoc(jobRef, {
               pickupPromiseDate: pickupDateInput,
               isPickupContacted: true,
               updatedAt: serverTimestamp()
           });
 
-          // Generate WA link with the specific pickup date
           const link = generateWaLink(pickupModal.job, 'ready', pickupDateInput);
           if (link) window.open(link, '_blank');
           
@@ -282,15 +268,12 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
       }
 
       if (type === 'ready') {
-          // Open Pickup Date Modal instead of direct WA
           setPickupModal({ isOpen: true, job });
-          setPickupDateInput(new Date().toISOString().split('T')[0]); // Default to today
+          setPickupDateInput(new Date().toISOString().split('T')[0]); 
           return;
       }
 
-      // Handle other types directly
       if (type === 'followup') {
-         // Service Follow Up -> Mark as Contacted
          try {
              await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, job.id), { isServiceContacted: true });
          } catch(e) { console.error("Failed to update Service Contact status", e); }
@@ -311,271 +294,447 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-600 rounded-xl shadow-sm text-white"><MessageSquare size={24}/></div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">CRC / Customer Care</h1>
-                    <p className="text-sm text-gray-500 font-medium">Mode WhatsApp: <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isApiMode ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-green-100 text-green-700 border-green-200'}`}>{isApiMode ? 'GATEWAY API (BOT)' : 'PERSONAL (MANUAL)'}</span></p>
+    <div className="animate-fade-in pb-[48px]">
+        {/* HEADER */}
+        <div className="border-b border-hairline pb-[24px] mb-[48px]">
+            <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">CUSTOMER CARE</h1>
+            <p className="text-[16px] text-mute font-normal mt-[18px]">Mode WhatsApp: <span className="font-medium text-ink border border-ink px-2 py-1 text-[12px] uppercase tracking-widest">{isApiMode ? 'GATEWAY API (BOT)' : 'PERSONAL (MANUAL)'}</span></p>
+        </div>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-[24px] mb-[48px]">
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+                <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">{t('stats_ready')}</p>
+                <h2 className="text-[40px] font-display text-ink leading-none">{readyPickupJobs.length}</h2>
+            </div>
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+                <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Potensi Booking</p>
+                <h2 className="text-[40px] font-display text-ink leading-none">{bookingJobs.length}</h2>
+            </div>
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+                <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Perlu Follow Up</p>
+                <h2 className="text-[40px] font-display text-ink leading-none">{followUpJobs.length}</h2>
+            </div>
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+                <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Avg. Rating (CSI)</p>
+                <h2 className="text-[40px] font-display text-ink leading-none">{avgRating} / 5</h2>
+            </div>
+        </div>
+
+        {/* TABS */}
+        <div className="flex overflow-x-auto gap-6 border-b border-hairline mb-[48px] pb-4 scrollbar-hide">
+            <button onClick={() => setActiveTab('ready')} className={`text-[14px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'ready' ? 'text-ink border-b-2 border-ink' : 'text-mute hover:text-ink'}`}>{t('tab_ready')}</button>
+            <button onClick={() => setActiveTab('booking')} className={`text-[14px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'booking' ? 'text-ink border-b-2 border-ink' : 'text-mute hover:text-ink'}`}>{t('tab_booking')}</button>
+            <button onClick={() => setActiveTab('followup')} className={`text-[14px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'followup' ? 'text-ink border-b-2 border-ink' : 'text-mute hover:text-ink'}`}>{t('tab_followup')}</button>
+            <button onClick={() => setActiveTab('broadcast')} className={`text-[14px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'broadcast' ? 'text-ink border-b-2 border-ink' : 'text-mute hover:text-ink'}`}>{t('tab_broadcast')}</button>
+            <button onClick={() => setActiveTab('history')} className={`text-[14px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'history' ? 'text-ink border-b-2 border-ink' : 'text-mute hover:text-ink'}`}>{t('tab_history')}</button>
+        </div>
+
+        <div className="min-h-[400px]">
+            {/* SEARCH */}
+            {activeTab !== 'broadcast' && (
+                <div className="relative mb-[24px]">
+                    <input 
+                        type="text" 
+                        placeholder="Search..." 
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink"
+                    />
+                    <span className="absolute right-4 top-4 text-[12px] font-medium text-mute uppercase tracking-widest">SEARCH</span>
                 </div>
-            </div>
-        </div>
+            )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('stats_ready')}</p><h2 className="text-2xl font-black text-emerald-600">{readyPickupJobs.length} Unit</h2></div><div className="p-3 bg-emerald-50 rounded-full text-emerald-600"><CheckCircle size={24}/></div></div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Potensi Booking</p><h2 className="text-2xl font-black text-indigo-900">{bookingJobs.length} Unit</h2></div><div className="p-3 bg-indigo-50 rounded-full text-indigo-600"><Calendar size={24}/></div></div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Perlu Follow Up</p><h2 className="text-2xl font-black text-orange-600">{followUpJobs.length} Unit</h2></div><div className="p-3 bg-orange-50 rounded-full text-orange-600"><Phone size={24}/></div></div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avg. Rating (CSI)</p><h2 className="text-2xl font-black text-yellow-500 flex items-center gap-1">{avgRating} <Star fill="currentColor" size={20}/></h2></div><div className="p-3 bg-yellow-50 rounded-full text-yellow-600"><Star size={24}/></div></div>
-        </div>
+            {/* READY FOR PICKUP */}
+            {activeTab === 'ready' && (
+                <div className="bg-canvas border border-hairline animate-fade-in">
+                    <div className="p-6 bg-soft-cloud border-b border-hairline">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">{t('ready_title')}</h3>
+                        <p className="text-[12px] text-mute uppercase tracking-widest mt-1">{t('ready_subtitle')}</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
+                                <tr>
+                                    <th className="px-6 py-4 font-normal">Unit / Pelanggan</th>
+                                    <th className="px-6 py-4 font-normal">SA Penanggungjawab</th>
+                                    <th className="px-6 py-4 text-center font-normal">Waktu Selesai</th>
+                                    <th className="px-6 py-4 text-center font-normal">Aksi CRC</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {readyPickupJobs.map(job => (
+                                    <tr key={job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.policeNumber}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{job.customerName} | {job.carModel}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-[14px] font-medium text-ink">{job.namaSA || '-'}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="text-[12px] text-ink">{formatDateIndo(job.updatedAt)}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-1 border border-mute inline-block px-2 py-0.5">SIAP DIAMBIL</div>
+                                            {job.pickupPromiseDate && <div className="text-[10px] text-ink font-medium mt-1">Janji: {formatDateIndo(job.pickupPromiseDate)}</div>}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button 
+                                                onClick={() => handleSingleAction(job, 'ready')}
+                                                className="bg-canvas border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                            >
+                                                {t('btn_wa_ready')}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {readyPickupJobs.length === 0 && (
+                                    <tr><td colSpan={4} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Belum ada unit yang baru selesai perbaikan.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
-                <button onClick={() => setActiveTab('ready')} className={`flex-1 min-w-[150px] py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'ready' ? 'border-emerald-600 text-emerald-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><CheckCircle2 size={16}/> {t('tab_ready')}</button>
-                <button onClick={() => setActiveTab('booking')} className={`flex-1 min-w-[150px] py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'booking' ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><Calendar size={16}/> {t('tab_booking')}</button>
-                <button onClick={() => setActiveTab('followup')} className={`flex-1 min-w-[150px] py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'followup' ? 'border-orange-600 text-orange-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><Phone size={16}/> {t('tab_followup')}</button>
-                <button onClick={() => setActiveTab('broadcast')} className={`flex-1 min-w-[150px] py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'broadcast' ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><Megaphone size={16}/> {t('tab_broadcast')}</button>
-                <button onClick={() => setActiveTab('history')} className={`flex-1 min-w-[150px] py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'history' ? 'border-green-600 text-green-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><Star size={16}/> {t('tab_history')}</button>
-            </div>
+            {/* BOOKING */}
+            {activeTab === 'booking' && (
+                <div className="bg-canvas border border-hairline animate-fade-in">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
+                                <tr>
+                                    <th className="px-6 py-4 font-normal">Tgl Rencana</th>
+                                    <th className="px-6 py-4 font-normal">Pelanggan</th>
+                                    <th className="px-6 py-4 font-normal">Kendaraan</th>
+                                    <th className="px-6 py-4 font-normal">Status</th>
+                                    <th className="px-6 py-4 text-center font-normal">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {bookingJobs.map((job: any) => (
+                                    <tr key={job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-6 py-4 text-[14px] font-medium text-ink">{job.tanggalBooking ? formatDateIndo(job.tanggalBooking) : '-'}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.customerName}</div>
+                                            <div className="text-[12px] text-mute">{job.customerPhone}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.policeNumber}</div>
+                                            <div className="text-[12px] text-mute">{job.carModel}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {job.isPartReady ? <span className="text-[10px] font-medium text-ink border border-ink px-2 py-1 uppercase tracking-widest">Part Ready</span> : <span className="text-[10px] font-medium text-mute border border-mute px-2 py-1 uppercase tracking-widest">Waiting Part</span>}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button 
+                                                onClick={() => handleSingleAction(job, 'booking')} 
+                                                className="bg-canvas border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                            >
+                                                WA REMINDER
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {bookingJobs.length === 0 && <tr><td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Tidak ada potensi booking.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
-            <div className="min-h-[400px]">
-                {/* READY FOR PICKUP TAB */}
-                {activeTab === 'ready' && (
-                    <div className="animate-fade-in p-0">
-                        <div className="p-6 bg-emerald-50/30 border-b border-emerald-100 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-emerald-900">{t('ready_title')}</h3>
-                                <p className="text-xs text-emerald-600 font-medium">{t('ready_subtitle')}</p>
-                            </div>
-                            <div className="relative group">
-                                <Search className="absolute left-3 top-2.5 text-emerald-400" size={18}/>
-                                <input 
-                                    type="text" 
-                                    placeholder="Cari Nopol..." 
-                                    className="pl-10 p-2 border border-emerald-200 rounded-xl text-sm focus:ring-4 focus:ring-emerald-50 outline-none w-64"
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                />
+            {/* FOLLOW UP */}
+            {activeTab === 'followup' && (
+                <div className="bg-canvas border border-hairline animate-fade-in">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
+                                <tr>
+                                    <th className="px-6 py-4 font-normal">Tgl Selesai</th>
+                                    <th className="px-6 py-4 font-normal">Pelanggan</th>
+                                    <th className="px-6 py-4 font-normal">Kendaraan</th>
+                                    <th className="px-6 py-4 text-center font-normal">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {followUpJobs.map(job => (
+                                    <tr key={job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-6 py-4 text-[14px] text-ink">
+                                            {job.closedAt ? formatDateIndo(job.closedAt) : (job.updatedAt ? formatDateIndo(job.updatedAt) : '-')}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.customerName}</div>
+                                            <div className="text-[12px] text-mute">{job.customerPhone}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.policeNumber}</div>
+                                            <div className="text-[12px] text-mute">{job.carModel}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <button 
+                                                    onClick={() => handleSingleAction(job, 'followup')} 
+                                                    className="border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                                >
+                                                    WA FOLLOW UP
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleOpenFeedback(job)} 
+                                                    className="border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                                >
+                                                    INPUT CSI
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {followUpJobs.length === 0 && <tr><td colSpan={4} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Tidak ada antrean follow up.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* BROADCAST */}
+            {activeTab === 'broadcast' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
+                    <div className="lg:col-span-1 space-y-[24px]">
+                        <div className="bg-canvas border border-hairline p-6 md:p-8">
+                            <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-4 border-b border-hairline pb-4">Pesan Promo / Blast</h3>
+                            <textarea 
+                                className="w-full p-4 border border-hairline bg-soft-cloud text-[14px] text-ink focus:outline-none focus:border-ink min-h-[200px]" 
+                                placeholder="Tulis pesan..." 
+                                value={broadcastMessage} 
+                                onChange={e => setBroadcastMessage(e.target.value)}
+                            />
+                            <button 
+                                onClick={() => showNotification("Fitur blast siap digunakan per unit.", "info")} 
+                                className="w-full mt-6 bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
+                            >
+                                SIAPKAN LINK WA
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col">
+                        <div className="p-6 bg-soft-cloud border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Daftar Pelanggan</h3>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Filter Model..." value={filterModel} onChange={e => setFilterModel(e.target.value)} className="p-2 border border-hairline bg-canvas text-[12px] uppercase w-32 focus:outline-none focus:border-ink"/>
+                                <input type="text" placeholder="Tahun..." value={filterYear} onChange={e => setFilterYear(e.target.value)} className="p-2 border border-hairline bg-canvas text-[12px] uppercase w-20 focus:outline-none focus:border-ink"/>
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-black tracking-widest border-b">
+                        <div className="max-h-[500px] overflow-y-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] sticky top-0 border-b border-hairline">
                                     <tr>
-                                        <th className="px-6 py-4">Unit / Pelanggan</th>
-                                        <th className="px-6 py-4">SA Penanggungjawab</th>
-                                        <th className="px-6 py-4 text-center">Waktu Selesai</th>
-                                        <th className="px-6 py-4 text-center">Aksi CRC</th>
+                                        <th className="px-6 py-4 w-10 text-center font-normal">
+                                            <button onClick={toggleAllRecipients} className="uppercase hover:text-ink">{selectedRecipients.length === broadcastCandidates.length && broadcastCandidates.length > 0 ? 'ALL' : 'NONE'}</button>
+                                        </th>
+                                        <th className="px-6 py-4 font-normal">Nama / Mobil</th>
+                                        <th className="px-6 py-4 text-center font-normal">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {readyPickupJobs.map(job => (
-                                        <tr key={job.id} className="hover:bg-emerald-50/10 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Car size={18}/></div>
-                                                    <div>
-                                                        <div className="font-black text-gray-900 leading-none mb-1">{job.policeNumber}</div>
-                                                        <div className="text-xs text-gray-500 font-bold uppercase">{job.customerName} | {job.carModel}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-[10px]">SA</div>
-                                                    <span className="font-bold text-gray-700">{job.namaSA || '-'}</span>
-                                                </div>
-                                            </td>
+                                <tbody className="divide-y divide-hairline">
+                                    {broadcastCandidates.map(job => (
+                                        <tr key={job.id} className={`hover:bg-soft-cloud transition-colors ${selectedRecipients.includes(job.id) ? 'bg-soft-cloud' : ''}`}>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="text-xs font-bold text-gray-500">{formatDateIndo(job.updatedAt)}</div>
-                                                <div className="text-[10px] text-emerald-600 font-black flex items-center justify-center gap-1"><Clock size={10}/> SIAP DIAMBIL</div>
-                                                {job.pickupPromiseDate && <div className="text-[9px] text-indigo-600 font-bold mt-1 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Janji: {formatDateIndo(job.pickupPromiseDate)}</div>}
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedRecipients.includes(job.id)} 
+                                                    onChange={() => toggleRecipient(job.id)}
+                                                    className="w-4 h-4 accent-ink"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-[14px] font-medium text-ink">{job.customerName}</div>
+                                                <div className="text-[10px] text-mute mt-1 uppercase tracking-widest">{job.carModel} - {job.policeNumber}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <button 
-                                                    onClick={() => handleSingleAction(job, 'ready')}
-                                                    className="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] shadow-lg shadow-emerald-100 hover:bg-emerald-700 transform active:scale-95 transition-all"
+                                                    onClick={() => handleSingleAction(job, 'promo')} 
+                                                    className="bg-canvas border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
                                                 >
-                                                    <Send size={14}/> {t('btn_wa_ready')}
+                                                    KIRIM
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {readyPickupJobs.length === 0 && (
-                                        <tr>
-                                            <td colSpan={4} className="py-20 text-center text-gray-400 italic">
-                                                <Ticket size={48} className="mx-auto mb-4 opacity-10"/>
-                                                Belum ada unit yang baru selesai perbaikan.
-                                            </td>
-                                        </tr>
-                                    )}
+                                    {broadcastCandidates.length === 0 && <tr><td colSpan={3} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Tidak ada pelanggan.</td></tr>}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {activeTab === 'booking' && (
-                    <div className="animate-fade-in">
-                        <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                            <Search className="text-gray-400" size={20}/><input type="text" placeholder="Cari..." className="w-full bg-transparent outline-none font-medium" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}/>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-black"><tr><th className="px-6 py-4">Tgl Rencana</th><th className="px-6 py-4">Pelanggan</th><th className="px-6 py-4">Kendaraan</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-center">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {bookingJobs.map((job: any) => (
-                                        <tr key={job.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 font-bold text-indigo-700">{job.tanggalBooking ? formatDateIndo(job.tanggalBooking) : '-'}</td>
-                                            <td className="px-6 py-4"><div><div className="font-bold text-gray-900">{job.customerName}</div><div className="text-xs text-gray-500">{job.customerPhone}</div></div></td>
-                                            <td className="px-6 py-4"><div><div className="font-medium text-gray-800">{job.policeNumber}</div><div className="text-xs text-gray-500">{job.carModel}</div></div></td>
-                                            <td className="px-6 py-4">
-                                                {job.isPartReady ? <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 uppercase">Part Ready</span> : <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200 uppercase">Waiting Part</span>}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button onClick={() => handleSingleAction(job, 'booking')} title="Atur Jadwal & Kirim WA" className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200 hover:bg-green-100 text-xs font-black shadow-sm transform active:scale-95"><Send size={14}/> WA REMINDER</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'followup' && (
-                    <div className="animate-fade-in">
-                        <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                            <Search className="text-gray-400" size={20}/><input type="text" placeholder="Cari..." className="w-full bg-transparent outline-none font-medium" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}/>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-black"><tr><th className="px-6 py-4">Tgl Selesai</th><th className="px-6 py-4">Pelanggan</th><th className="px-6 py-4">Kendaraan</th><th className="px-6 py-4 text-center">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {followUpJobs.map(job => (
-                                        <tr key={job.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-gray-600 font-bold">
-                                                {job.closedAt ? formatDateIndo(job.closedAt) : (job.updatedAt ? formatDateIndo(job.updatedAt) : '-')}
-                                            </td>
-                                            <td className="px-6 py-4"><div className="font-bold text-gray-900">{job.customerName}</div><div className="text-xs text-gray-500">{job.customerPhone}</div></td>
-                                            <td className="px-6 py-4"><div className="font-medium text-gray-800">{job.policeNumber}</div><div className="text-xs text-gray-500">{job.carModel}</div></td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex justify-center gap-3">
-                                                    <button onClick={() => handleSingleAction(job, 'followup')} title="Kirim WA Follow Up Service" className="p-2.5 bg-green-50 text-green-600 rounded-full border border-green-100 hover:bg-green-100 transition-colors shadow-sm"><MessageSquare size={18}/></button>
-                                                    <button onClick={() => handleOpenFeedback(job)} title="Input Point Survey Pelanggan (CSI)" className="p-2.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors shadow-sm"><CheckCircle size={18}/></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'broadcast' && (
-                    <div className="p-6 space-y-6 animate-fade-in">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-1 space-y-4">
-                                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                                    <h3 className="font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs"><Megaphone size={18}/> Pesan Promo / Blast</h3>
-                                    <textarea className="w-full p-4 border border-blue-200 rounded-xl text-sm min-h-[200px] focus:ring-4 focus:ring-blue-50 transition-all font-medium" placeholder="Tulis pesan..." value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)}/>
-                                    <button onClick={() => showNotification("Fitur blast siap digunakan per unit.", "info")} className="w-full mt-6 bg-blue-600 text-white py-4 rounded-xl font-black shadow-xl hover:bg-blue-700 transition-all transform active:scale-95 flex items-center justify-center gap-2"><Zap size={20}/> SIAPKAN LINK WA</button>
-                                </div>
-                            </div>
-                            <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                                <div className="p-4 bg-gray-50 border-b flex flex-col md:flex-row justify-between gap-4">
-                                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><Users size={18} className="text-indigo-500"/> Daftar Pelanggan</h3>
-                                    <div className="flex gap-2"><input type="text" placeholder="Filter Model..." value={filterModel} onChange={e => setFilterModel(e.target.value)} className="p-2 border rounded-lg text-xs w-32"/><input type="text" placeholder="Tahun..." value={filterYear} onChange={e => setFilterYear(e.target.value)} className="p-2 border rounded-lg text-xs w-20"/></div>
-                                </div>
-                                <div className="max-h-[400px] overflow-y-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="bg-gray-100 text-gray-500 uppercase text-[10px] font-black sticky top-0"><tr><th className="px-4 py-3 w-10 text-center"><button onClick={toggleAllRecipients}><Square size={16}/></button></th><th className="px-4 py-3">Nama / Mobil</th><th className="px-4 py-3 text-center">Aksi</th></tr></thead>
-                                        <tbody className="divide-y">{broadcastCandidates.map(job => (
-                                            <tr key={job.id} className={`hover:bg-gray-50 ${selectedRecipients.includes(job.id) ? 'bg-indigo-50' : ''}`}><td className="px-4 py-3 text-center"><button onClick={() => toggleRecipient(job.id)}>{selectedRecipients.includes(job.id) ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16}/>}</button></td><td className="px-4 py-3"><div className="font-bold text-gray-900">{job.customerName}</div><div className="text-[10px] text-indigo-600 font-bold uppercase">{job.carModel} - {job.policeNumber}</div></td><td className="px-4 py-3 text-center"><button onClick={() => handleSingleAction(job, 'promo')} title="Kirim Pesan Promo WA Personal" className="p-2 text-green-600 hover:bg-green-50 rounded-full"><Send size={16}/></button></td></tr>
-                                        ))}</tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'history' && (
-                    <div className="animate-fade-in">
-                        <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                            <Search className="text-gray-400" size={20}/><input type="text" placeholder="Cari..." className="w-full bg-transparent outline-none font-medium" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}/>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-black"><tr><th className="px-6 py-4">Tgl Follow Up</th><th className="px-6 py-4">Pelanggan / Unit</th><th className="px-6 py-4 text-center">Indeks CSI</th><th className="px-6 py-4 text-center">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-gray-100">{historyJobs.map(job => (
-                                    <tr key={job.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-gray-500 font-medium">{formatDateIndo(job.crcFollowUpDate)}<div className="text-[10px] font-black text-indigo-400 uppercase">{job.crcFollowUpStatus}</div></td>
-                                        <td className="px-6 py-4"><div><div className="font-bold text-gray-900">{job.customerName}</div><div className="text-xs text-gray-500">{job.policeNumber} - {job.carModel}</div></div></td>
-                                        <td className="px-6 py-4 text-center"><div className="flex flex-col items-center"><div className="text-xs font-black text-yellow-600">{job.customerRating || 0} / 5</div><div className="flex gap-0.5 text-yellow-400">{[...Array(5)].map((_, i) => (<Star key={i} size={10} fill={i < Math.floor(job.customerRating || 0) ? "currentColor" : "none"} stroke="currentColor"/>))}</div></div></td>
-                                        <td className="px-6 py-4 text-center"><button onClick={() => handleOpenFeedback(job)} title="Lihat Detail Survey CSI" className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-full"><ClipboardCheck size={16}/></button></td>
+            {/* HISTORY */}
+            {activeTab === 'history' && (
+                <div className="bg-canvas border border-hairline animate-fade-in">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
+                                <tr>
+                                    <th className="px-6 py-4 font-normal">Tgl Follow Up</th>
+                                    <th className="px-6 py-4 font-normal">Pelanggan / Unit</th>
+                                    <th className="px-6 py-4 text-center font-normal">Indeks CSI</th>
+                                    <th className="px-6 py-4 text-center font-normal">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {historyJobs.map(job => (
+                                    <tr key={job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] text-ink">{formatDateIndo(job.crcFollowUpDate)}</div>
+                                            <div className="text-[10px] font-medium text-mute uppercase tracking-widest mt-1 border border-hairline inline-block px-1 py-0.5">{job.crcFollowUpStatus}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-[14px] font-medium text-ink">{job.customerName}</div>
+                                            <div className="text-[12px] text-mute">{job.policeNumber} - {job.carModel}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="text-[14px] font-medium text-ink">{job.customerRating || 0} / 5</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button 
+                                                onClick={() => handleOpenFeedback(job)} 
+                                                className="border border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-ink hover:text-canvas transition-colors"
+                                            >
+                                                DETAIL
+                                            </button>
+                                        </td>
                                     </tr>
-                                ))}</tbody>
-                            </table>
-                        </div>
+                                ))}
+                                {historyJobs.length === 0 && <tr><td colSpan={4} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">Belum ada riwayat.</td></tr>}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
 
         {/* BOOKING MODAL */}
-        <Modal isOpen={bookingModal.isOpen} onClose={() => !isUpdating && setBookingModal({ isOpen: false, job: null })} title="Penetapan Jadwal Booking">
+        <Modal isOpen={bookingModal.isOpen} onClose={() => !isUpdating && setBookingModal({ isOpen: false, job: null })} title="PENETAPAN JADWAL BOOKING">
             <div className="space-y-6">
-                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 shadow-sm"><Calendar size={24}/></div>
-                    <div><h4 className="font-black text-gray-900 leading-none">{bookingModal.job?.policeNumber}</h4><p className="text-sm text-gray-500 mt-1">{bookingModal.job?.customerName} | {bookingModal.job?.carModel}</p></div>
+                <div className="bg-soft-cloud p-6 border border-hairline">
+                    <h4 className="font-display text-[24px] text-ink leading-none uppercase">{bookingModal.job?.policeNumber}</h4>
+                    <p className="text-[12px] text-mute mt-2">{bookingModal.job?.customerName} | {bookingModal.job?.carModel}</p>
                 </div>
-                <div className="space-y-2"><label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Pilih Tanggal Rencana Masuk *</label><input type="date" required className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl text-lg font-black text-indigo-900 outline-none" value={bookingDateInput} onChange={e => setBookingDateInput(e.target.value)}/></div>
-                <div className="pt-4 flex gap-3"><button onClick={() => setBookingModal({ isOpen: false, job: null })} disabled={isUpdating} className="flex-1 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors">BATAL</button><button onClick={executeBookingProcess} disabled={isUpdating || !bookingDateInput} className="flex-[2] flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all transform active:scale-95 disabled:opacity-50">{isUpdating ? <Loader2 size={20} className="animate-spin"/> : <><Save size={20}/> SIMPAN & KIRIM WA</>}</button></div>
+                <div>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Pilih Tanggal Rencana Masuk</label>
+                    <input 
+                        type="date" 
+                        required 
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                        value={bookingDateInput} 
+                        onChange={e => setBookingDateInput(e.target.value)}
+                    />
+                </div>
+                <div className="pt-4 flex gap-4 border-t border-hairline">
+                    <button onClick={() => setBookingModal({ isOpen: false, job: null })} disabled={isUpdating} className="flex-1 py-4 text-[12px] font-medium text-ink uppercase tracking-widest border border-ink hover:bg-soft-cloud transition-colors">BATAL</button>
+                    <button onClick={executeBookingProcess} disabled={isUpdating || !bookingDateInput} className="flex-1 py-4 text-[12px] font-medium text-canvas bg-ink uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50">
+                        {isUpdating ? 'PROCESSING...' : 'SIMPAN & KIRIM WA'}
+                    </button>
+                </div>
             </div>
         </Modal>
 
         {/* PICKUP MODAL */}
-        <Modal isOpen={pickupModal.isOpen} onClose={() => !isUpdating && setPickupModal({ isOpen: false, job: null })} title="Konfirmasi Jadwal Pengambilan">
+        <Modal isOpen={pickupModal.isOpen} onClose={() => !isUpdating && setPickupModal({ isOpen: false, job: null })} title="KONFIRMASI JADWAL PENGAMBILAN">
             <div className="space-y-6">
-                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-600 shadow-sm"><Clock size={24}/></div>
-                    <div><h4 className="font-black text-gray-900 leading-none">{pickupModal.job?.policeNumber}</h4><p className="text-sm text-gray-500 mt-1">Status: Siap Ambil</p></div>
+                <div className="bg-soft-cloud p-6 border border-hairline">
+                    <h4 className="font-display text-[24px] text-ink leading-none uppercase">{pickupModal.job?.policeNumber}</h4>
+                    <p className="text-[12px] text-mute mt-2 uppercase tracking-widest">Status: Siap Ambil</p>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 text-xs text-amber-800 font-bold flex items-center gap-2">
-                    <AlertCircle size={16}/>
+                <div className="p-4 bg-canvas border border-ink text-ink text-[12px] font-medium uppercase tracking-widest">
                     Tanggal ini akan digunakan sebagai target KPI (Tepat Waktu/Tidak).
                 </div>
-                <div className="space-y-2"><label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Customer Berjanji Datang Tanggal *</label><input type="date" required className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl text-lg font-black text-emerald-900 outline-none" value={pickupDateInput} onChange={e => setPickupDateInput(e.target.value)}/></div>
-                <div className="pt-4 flex gap-3"><button onClick={() => setPickupModal({ isOpen: false, job: null })} disabled={isUpdating} className="flex-1 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors">BATAL</button><button onClick={executePickupProcess} disabled={isUpdating || !pickupDateInput} className="flex-[2] flex items-center justify-center gap-2 bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-xl hover:bg-emerald-700 transition-all transform active:scale-95 disabled:opacity-50">{isUpdating ? <Loader2 size={20} className="animate-spin"/> : <><Send size={20}/> SIMPAN & BUKA WA</>}</button></div>
+                <div>
+                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Customer Berjanji Datang Tanggal</label>
+                    <input 
+                        type="date" 
+                        required 
+                        className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] font-medium text-ink uppercase"
+                        value={pickupDateInput} 
+                        onChange={e => setPickupDateInput(e.target.value)}
+                    />
+                </div>
+                <div className="pt-4 flex gap-4 border-t border-hairline">
+                    <button onClick={() => setPickupModal({ isOpen: false, job: null })} disabled={isUpdating} className="flex-1 py-4 text-[12px] font-medium text-ink uppercase tracking-widest border border-ink hover:bg-soft-cloud transition-colors">BATAL</button>
+                    <button onClick={executePickupProcess} disabled={isUpdating || !pickupDateInput} className="flex-1 py-4 text-[12px] font-medium text-canvas bg-ink uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50">
+                        {isUpdating ? 'PROCESSING...' : 'SIMPAN & BUKA WA'}
+                    </button>
+                </div>
             </div>
         </Modal>
 
-        {/* SURVEY CSI MODAL (OVERLAY FORM) */}
-        <Modal isOpen={feedbackModal.isOpen} onClose={() => setFeedbackModal({ isOpen: false, job: null })} title="Point Survey Kepuasan Pelanggan (CSI)" maxWidth="max-w-3xl">
+        {/* SURVEY CSI MODAL */}
+        <Modal isOpen={feedbackModal.isOpen} onClose={() => setFeedbackModal({ isOpen: false, job: null })} title="SURVEY KEPUASAN PELANGGAN (CSI)" maxWidth="max-w-3xl">
             <div className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-4"><div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm"><User size={20}/></div><div><p className="font-black text-gray-900 leading-tight">{feedbackModal.job?.customerName}</p><p className="text-xs text-gray-500">{feedbackModal.job?.policeNumber}</p></div></div>
-                    <div className="flex gap-2"><button onClick={() => setFollowUpStatus('Contacted')} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${followUpStatus === 'Contacted' ? 'bg-green-600 text-white' : 'bg-white text-gray-400 border-gray-200'}`}>Tersambung</button><button onClick={() => setFollowUpStatus('Unreachable')} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${followUpStatus === 'Unreachable' ? 'bg-red-600 text-white' : 'bg-white text-gray-400 border-gray-200'}`}>Gagal Hubungi</button></div>
+                <div className="bg-soft-cloud p-6 border border-hairline flex items-center justify-between">
+                    <div>
+                        <p className="font-display text-[24px] text-ink uppercase leading-none">{feedbackModal.job?.customerName}</p>
+                        <p className="text-[12px] text-mute mt-2 uppercase tracking-widest">{feedbackModal.job?.policeNumber}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setFollowUpStatus('Contacted')} 
+                            className={`px-4 py-2 text-[10px] font-medium uppercase tracking-widest border transition-colors ${followUpStatus === 'Contacted' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
+                        >
+                            Tersambung
+                        </button>
+                        <button 
+                            onClick={() => setFollowUpStatus('Unreachable')} 
+                            className={`px-4 py-2 text-[10px] font-medium uppercase tracking-widest border transition-colors ${followUpStatus === 'Unreachable' ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
+                        >
+                            Gagal Hubungi
+                        </button>
+                    </div>
                 </div>
+                
                 {followUpStatus === 'Contacted' && (
                     <div className="animate-fade-in space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {settings.csiIndicators.map((indicator, idx) => (
-                                <div key={idx} className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3">
-                                    <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{indicator}</p>
-                                    <div className="flex gap-2 justify-center bg-white py-2 rounded-lg border border-indigo-50">
-                                        {[1, 2, 3, 4, 5].map(star => (<button key={star} onClick={() => setCsiRatings(prev => ({ ...prev, [indicator]: star }))} className="transition-transform hover:scale-125">{star <= (csiRatings[indicator] || 0) ? <Star size={24} className="text-yellow-400 fill-yellow-400"/> : <Star size={24} className="text-gray-200"/>}</button>))}
+                                <div key={idx} className="bg-canvas p-4 border border-hairline flex flex-col gap-4">
+                                    <p className="text-[12px] font-medium text-ink uppercase tracking-widest">{indicator}</p>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map(val => (
+                                            <button 
+                                                key={val} 
+                                                onClick={() => setCsiRatings(prev => ({ ...prev, [indicator]: val }))} 
+                                                className={`flex-1 py-2 border text-[12px] font-medium transition-colors ${val <= (csiRatings[indicator] || 0) ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-mute border-hairline hover:text-ink'}`}
+                                            >
+                                                {val}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             ))}
-                            {settings.csiIndicators.length === 0 && <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 col-span-2"><AlertCircle size={24} className="mx-auto text-gray-300 mb-2"/><p className="text-xs text-gray-400">Belum ada indikator survey yang diatur.</p></div>}
+                            {settings.csiIndicators.length === 0 && (
+                                <div className="p-8 text-center border border-hairline border-dashed col-span-2">
+                                    <p className="text-[12px] text-mute uppercase tracking-widest">Belum ada indikator survey yang diatur.</p>
+                                </div>
+                            )}
                         </div>
-                        <div className="space-y-2"><label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Komentar / Feedback Pelanggan</label><textarea value={feedbackNotes} onChange={e => setFeedbackNotes(e.target.value)} rows={3} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm" placeholder="Saran atau keluhan..."/></div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Komentar / Feedback</label>
+                            <textarea 
+                                value={feedbackNotes} 
+                                onChange={e => setFeedbackNotes(e.target.value)} 
+                                rows={3} 
+                                className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[14px] text-ink" 
+                                placeholder="Saran atau keluhan..."
+                            />
+                        </div>
                     </div>
                 )}
-                <div className="pt-4 border-t flex gap-3"><button onClick={() => setFeedbackModal({ isOpen: false, job: null })} className="flex-1 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors">BATAL</button><button onClick={handleSaveFeedback} title="Simpan hasil survey & CSI ke riwayat" className="flex-[2] bg-indigo-600 text-white py-3 rounded-xl font-black shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"><Save size={20}/> SIMPAN HASIL SURVEY</button></div>
+                
+                <div className="pt-6 border-t border-hairline flex gap-4">
+                    <button onClick={() => setFeedbackModal({ isOpen: false, job: null })} className="flex-1 py-4 text-[12px] font-medium text-ink uppercase tracking-widest border border-ink hover:bg-soft-cloud transition-colors">BATAL</button>
+                    <button onClick={handleSaveFeedback} className="flex-1 py-4 text-[12px] font-medium text-canvas bg-ink uppercase tracking-widest hover:bg-mute transition-colors">
+                        SIMPAN HASIL SURVEY
+                    </button>
+                </div>
             </div>
         </Modal>
     </div>

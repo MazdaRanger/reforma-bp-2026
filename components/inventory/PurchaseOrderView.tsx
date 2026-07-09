@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { collection, getDocs, doc, addDoc, updateDoc, serverTimestamp, increment, query, orderBy, limit, getDoc, where, Timestamp, writeBatch, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, serverTimestamp, increment, query, orderBy, limit, getDoc, where, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db, PURCHASE_ORDERS_COLLECTION, SPAREPART_COLLECTION, SETTINGS_COLLECTION, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { InventoryItem, Supplier, PurchaseOrder, PurchaseOrderItem, UserPermissions, Settings, Job, EstimateItem } from '../../types';
-import { formatCurrency, formatDateIndo, cleanObject, generateRandomId, toYyyyMmDd } from '../../utils/helpers';
+import { formatCurrency, formatDateIndo, cleanObject, toYyyyMmDd } from '../../utils/helpers';
 import { generatePurchaseOrderPDF, generateReceivingReportPDF } from '../../utils/pdfGenerator';
-import { ShoppingCart, Plus, Search, Eye, Download, CheckCircle, XCircle, ArrowLeft, Trash2, Package, AlertCircle, CheckSquare, Square, Printer, Save, FileText, Send, Ban, Check, RefreshCw, Layers, Car, Loader2, X, ChevronRight, Hash, Clock, Calendar, AlertTriangle, Edit } from 'lucide-react';
 import { initialSettingsState } from '../../utils/constants';
 
 interface PurchaseOrderViewProps {
@@ -68,8 +66,8 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
   const [poCreationMode, setPoCreationMode] = useState<'manual' | 'wo'>('manual');
   const [poForm, setPoForm] = useState<any>({
-      id: null, // Add ID to track edit mode
-      poNumber: '', // Track PO Number for edit
+      id: null,
+      poNumber: '',
       supplierId: '',
       items: [],
       notes: '',
@@ -120,18 +118,14 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
       }
   }, [realTimePOs]);
 
-  // Handle direct navigation from Part Monitoring
   useEffect(() => {
       if (initialJobId && jobs.length > 0) {
           const targetJob = jobs.find(j => j.id === initialJobId);
           if (targetJob) {
-              // 1. Masuk mode create & WO
               setViewMode('create');
               setPoCreationMode('wo');
-              // 2. Isi term dan temukan job-nya
               setWoSearchTerm(targetJob.woNumber || targetJob.policeNumber);
               
-              // 3. Langsung select job-nya (auto-load parts)
               if (targetJob.estimateData?.partItems && targetJob.estimateData.partItems.length > 0) {
                   setFoundJob(targetJob);
                   const initialSelection: any = {};
@@ -141,10 +135,10 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                   setSelectedPartsFromWo(initialSelection);
                   
                   setTimeout(() => {
-                     showNotification(`Mode Cepat: Data part dari WO ${targetJob.woNumber || targetJob.policeNumber} telah dimuat.`, "success");
+                     showNotification(`MODE CEPAT: DATA PART DARI WO ${targetJob.woNumber || targetJob.policeNumber} TELAH DIMUAT.`, "success");
                   }, 500);
               } else {
-                  showNotification(`Pekerjaan ${targetJob.policeNumber} tidak memiliki estimasi suku cadang.`, "error");
+                  showNotification(`PEKERJAAN ${targetJob.policeNumber} TIDAK MEMILIKI ESTIMASI SUKU CADANG.`, "error");
               }
           }
       }
@@ -174,19 +168,19 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
     const supplierAddress = supplier ? supplier.address : '';
     try {
         generatePurchaseOrderPDF(po, settings, supplierAddress);
-        showNotification(`Mendownload ${po.poNumber}...`, "success");
+        showNotification(`MENDOWNLOAD ${po.poNumber}...`, "success");
     } catch (err: any) {
         console.error("PDF Print Error:", err);
-        showNotification("Gagal mencetak PDF.", "error");
+        showNotification("GAGAL MENCETAK PDF.", "error");
     }
   };
 
   const handleApprovePO = async (e?: React.MouseEvent) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!selectedPO || !selectedPO.id) return;
-    if (!isManager) { showNotification("Akses Ditolak: Manager only.", "error"); return; }
+    if (!isManager) { showNotification("AKSES DITOLAK: MANAGER ONLY.", "error"); return; }
 
-    if (!window.confirm(`Setujui PO ${selectedPO.poNumber}?`)) return;
+    if (!window.confirm(`SETUJUI PO ${selectedPO.poNumber}?`)) return;
 
     setIsProcessing(true);
     try {
@@ -198,11 +192,11 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
             lastModified: serverTimestamp()
         });
 
-        showNotification(`PO ${selectedPO.poNumber} disetujui.`, "success");
+        showNotification(`PO ${selectedPO.poNumber} DISETUJUI.`, "success");
         setViewMode('list');
         setSelectedPO(null);
     } catch (e: any) {
-        showNotification(`Error: ${e.message}`, "error");
+        showNotification(`ERROR: ${e.message}`, "error");
     } finally {
         setIsProcessing(false);
     }
@@ -213,9 +207,9 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
     if (!selectedPO || !selectedPO.id) return;
     if (!isManager) return;
 
-    const reason = window.prompt("Alasan penolakan:", "");
+    const reason = window.prompt("ALASAN PENOLAKAN:", "");
     if (reason === null) return;
-    if (!reason.trim()) { showNotification("Alasan wajib diisi.", "error"); return; }
+    if (!reason.trim()) { showNotification("ALASAN WAJIB DIISI.", "error"); return; }
 
     setIsProcessing(true);
     try {
@@ -225,27 +219,26 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
             approvedBy: userPermissions.role,
             approvedAt: serverTimestamp()
         });
-        showNotification(`PO ditolak.`, "success");
+        showNotification(`PO DITOLAK.`, "success");
         setViewMode('list');
         setSelectedPO(null);
     } catch (e: any) {
-        showNotification("Gagal menolak PO.", "error");
+        showNotification("GAGAL MENOLAK PO.", "error");
     } finally {
         setIsProcessing(false);
     }
   };
 
   const handleCancelPO = async (po: PurchaseOrder) => {
-    // Allow Manager OR Partman IF Pending/Draft
     const isPending = po.status === 'Pending Approval' || po.status === 'Draft';
     const canCancel = isManager || (isPartman && isPending);
 
     if (!canCancel) {
-        showNotification("Hanya Manager yang bisa membatalkan PO yang sudah diproses.", "error");
+        showNotification("HANYA MANAGER YANG BISA MEMBATALKAN PO YANG SUDAH DIPROSES.", "error");
         return;
     }
 
-    if (!window.confirm(`Yakin ingin membatalkan/menghapus PO ${po.poNumber}?`)) return;
+    if (!window.confirm(`YAKIN INGIN MEMBATALKAN/MENGHAPUS PO ${po.poNumber}?`)) return;
 
     setIsProcessing(true);
     try {
@@ -254,7 +247,6 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
             lastModified: serverTimestamp()
         });
 
-        // Release job items order status
         for (const item of po.items) {
             if (item.refJobId && item.refPartIndex !== undefined) {
                 const jobRef = doc(db, SERVICE_JOBS_COLLECTION, item.refJobId);
@@ -269,18 +261,17 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
             }
         }
 
-        showNotification(`PO ${po.poNumber} telah dibatalkan.`, "success");
+        showNotification(`PO ${po.poNumber} TELAH DIBATALKAN.`, "success");
         setViewMode('list');
         setSelectedPO(null);
     } catch (e: any) {
         console.error(e);
-        showNotification("Gagal membatalkan PO.", "error");
+        showNotification("GAGAL MEMBATALKAN PO.", "error");
     } finally {
         setIsProcessing(false);
     }
   };
 
-  // Populate Form for Edit Mode
   const handleEditPO = (po: PurchaseOrder) => {
       setPoForm({
           id: po.id,
@@ -291,7 +282,6 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           hasPpn: po.hasPpn || false,
           date: po.date ? toYyyyMmDd(po.date) : new Date().toISOString().split('T')[0]
       });
-      // Set Mode to Manual (easiest for editing mixed items) or WO if all items have ref
       const hasRef = po.items.some(i => i.refJobId);
       setPoCreationMode(hasRef ? 'wo' : 'manual');
       setViewMode('create');
@@ -300,7 +290,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
   const handleProcessReceiving = async () => {
       if (!selectedPO) return;
       if (selectedItemsToReceive.length === 0) { 
-          showNotification("Pilih setidaknya satu item yang akan diterima.", "error"); 
+          showNotification("PILIH SETIDAKNYA SATU ITEM YANG AKAN DITERIMA.", "error"); 
           return; 
       }
       
@@ -310,18 +300,17 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           const inputQty = receiveQtyMap[idx] || 0;
           
           if (inputQty <= 0) {
-              showNotification(`Qty untuk ${item.name} harus lebih dari 0.`, "error");
+              showNotification(`QTY UNTUK ${item.name} HARUS LEBIH DARI 0.`, "error");
               return;
           }
           if (inputQty > remaining) {
-              showNotification(`Qty untuk ${item.name} melebihi sisa pesanan (${remaining}).`, "error");
+              showNotification(`QTY UNTUK ${item.name} MELEBIHI SISA PESANAN (${remaining}).`, "error");
               return;
           }
 
-          // Validasi Harga Jual vs Harga Beli untuk Part Baru dari Estimasi
           const isLinkedToExisting = item.inventoryId && inventoryItems.some(i => i.id === item.inventoryId);
           if (!isLinkedToExisting && item.estimatedSellPrice && item.estimatedSellPrice < item.price) {
-              showNotification(`BLOKIR: Harga jual estimasi ${item.name} (${formatCurrency(item.estimatedSellPrice)}) lebih rendah dari modal beli (${formatCurrency(item.price)}). Revisi di menu Estimasi terlebih dahulu!`, "error");
+              showNotification(`BLOKIR: HARGA JUAL ESTIMASI ${item.name} (${formatCurrency(item.estimatedSellPrice)}) LEBIH RENDAH DARI MODAL BELI (${formatCurrency(item.price)}). REVISI DI MENU ESTIMASI TERLEBIH DAHULU!`, "error");
               return;
           }
       }
@@ -409,7 +398,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                   if (jobUpdateMap[jobId] && jobUpdateMap[jobId].parts[item.refPartIndex]) {
                       const jobPart = jobUpdateMap[jobId].parts[item.refPartIndex];
                       jobPart.inventoryId = targetInventoryId;
-                      jobPart.hasArrived = true; // Mark as arrived since we received it
+                      jobPart.hasArrived = true; 
                       jobUpdateMap[jobId].changed = true;
 
                       if (inventoryItems.find(i => i.id === targetInventoryId)) {
@@ -423,7 +412,6 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               }
           }
 
-          // Handle Job Status Sync for received parts
           for (const [jobId, data] of Object.entries(jobUpdateMap)) {
               if (data.changed) {
                   const updatePayload: any = {
@@ -431,7 +419,6 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                       updatedAt: serverTimestamp()
                   };
                   
-                  // Check if ALL parts are now fulfilled (either arrived or already in stock and not ordered)
                   const partsComplete = data.parts.every(p => p.hasArrived || !p.isOrdered);
                   
                   if (partsComplete) {
@@ -479,9 +466,9 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           generateReceivingReportPDF(selectedPO, itemsReceivedForReport, settings, userPermissions.role, bstNumber);
           
           if (mismatchCount > 0) {
-              showNotification(`Barang Diterima. Warning: ${mismatchCount} item mismatch harga.`, "info");
+              showNotification(`BARANG DITERIMA. WARNING: ${mismatchCount} ITEM MISMATCH HARGA.`, "info");
           } else {
-              showNotification(`Penerimaan Berhasil. Stok Gudang Bertambah.`, "success");
+              showNotification(`PENERIMAAN BERHASIL. STOK GUDANG BERTAMBAH.`, "success");
           }
           
           setViewMode('list');
@@ -489,13 +476,12 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
       } catch (e: any) {
           console.error("Receiving Error:", e);
-          showNotification("Error saat penerimaan: " + e.message, "error");
+          showNotification("ERROR SAAT PENERIMAAN: " + e.message, "error");
       } finally {
           setIsProcessing(false);
       }
   };
 
-  // ... (Other functions like handleSearchWO, handleSelectJobFromPicker, handleToggleWoPart, handleImportPartsToPO, handleAddItem, handleUpdateItem, handleRemoveItem remain same) ...
   const handleSearchWO = () => {
       if (!woSearchTerm) return;
       const termUpper = woSearchTerm.toUpperCase().replace(/\s/g, '');
@@ -503,16 +489,16 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
       if (matches.length > 0) {
           matches.sort((a, b) => { const getTime = (val: any) => val?.seconds || 0; return getTime(b.createdAt) - getTime(a.createdAt); });
           setWoMatches(matches); setIsWoPickerOpen(true);
-      } else { showNotification("No. Polisi atau WO aktif tidak ditemukan.", "error"); setWoMatches([]); setIsWoPickerOpen(false); setFoundJob(null); }
+      } else { showNotification("NO. POLISI ATAU WO AKTIF TIDAK DITEMUKAN.", "error"); setWoMatches([]); setIsWoPickerOpen(false); setFoundJob(null); }
   };
 
   const handleSelectJobFromPicker = (job: Job) => {
-      if (!job.estimateData?.partItems || job.estimateData.partItems.length === 0) { showNotification(`Pekerjaan ${job.policeNumber} tidak memiliki estimasi suku cadang.`, "error"); return; }
+      if (!job.estimateData?.partItems || job.estimateData.partItems.length === 0) { showNotification(`PEKERJAAN ${job.policeNumber} TIDAK MEMILIKI ESTIMASI SUKU CADANG.`, "error"); return; }
       setFoundJob(job); setIsWoPickerOpen(false);
       const initialSelection: any = {};
       job.estimateData.partItems.forEach((p, idx) => { if (!p.isOrdered) initialSelection[idx] = { selected: true, isIndent: p.isIndent || false }; });
       setSelectedPartsFromWo(initialSelection);
-      showNotification(`Work Order ${job.woNumber || job.policeNumber} dipilih.`, "success");
+      showNotification(`WORK ORDER ${job.woNumber || job.policeNumber} DIPILIH.`, "success");
   };
 
   const handleToggleWoPart = (idx: number, field: 'selected' | 'isIndent') => {
@@ -529,14 +515,14 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               const partCodeUpper = estItem.number?.toUpperCase().trim() || "";
               const invItem = inventoryItems.find(i => (estItem.inventoryId && i.id === estItem.inventoryId) || (partCodeUpper && i.code?.toUpperCase() === partCodeUpper));
               itemsToAdd.push({
-                  code: partCodeUpper || estItem.number || 'NON-PART-NO', name: estItem.name || 'Tanpa Nama', brand: invItem?.brand || foundJob.carBrand || 'Genuine', category: 'sparepart', qty: estItem.qty || 1, qtyReceived: 0, unit: invItem?.unit || 'Pcs', price: invItem?.buyPrice || 0, total: (estItem.qty || 1) * (invItem?.buyPrice || 0), inventoryId: estItem.inventoryId || invItem?.id || null, refJobId: foundJob.id, refWoNumber: foundJob.woNumber, refPartIndex: idx, isIndent: selection.isIndent, isStockManaged: true, estimatedSellPrice: estItem.price || 0
+                  code: partCodeUpper || estItem.number || 'NON-PART-NO', name: estItem.name || 'TANPA NAMA', brand: invItem?.brand || foundJob.carBrand || 'GENUINE', category: 'sparepart', qty: estItem.qty || 1, qtyReceived: 0, unit: invItem?.unit || 'PCS', price: invItem?.buyPrice || 0, total: (estItem.qty || 1) * (invItem?.buyPrice || 0), inventoryId: estItem.inventoryId || invItem?.id || null, refJobId: foundJob.id, refWoNumber: foundJob.woNumber, refPartIndex: idx, isIndent: selection.isIndent, isStockManaged: true, estimatedSellPrice: estItem.price || 0
               });
           }
       });
-      if (itemsToAdd.length === 0) { showNotification("Pilih minimal satu part.", "error"); return; }
+      if (itemsToAdd.length === 0) { showNotification("PILIH MINIMAL SATU PART.", "error"); return; }
       setPoForm((prev: any) => ({ ...prev, items: [...(prev.items || []), ...itemsToAdd] }));
       if (!poForm.notes) setPoForm((prev: any) => ({ ...prev, notes: `PO WO: ${foundJob.woNumber || foundJob.policeNumber}` }));
-      showNotification(`${itemsToAdd.length} item masuk ke Draft PO.`, "success"); setFoundJob(null); setWoSearchTerm('');
+      showNotification(`${itemsToAdd.length} ITEM MASUK KE DRAFT PO.`, "success"); setFoundJob(null); setWoSearchTerm('');
   };
 
   const handleAddItem = () => { setPoForm((prev: any) => ({ ...prev, items: [...(prev.items || []), { code: '', name: '', brand: '', category: 'sparepart', qty: 1, price: 0, total: 0, unit: 'Pcs', inventoryId: null, qtyReceived: 0, isStockManaged: true }] })); };
@@ -565,7 +551,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
   const handleSubmitPO = async (status: 'Draft' | 'Pending Approval') => {
       if (!poForm.supplierId || !poForm.items || poForm.items.length === 0) {
-          showNotification("Pilih supplier dan tambahkan item.", "error");
+          showNotification("PILIH SUPPLIER DAN TAMBAHKAN ITEM.", "error");
           return;
       }
       const supplier = suppliers.find(s => s.id === poForm.supplierId);
@@ -597,23 +583,20 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           };
 
           if (poForm.id) {
-              // UPDATE EXISTING PO
-              payload.poNumber = poForm.poNumber; // Keep existing number
+              payload.poNumber = poForm.poNumber; 
               payload.lastModified = serverTimestamp();
               
               await updateDoc(doc(db, PURCHASE_ORDERS_COLLECTION, poForm.id), cleanObject(payload));
-              showNotification(`PO ${poForm.poNumber} berhasil diperbarui.`, "success");
+              showNotification(`PO ${poForm.poNumber} BERHASIL DIPERBARUI.`, "success");
           } else {
-              // CREATE NEW PO
               const poNumber = await generateSequentialId(PURCHASE_ORDERS_COLLECTION, 'poNumber', 'PO');
               payload.poNumber = poNumber;
               payload.createdAt = serverTimestamp();
               
               await addDoc(collection(db, PURCHASE_ORDERS_COLLECTION), cleanObject(payload));
-              showNotification(`PO ${poNumber} Berhasil Diterbitkan!`, "success");
+              showNotification(`PO ${poNumber} BERHASIL DITERBITKAN!`, "success");
           }
 
-          // Update Job Link status regardless of create or update
           for (const item of sanitizedItems) {
               if (item.refJobId && item.refPartIndex !== null) {
                   const jobRef = doc(db, SERVICE_JOBS_COLLECTION, item.refJobId);
@@ -636,7 +619,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           setPoForm({ id: null, poNumber: '', supplierId: '', items: [], notes: '', hasPpn: false, date: new Date().toISOString().split('T')[0] });
           setPoCreationMode('manual');
       } catch (e: any) {
-          showNotification("Gagal menyimpan PO.", "error");
+          showNotification("GAGAL MENYIMPAN PO.", "error");
       } finally {
           setLoading(false);
       }
@@ -644,13 +627,13 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
   const getStatusBadge = (status: string) => {
       switch (status) {
-          case 'Draft': return <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-bold border">Draft</span>;
-          case 'Pending Approval': return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold border">Pending Approval</span>;
-          case 'Ordered': return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold border">Ordered</span>;
-          case 'Partial': return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-bold border">Partial</span>;
-          case 'Received': return <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold border">Received</span>;
-          case 'Rejected': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold border">Rejected</span>;
-          case 'Cancelled': return <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-bold border">Cancelled</span>;
+          case 'Draft': return <span className="px-2 py-1 bg-soft-cloud text-mute border border-hairline uppercase tracking-widest text-[10px]">DRAFT</span>;
+          case 'Pending Approval': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px] animate-pulse">PENDING APPROVAL</span>;
+          case 'Ordered': return <span className="px-2 py-1 bg-ink text-canvas border border-ink uppercase tracking-widest text-[10px]">ORDERED</span>;
+          case 'Partial': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px]">PARTIAL</span>;
+          case 'Received': return <span className="px-2 py-1 bg-canvas text-ink border border-hairline uppercase tracking-widest text-[10px] opacity-70">RECEIVED</span>;
+          case 'Rejected': return <span className="px-2 py-1 bg-soft-cloud text-ink border border-ink uppercase tracking-widest text-[10px]">REJECTED</span>;
+          case 'Cancelled': return <span className="px-2 py-1 bg-soft-cloud text-mute border border-hairline uppercase tracking-widest text-[10px]">CANCELLED</span>;
           default: return null;
       }
   };
@@ -660,47 +643,45 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
       const isEditing = !!poForm.id;
 
       return (
-          <div className="animate-fade-in bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-4 mb-6 border-b pb-4">
+          <div className="animate-fade-in pb-[48px]">
+              <div className="flex items-center gap-4 mb-[48px] border-b border-hairline pb-[24px]">
                   <button onClick={() => { 
                       setPoForm({id: null, poNumber: '', supplierId: '', items: [], hasPpn: false, date: new Date().toISOString().split('T')[0]}); 
                       if (onPOComplete) onPOComplete(); else setViewMode('list'); 
-                  }} className="p-2 hover:bg-gray-100 rounded-full"><ArrowLeft size={20}/></button>
-                  <h2 className="text-2xl font-bold text-gray-800">{isEditing ? `Edit PO ${poForm.poNumber}` : 'Buat Purchase Order Baru'}</h2>
+                  }} className="text-[12px] font-medium text-ink uppercase tracking-widest border border-hairline hover:border-ink px-4 py-2 transition-colors">KEMBALI</button>
+                  <h2 className="text-[32px] font-display uppercase leading-none text-ink">{isEditing ? `EDIT PO ${poForm.poNumber}` : 'BUAT PURCHASE ORDER BARU'}</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] mb-[48px]">
                   <div>
-                      <label className="block text-sm font-bold mb-1">Supplier *</label>
-                      <select className="w-full p-2 border rounded" value={poForm.supplierId} onChange={e => setPoForm({ ...poForm, supplierId: e.target.value })}>
-                          <option value="">-- Pilih Supplier --</option>
+                      <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">SUPPLIER *</label>
+                      <select className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={poForm.supplierId} onChange={e => setPoForm({ ...poForm, supplierId: e.target.value })}>
+                          <option value="">-- PILIH SUPPLIER --</option>
                           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                   </div>
                   <div>
-                      <label className="block text-sm font-bold mb-1">Tanggal PO *</label>
-                      <div className="relative">
-                        <input type="date" className="w-full p-2 border rounded pl-10 font-bold" value={poForm.date} onChange={e => setPoForm({...poForm, date: e.target.value})} />
-                        <Calendar className="absolute left-3 top-2.5 text-indigo-500" size={18}/>
-                      </div>
+                      <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">TANGGAL PO *</label>
+                      <input type="date" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={poForm.date} onChange={e => setPoForm({...poForm, date: e.target.value})} />
                   </div>
                   <div>
-                      <label className="block text-sm font-bold mb-1">Metode Input</label>
-                      <div className="flex bg-gray-100 p-1 rounded-lg">
-                          <button onClick={() => setPoCreationMode('manual')} className={`flex-1 py-2 rounded-md text-sm font-bold ${poCreationMode === 'manual' ? 'bg-white text-indigo-600 shadow' : 'text-gray-500'}`}><Layers size={16} className="inline mr-1"/> General</button>
-                          <button onClick={() => setPoCreationMode('wo')} className={`flex-1 py-2 rounded-md text-sm font-bold ${poCreationMode === 'wo' ? 'bg-white text-indigo-600 shadow' : 'text-gray-500'}`}><Car size={16} className="inline mr-1"/> Dari WO</button>
+                      <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">METODE INPUT</label>
+                      <div className="flex bg-soft-cloud border border-hairline p-1">
+                          <button onClick={() => setPoCreationMode('manual')} className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest transition-colors ${poCreationMode === 'manual' ? 'bg-ink text-canvas' : 'bg-transparent text-mute hover:text-ink'}`}>GENERAL</button>
+                          <button onClick={() => setPoCreationMode('wo')} className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest transition-colors ${poCreationMode === 'wo' ? 'bg-ink text-canvas' : 'bg-transparent text-mute hover:text-ink'}`}>DARI WO</button>
                       </div>
                   </div>
               </div>
 
               {poCreationMode === 'wo' && (
-                  <div className="mb-8 bg-blue-50 border border-blue-200 p-4 rounded-xl relative">
-                      <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2"><Search size={18}/> Cari Kebutuhan Part dari Estimasi SA</h3>
-                      <div className="flex gap-2 mb-4 relative">
+                  <div className="mb-[48px] bg-canvas border border-hairline p-6 relative">
+                      <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">CARI KEBUTUHAN PART DARI ESTIMASI SA</h3>
+                      <div className="flex gap-4 mb-6 relative">
                           <div className="relative flex-grow">
                               <input 
                                   type="text" 
-                                  placeholder="No. Polisi, WO, atau Nama..." 
-                                  className="w-full p-2 border border-blue-300 rounded uppercase font-mono font-bold" 
+                                  placeholder="NO. POLISI, WO, ATAU NAMA..." 
+                                  className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" 
                                   value={woSearchTerm} 
                                   onChange={e => {
                                       setWoSearchTerm(e.target.value);
@@ -710,154 +691,155 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                               />
                               
                               {isWoPickerOpen && (
-                                  <div ref={pickerRef} className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-indigo-100 z-[100] max-h-72 overflow-y-auto animate-pop-in backdrop-blur-md bg-white/98">
-                                      <div className="p-2 bg-indigo-50 border-b border-indigo-100 sticky top-0 z-10 flex justify-between items-center">
-                                          <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2">Pilih Work Order Aktif</span>
-                                          <button onClick={() => setIsWoPickerOpen(false)} className="p-1 hover:bg-white rounded-full text-indigo-400"><X size={14}/></button>
+                                  <div ref={pickerRef} className="absolute left-0 right-0 top-full mt-2 bg-canvas border border-hairline shadow-2xl z-50 max-h-72 overflow-y-auto">
+                                      <div className="p-3 bg-soft-cloud border-b border-hairline sticky top-0 z-10">
+                                          <span className="text-[10px] font-medium text-mute uppercase tracking-widest">PILIH WORK ORDER AKTIF</span>
                                       </div>
                                       {woMatches.map(job => (
                                           <div 
                                               key={job.id} 
                                               onClick={() => handleSelectJobFromPicker(job)}
-                                              className="p-4 hover:bg-indigo-50 cursor-pointer border-b last:border-0 group flex justify-between items-center transition-colors"
+                                              className="p-4 hover:bg-soft-cloud cursor-pointer border-b border-hairline last:border-0 flex justify-between items-center transition-colors"
                                           >
                                               <div>
-                                                  <div className="flex items-center gap-2">
-                                                      <span className="font-black text-indigo-900 text-lg">{job.policeNumber}</span>
-                                                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-black">{job.woNumber || 'ESTIMASI'}</span>
+                                                  <div className="flex items-center gap-4">
+                                                      <span className="font-display text-[24px] text-ink">{job.policeNumber}</span>
+                                                      <span className="px-2 py-1 bg-canvas border border-ink text-ink text-[10px] font-medium tracking-widest uppercase">{job.woNumber || 'ESTIMASI'}</span>
                                                   </div>
-                                                  <div className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-tight">{job.customerName} | {job.carModel}</div>
+                                                  <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{job.customerName} | {job.carModel}</div>
                                               </div>
-                                              <div className="text-right flex flex-col items-end gap-1">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase flex items-center gap-1"><Clock size={10}/> {formatDateIndo(job.createdAt)}</span>
-                                                  <ChevronRight size={18} className="text-gray-300 group-hover:text-indigo-600 transition-colors"/>
+                                              <div className="text-right">
+                                                  <span className="text-[10px] font-medium text-mute uppercase tracking-widest">{formatDateIndo(job.createdAt)}</span>
                                               </div>
                                           </div>
                                       ))}
                                   </div>
                               )}
                           </div>
-                          <button onClick={handleSearchWO} disabled={loading} className="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 flex items-center gap-2">
-                              {loading ? <Loader2 size={16} className="animate-spin"/> : <Search size={16}/>}
-                              Cari Data
+                          <button onClick={handleSearchWO} disabled={loading} className="bg-ink text-canvas px-8 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50">
+                              {loading ? 'PROCESSING...' : 'CARI DATA'}
                           </button>
                       </div>
 
                       {foundJob && (
-                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm animate-fade-in">
-                              <div className="p-3 bg-gray-100 flex justify-between items-center border-b">
+                          <div className="bg-canvas border border-hairline overflow-hidden animate-fade-in">
+                              <div className="p-4 bg-soft-cloud flex justify-between items-center border-b border-hairline">
                                   <div className="flex items-center gap-4">
-                                      <div className="flex items-center gap-2 font-bold text-gray-800">
-                                          <Hash size={16} className="text-indigo-600"/>
+                                      <div className="flex items-center gap-2 font-medium text-ink uppercase text-[14px]">
                                           <span>{foundJob.woNumber || 'ESTIMASI'}</span> 
-                                          <span className="text-gray-300 mx-1">|</span>
+                                          <span className="text-mute mx-1">|</span>
                                           <span>{foundJob.policeNumber}</span>
                                       </div>
-                                      <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">{foundJob.customerName}</span>
+                                      <span className="text-[10px] font-medium text-mute uppercase tracking-widest">{foundJob.customerName}</span>
                                   </div>
-                                  <div className="flex gap-2">
-                                      <button onClick={() => setFoundJob(null)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-2 rounded">BATAL</button>
-                                      <button onClick={handleImportPartsToPO} className="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-green-700 flex items-center gap-1 shadow-sm transition-transform active:scale-95"><Plus size={14}/> TAMBAH KE PO</button>
+                                  <div className="flex gap-4">
+                                      <button onClick={() => setFoundJob(null)} className="text-[10px] font-medium text-ink border border-hairline hover:border-ink px-4 py-2 uppercase tracking-widest transition-colors">BATAL</button>
+                                      <button onClick={handleImportPartsToPO} className="bg-ink text-canvas px-4 py-2 text-[10px] font-medium uppercase tracking-widest hover:bg-mute transition-colors">TAMBAH KE PO</button>
                                   </div>
                               </div>
-                              <table className="w-full text-sm text-left">
-                                  <thead className="bg-gray-50"><tr><th className="p-3 w-10 text-center">Pilih</th><th className="p-3">Item Part SA</th><th className="p-3 w-20 text-center">Qty</th><th className="p-3 text-center">Set Indent?</th></tr></thead>
-                                  <tbody className="divide-y">
-                                      {foundJob.estimateData?.partItems?.map((part, idx) => (
-                                          <tr key={idx} className={part.isOrdered ? 'bg-gray-50 opacity-60' : 'hover:bg-blue-50/50'}>
-                                              <td className="p-3 text-center">{!part.isOrdered && <input type="checkbox" checked={selectedPartsFromWo[idx]?.selected || false} onChange={() => handleToggleWoPart(idx, 'selected')} className="w-4 h-4 cursor-pointer text-indigo-600 rounded"/>}</td>
-                                              <td className="p-3"><div className="font-bold text-gray-800">{part.name}</div><div className="text-[10px] text-indigo-600 font-mono font-bold">{part.number || 'TANPA NO PART'}</div></td>
-                                              <td className="p-3 text-center font-bold text-gray-700">{part.qty || 1}</td>
-                                              <td className="p-3 text-center">{!part.isOrdered && selectedPartsFromWo[idx]?.selected && <label className="inline-flex items-center gap-1 cursor-pointer text-[10px] bg-white px-2 py-1 rounded border border-red-200 shadow-sm"><input type="checkbox" checked={selectedPartsFromWo[idx]?.isIndent || false} onChange={() => handleToggleWoPart(idx, 'isIndent')} className="text-red-600 rounded"/><span className={selectedPartsFromWo[idx]?.isIndent ? 'text-red-600 font-black' : 'text-gray-400 font-bold'}>INDENT</span></label>}</td>
-                                          </tr>
-                                      ))}
-                                  </tbody>
-                              </table>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-canvas border-b border-hairline"><tr><th className="p-4 w-16 text-center text-[10px] font-medium text-mute uppercase tracking-widest">PILIH</th><th className="p-4 text-[10px] font-medium text-mute uppercase tracking-widest">ITEM PART SA</th><th className="p-4 w-24 text-center text-[10px] font-medium text-mute uppercase tracking-widest">QTY</th><th className="p-4 text-center text-[10px] font-medium text-mute uppercase tracking-widest">SET INDENT?</th></tr></thead>
+                                    <tbody className="divide-y divide-hairline">
+                                        {foundJob.estimateData?.partItems?.map((part, idx) => (
+                                            <tr key={idx} className={part.isOrdered ? 'bg-soft-cloud opacity-60' : 'hover:bg-soft-cloud transition-colors'}>
+                                                <td className="p-4 text-center">{!part.isOrdered && <input type="checkbox" checked={selectedPartsFromWo[idx]?.selected || false} onChange={() => handleToggleWoPart(idx, 'selected')} className="w-4 h-4 cursor-pointer accent-ink"/>}</td>
+                                                <td className="p-4"><div className="font-medium text-[14px] text-ink uppercase">{part.name}</div><div className="text-[10px] text-mute uppercase tracking-widest mt-1">{part.number || 'TANPA NO PART'}</div></td>
+                                                <td className="p-4 text-center font-medium text-ink text-[14px]">{part.qty || 1}</td>
+                                                <td className="p-4 text-center">{!part.isOrdered && selectedPartsFromWo[idx]?.selected && <label className="inline-flex items-center gap-2 cursor-pointer text-[10px] bg-canvas px-3 py-1 border border-hairline"><input type="checkbox" checked={selectedPartsFromWo[idx]?.isIndent || false} onChange={() => handleToggleWoPart(idx, 'isIndent')} className="accent-ink"/><span className={selectedPartsFromWo[idx]?.isIndent ? 'text-ink font-medium uppercase' : 'text-mute font-medium uppercase'}>INDENT</span></label>}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                              </div>
                           </div>
                       )}
                   </div>
               )}
 
-              <div className="mb-6">
-                  <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><ShoppingCart size={18}/> Item Pesanan {isEditing ? '(Mode Edit)' : '(Draft)'}</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left border border-gray-200 rounded overflow-hidden">
-                        <thead className="bg-gray-100 font-bold">
+              <div className="mb-[48px]">
+                  <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">ITEM PESANAN {isEditing ? '(MODE EDIT)' : '(DRAFT)'}</h3>
+                  <div className="overflow-x-auto bg-canvas border border-hairline">
+                    <table className="w-full text-left">
+                        <thead className="bg-soft-cloud border-b border-hairline font-medium text-[10px] text-mute uppercase tracking-widest">
                             <tr>
-                                <th className="p-3 border">Kategori</th>
-                                <th className="p-3 border">Kode Part</th>
-                                <th className="p-3 border">Nama Barang</th>
-                                <th className="p-3 border">Merk / Model</th>
-                                <th className="p-3 border w-20 text-center">Qty</th>
-                                <th className="p-3 border w-24">Satuan</th>
-                                <th className="p-3 border text-right">Harga</th>
-                                <th className="p-3 border text-right">Total</th>
-                                <th className="p-3 border w-10"></th>
+                                <th className="p-4 font-normal">KATEGORI</th>
+                                <th className="p-4 font-normal">KODE PART</th>
+                                <th className="p-4 font-normal">NAMA BARANG</th>
+                                <th className="p-4 font-normal">MERK / MODEL</th>
+                                <th className="p-4 w-24 text-center font-normal">QTY</th>
+                                <th className="p-4 w-32 font-normal">SATUAN</th>
+                                <th className="p-4 text-right font-normal">HARGA</th>
+                                <th className="p-4 text-right font-normal">TOTAL</th>
+                                <th className="p-4 w-16 font-normal"></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-hairline">
                             {(poForm.items || []).map((item: any, idx: number) => (
-                                <tr key={idx} className={item.refJobId ? "bg-blue-50/50" : ""}>
-                                    <td className="p-2 border">
-                                        <select className="w-full p-2 border rounded text-xs" value={item.category} onChange={e => handleUpdateItem(idx, 'category', e.target.value)}>
-                                            <option value="sparepart">Part</option>
-                                            <option value="material">Bahan</option>
+                                <tr key={idx} className={item.refJobId ? "bg-soft-cloud/50" : ""}>
+                                    <td className="p-2">
+                                        <select className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink" value={item.category} onChange={e => handleUpdateItem(idx, 'category', e.target.value)}>
+                                            <option value="sparepart">PART</option>
+                                            <option value="material">BAHAN</option>
                                         </select>
                                         {item.category === 'material' && (
-                                            <div className="mt-1 flex items-center gap-1">
+                                            <div className="mt-2 flex items-center gap-2">
                                                 <input 
                                                     type="checkbox" 
                                                     id={`stockManaged-${idx}`}
                                                     checked={item.isStockManaged === false} 
                                                     onChange={e => handleUpdateItem(idx, 'isStockManaged', !e.target.checked)}
-                                                    className="w-3 h-3 text-orange-600 rounded focus:ring-orange-500 cursor-pointer"
+                                                    className="w-3 h-3 accent-ink cursor-pointer"
                                                 />
-                                                <label htmlFor={`stockManaged-${idx}`} className="text-[10px] text-orange-700 font-bold cursor-pointer whitespace-nowrap">
-                                                    Ready Use (Vendor)
+                                                <label htmlFor={`stockManaged-${idx}`} className="text-[8px] text-mute font-medium uppercase tracking-widest cursor-pointer whitespace-nowrap">
+                                                    READY USE
                                                 </label>
                                             </div>
                                         )}
                                     </td>
-                                    <td className="p-2 border"><input type="text" className="w-full p-2 border rounded font-mono uppercase text-xs" value={item.code} onChange={e => handleUpdateItem(idx, 'code', e.target.value)} placeholder="Kode..." disabled={!!item.refJobId}/></td>
-                                    <td className="p-2 border">
-                                        <input type="text" className="w-full p-2 border rounded text-xs" value={item.name} onChange={e => handleUpdateItem(idx, 'name', e.target.value)} placeholder="Nama..." disabled={!!item.refJobId}/>
-                                        {item.refWoNumber && <div className="text-[9px] text-blue-600 font-bold">Ref: {item.refWoNumber} {item.isIndent && <span className="text-red-600">[INDENT]</span>}</div>}
+                                    <td className="p-2"><input type="text" className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink" value={item.code} onChange={e => handleUpdateItem(idx, 'code', e.target.value)} placeholder="KODE..." disabled={!!item.refJobId}/></td>
+                                    <td className="p-2">
+                                        <input type="text" className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink" value={item.name} onChange={e => handleUpdateItem(idx, 'name', e.target.value)} placeholder="NAMA..." disabled={!!item.refJobId}/>
+                                        {item.refWoNumber && <div className="text-[8px] text-ink font-medium uppercase tracking-widest mt-1">REF: {item.refWoNumber} {item.isIndent && <span className="border border-ink px-1 ml-1 animate-pulse">INDENT</span>}</div>}
                                     </td>
-                                    <td className="p-2 border"><input type="text" className="w-full p-2 border rounded text-xs" value={item.brand} onChange={e => handleUpdateItem(idx, 'brand', e.target.value)} placeholder="Merk/Tipe..."/></td>
-                                    <td className="p-2 border"><input type="number" className="w-full p-2 border rounded text-center font-bold" value={item.qty} onChange={e => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></td>
-                                    <td className="p-2 border">
-                                        <select className="w-full p-2 border rounded text-xs" value={item.unit} onChange={e => handleUpdateItem(idx, 'unit', e.target.value)}>
-                                            {UNIT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    <td className="p-2"><input type="text" className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink" value={item.brand} onChange={e => handleUpdateItem(idx, 'brand', e.target.value)} placeholder="MERK/TIPE..."/></td>
+                                    <td className="p-2"><input type="number" className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink text-center" value={item.qty} onChange={e => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></td>
+                                    <td className="p-2">
+                                        <select className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[10px] font-medium uppercase tracking-widest text-ink" value={item.unit} onChange={e => handleUpdateItem(idx, 'unit', e.target.value)}>
+                                            {UNIT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt.toUpperCase()}</option>)}
                                         </select>
                                     </td>
-                                    <td className="p-2 border"><input type="number" className="w-full p-2 border rounded text-right font-mono" value={item.price} onChange={e => handleUpdateItem(idx, 'price', Number(e.target.value))} /></td>
-                                    <td className="p-2 border text-right font-bold">{formatCurrency(item.total)}</td>
-                                    <td className="p-2 border text-center"><button onClick={() => handleRemoveItem(idx)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button></td>
+                                    <td className="p-2"><input type="number" className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink text-right" value={item.price} onChange={e => handleUpdateItem(idx, 'price', Number(e.target.value))} /></td>
+                                    <td className="p-2 text-right font-medium text-[12px] text-ink">{formatCurrency(item.total)}</td>
+                                    <td className="p-2 text-center"><button onClick={() => handleRemoveItem(idx)} className="text-[10px] font-medium text-ink border border-hairline hover:border-ink px-2 py-1 uppercase tracking-widest transition-colors">HAPUS</button></td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                   </div>
-                  {poCreationMode === 'manual' && <button onClick={handleAddItem} className="mt-2 text-xs text-indigo-600 font-bold hover:underline">+ Tambah Manual</button>}
+                  {poCreationMode === 'manual' && <button onClick={handleAddItem} className="mt-4 text-[10px] font-medium text-ink uppercase tracking-widest border border-hairline hover:border-ink px-4 py-2 transition-colors">+ TAMBAH MANUAL</button>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t bg-gray-50 p-6 rounded-xl">
-                  <div><label className="block text-sm font-bold mb-1">Catatan</label><textarea className="w-full p-3 border rounded text-sm" rows={2} value={poForm.notes} onChange={e => setPoForm({ ...poForm, notes: e.target.value })}/></div>
-                  <div className="flex flex-col items-end">
-                      <div className="w-full max-w-xs space-y-1">
-                          <div className="flex justify-between text-sm"><span>Subtotal</span><span className="font-bold">{formatCurrency(subtotal)}</span></div>
-                          <div className="flex justify-between items-center text-sm">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                  <div onClick={() => setPoForm((prev: any) => ({...prev, hasPpn: !prev.hasPpn}))} className={`w-4 h-4 rounded border flex items-center justify-center ${poForm.hasPpn ? 'bg-indigo-600' : 'bg-white'}`}>{poForm.hasPpn && <CheckSquare size={12} className="text-white"/>}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] pt-6 border-t border-hairline bg-canvas p-6 border">
+                  <div>
+                      <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">CATATAN</label>
+                      <textarea className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" rows={3} value={poForm.notes} onChange={e => setPoForm({ ...poForm, notes: e.target.value })}/>
+                  </div>
+                  <div className="flex flex-col items-end justify-between">
+                      <div className="w-full max-w-sm space-y-4">
+                          <div className="flex justify-between text-[12px] font-medium text-mute uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-ink">{formatCurrency(subtotal)}</span></div>
+                          <div className="flex justify-between items-center text-[12px] font-medium text-mute uppercase tracking-widest">
+                              <label className="flex items-center gap-3 cursor-pointer">
+                                  <input type="checkbox" checked={poForm.hasPpn} onChange={() => setPoForm((prev: any) => ({...prev, hasPpn: !prev.hasPpn}))} className="w-4 h-4 accent-ink cursor-pointer" />
                                   <span>PPN {settings.ppnPercentage}%</span>
                               </label>
-                              <span>{formatCurrency(ppnAmount)}</span>
+                              <span className="text-ink">{formatCurrency(ppnAmount)}</span>
                           </div>
-                          <div className="flex justify-between text-xl font-black text-indigo-900 border-t pt-2"><span>Total</span><span>{formatCurrency(totalAmount)}</span></div>
+                          <div className="flex justify-between text-[16px] font-medium text-ink uppercase tracking-widest border-t border-hairline pt-4"><span>TOTAL</span><span>{formatCurrency(totalAmount)}</span></div>
                       </div>
-                      <div className="flex gap-3 mt-6 justify-end w-full">
-                        <button onClick={() => handleSubmitPO('Draft')} disabled={loading} className="px-6 py-2 border rounded font-bold text-gray-600 hover:bg-gray-100">Simpan Draft</button>
-                        <button onClick={() => handleSubmitPO('Pending Approval')} disabled={loading} className="px-8 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-lg">{isEditing ? 'Simpan Perubahan' : 'Ajukan Approval'}</button>
+                      <div className="flex gap-4 mt-8 justify-end w-full">
+                        <button onClick={() => handleSubmitPO('Draft')} disabled={loading} className="px-6 py-4 border border-ink text-ink text-[12px] font-medium uppercase tracking-widest hover:bg-soft-cloud transition-colors disabled:opacity-50">SIMPAN DRAFT</button>
+                        <button onClick={() => handleSubmitPO('Pending Approval')} disabled={loading} className="px-8 py-4 bg-ink text-canvas text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50">{isEditing ? 'SIMPAN PERUBAHAN' : 'AJUKAN APPROVAL'}</button>
                       </div>
                   </div>
               </div>
@@ -866,28 +848,30 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
   }
 
   if (viewMode === 'detail' && selectedPO) {
-      // ... (Existing detail view logic - no changes needed as it uses stored totals) ...
       const isReceivable = selectedPO.status === 'Ordered' || selectedPO.status === 'Partial';
       const showApprovalActions = selectedPO.status === 'Pending Approval' && isManager;
 
       return (
-          <div className="animate-fade-in bg-white p-6 rounded-xl border shadow-sm">
-              <div className="flex justify-between items-start mb-6 border-b pb-4">
-                  <div className="flex items-center gap-4">
-                      <button onClick={() => { setViewMode('list'); setSelectedPO(null); }} className="p-2 hover:bg-gray-100 rounded-full"><ArrowLeft size={20}/></button>
+          <div className="animate-fade-in pb-[48px]">
+              <div className="flex flex-col md:flex-row justify-between items-start mb-[48px] border-b border-hairline pb-[24px] gap-6">
+                  <div className="flex items-center gap-6">
+                      <button onClick={() => { setViewMode('list'); setSelectedPO(null); }} className="text-[12px] font-medium text-ink uppercase tracking-widest border border-hairline hover:border-ink px-4 py-2 transition-colors">KEMBALI</button>
                       <div>
-                          <h2 className="text-2xl font-bold text-gray-800">{selectedPO.poNumber}</h2>
-                          <div className="flex items-center gap-2 text-sm mt-1">{getStatusBadge(selectedPO.status)}<span className="text-gray-500">Supplier: <strong>{selectedPO.supplierName}</strong></span></div>
+                          <h2 className="text-[48px] font-display text-ink uppercase leading-none">{selectedPO.poNumber}</h2>
+                          <div className="flex items-center gap-4 mt-4">
+                              {getStatusBadge(selectedPO.status)}
+                              <span className="text-[12px] font-medium text-mute uppercase tracking-widest">SUPPLIER: <span className="text-ink">{selectedPO.supplierName}</span></span>
+                          </div>
                       </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-4">
                       {isManager && selectedPO.status !== 'Cancelled' && selectedPO.status !== 'Received' && (
                           <button 
                               onClick={() => handleCancelPO(selectedPO)} 
                               disabled={isProcessing} 
-                              className="px-4 py-2 bg-red-100 text-red-700 rounded border border-red-200 font-bold hover:bg-red-200 transition-all flex items-center gap-1 disabled:opacity-50"
+                              className="px-6 py-4 border border-ink text-ink text-[12px] font-medium uppercase tracking-widest hover:bg-soft-cloud transition-colors disabled:opacity-50"
                           >
-                              <XCircle size={18}/> Batalkan PO
+                              BATALKAN PO
                           </button>
                       )}
                       {showApprovalActions && (
@@ -896,51 +880,50 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                                 type="button" 
                                 onClick={(e) => handleRejectPO(e)} 
                                 disabled={isProcessing} 
-                                className="px-4 py-2 bg-red-100 text-red-700 rounded border border-red-200 font-bold hover:bg-red-200 transition-all flex items-center gap-1 disabled:opacity-50"
+                                className="px-6 py-4 border border-ink text-ink text-[12px] font-medium uppercase tracking-widest hover:bg-soft-cloud transition-colors disabled:opacity-50"
                             >
-                                <Ban size={18}/> Tolak
+                                TOLAK
                             </button>
                             <button 
                                 type="button" 
                                 onClick={(e) => handleApprovePO(e)} 
                                 disabled={isProcessing} 
-                                className="px-4 py-2 bg-green-600 text-white rounded shadow font-bold hover:bg-green-700 transition-all flex items-center gap-1 disabled:opacity-50"
+                                className="px-6 py-4 bg-ink text-canvas text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50"
                             >
-                                {isProcessing ? <Loader2 size={18} className="animate-spin"/> : <Check size={18}/>}
-                                Setujui (Approve)
+                                {isProcessing ? 'PROCESSING...' : 'SETUJUI (APPROVE)'}
                             </button>
                           </>
                       )}
                       {isReceivable && selectedItemsToReceive.length > 0 && (
-                        <button onClick={handleProcessReceiving} disabled={isProcessing} className="px-4 py-2 bg-indigo-600 text-white rounded shadow font-bold animate-pulse hover:bg-indigo-700">Simpan Terima ({selectedItemsToReceive.length})</button>
+                        <button onClick={handleProcessReceiving} disabled={isProcessing} className="px-6 py-4 bg-ink text-canvas text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors animate-pulse">SIMPAN TERIMA ({selectedItemsToReceive.length})</button>
                       )}
-                      <button onClick={() => handlePrintPO(selectedPO)} className="px-4 py-2 border rounded flex items-center gap-2 font-bold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100"><Printer size={18}/> Print PO</button>
+                      <button onClick={() => handlePrintPO(selectedPO)} className="px-6 py-4 border border-hairline hover:border-ink text-ink text-[12px] font-medium uppercase tracking-widest transition-colors">PRINT PO</button>
                   </div>
               </div>
 
-              <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left border">
-                      <thead className="bg-gray-100 font-bold">
-                          <tr>{isReceivable && <th className="p-3 border w-10"></th>}<th className="p-3 border">Item Barang</th><th className="p-3 border text-center">Order</th><th className="p-3 border text-center bg-green-50">Diterima</th>{isReceivable && <th className="p-3 border text-center bg-blue-50 w-24">Datang</th>}<th className="p-3 border text-right">Harga</th><th className="p-3 border text-right">Total</th></tr>
+              <div className="overflow-x-auto bg-canvas border border-hairline">
+                  <table className="w-full text-left">
+                      <thead className="bg-soft-cloud border-b border-hairline font-medium text-[10px] text-mute uppercase tracking-widest">
+                          <tr>{isReceivable && <th className="p-4 font-normal w-12 text-center"></th>}<th className="p-4 font-normal">ITEM BARANG</th><th className="p-4 text-center font-normal">ORDER</th><th className="p-4 text-center font-normal bg-canvas border-l border-r border-hairline">DITERIMA</th>{isReceivable && <th className="p-4 text-center font-normal">DATANG</th>}<th className="p-4 text-right font-normal">HARGA</th><th className="p-4 text-right font-normal">TOTAL</th></tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-hairline">
                           {(selectedPO.items || []).map((item, idx) => {
                               const rem = item.qty - (item.qtyReceived || 0);
                               return (
-                                  <tr key={idx} className={rem <= 0 ? 'opacity-50 bg-gray-50' : ''}>
-                                      {isReceivable && <td className="p-3 border text-center">{rem > 0 && <input type="checkbox" checked={selectedItemsToReceive.includes(idx)} onChange={() => toggleItemSelection(idx)} className="w-4 h-4"/>}</td>}
-                                      <td className="p-3 border">
-                                          <div><strong>{item.name}</strong></div>
-                                          <div className="text-[10px] font-mono text-gray-500">
+                                  <tr key={idx} className={rem <= 0 ? 'opacity-50 bg-soft-cloud' : 'hover:bg-soft-cloud transition-colors'}>
+                                      {isReceivable && <td className="p-4 text-center">{rem > 0 && <input type="checkbox" checked={selectedItemsToReceive.includes(idx)} onChange={() => toggleItemSelection(idx)} className="w-4 h-4 accent-ink cursor-pointer"/>}</td>}
+                                      <td className="p-4">
+                                          <div className="font-medium text-[14px] text-ink uppercase">{item.name}</div>
+                                          <div className="text-[10px] font-medium text-mute uppercase tracking-widest mt-1">
                                               {item.code} {item.brand && `| ${item.brand}`} {item.refWoNumber && `[WO: ${item.refWoNumber}]`} 
-                                              <span className="ml-2 px-1 bg-gray-200 rounded text-[9px] uppercase">{item.category}</span>
+                                              <span className="ml-2 px-2 py-1 border border-hairline bg-canvas text-[8px]">{item.category}</span>
                                           </div>
                                       </td>
-                                      <td className="p-3 border text-center">{item.qty} {item.unit}</td>
-                                      <td className="p-3 border text-center bg-green-50 font-bold">{item.qtyReceived || 0}</td>
-                                      {isReceivable && <td className="p-3 border text-center bg-blue-50">{rem > 0 && selectedItemsToReceive.includes(idx) ? <input type="number" max={rem} className="w-full p-1 border rounded text-center font-bold" value={receiveQtyMap[idx] || ''} onChange={e => setReceiveQtyMap({...receiveQtyMap, [idx]: Number(e.target.value)})}/> : '-'}</td>}
-                                      <td className="p-3 border text-right font-mono">{formatCurrency(item.price)}</td>
-                                      <td className="p-3 border text-right font-bold">{formatCurrency(item.total)}</td>
+                                      <td className="p-4 text-center font-medium text-ink text-[14px]">{item.qty} <span className="text-[10px] text-mute uppercase">{item.unit}</span></td>
+                                      <td className="p-4 text-center font-medium text-ink text-[14px] bg-canvas border-l border-r border-hairline">{item.qtyReceived || 0}</td>
+                                      {isReceivable && <td className="p-4 text-center">{rem > 0 && selectedItemsToReceive.includes(idx) ? <input type="number" max={rem} className="w-20 p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink text-[12px] font-medium text-ink text-center" value={receiveQtyMap[idx] || ''} onChange={e => setReceiveQtyMap({...receiveQtyMap, [idx]: Number(e.target.value)})}/> : '-'}</td>}
+                                      <td className="p-4 text-right font-medium text-[12px] text-mute">{formatCurrency(item.price)}</td>
+                                      <td className="p-4 text-right font-medium text-[14px] text-ink">{formatCurrency(item.total)}</td>
                                   </tr>
                               );
                           })}
@@ -951,56 +934,64 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
       );
   }
 
-  // ... (Return JSX same)
   return (
-    <div className="animate-fade-in space-y-6">
-        <div className="flex justify-between items-center">
-            <div><h1 className="text-3xl font-bold text-gray-900">Purchase Order (PO)</h1><p className="text-gray-500">Kelola pengadaan barang bengkel (Real-time).</p></div>
-            <button onClick={() => setViewMode('create')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 shadow-lg flex items-center gap-2 font-bold"><Plus size={18}/> Buat PO Baru</button>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b flex items-center justify-between">
-                <div className="relative w-full max-w-md"><Search className="absolute left-3 top-2.5 text-gray-400" size={18}/><input type="text" placeholder="Cari No. PO atau Supplier..." className="w-full pl-10 p-2.5 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+    <div className="animate-fade-in pb-[48px]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-[48px] border-b border-hairline pb-[24px]">
+            <div>
+                <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">PURCHASE ORDER</h1>
+                <p className="text-[16px] text-mute font-normal mt-[18px] uppercase tracking-widest">KELOLA PENGADAAN BARANG BENGKEL (REAL-TIME).</p>
             </div>
-            {realTimePOs.length === 0 ? <div className="p-20 text-center text-gray-500 font-bold">Belum ada PO dibuat.</div> : (
+            <button onClick={() => setViewMode('create')} className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors whitespace-nowrap">BUAT PO BARU</button>
+        </div>
+
+        <div className="bg-canvas border border-hairline overflow-hidden flex flex-col h-full">
+            <div className="p-4 bg-soft-cloud border-b border-hairline flex items-center justify-between">
+                <input type="text" placeholder="CARI NO. PO ATAU SUPPLIER..." className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            {realTimePOs.length === 0 ? <div className="p-12 text-center text-mute text-[12px] uppercase tracking-widest">BELUM ADA PO DIBUAT.</div> : (
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50 font-bold"><tr><th className="px-6 py-4 text-xs uppercase text-gray-500">No. PO</th><th className="px-6 py-4 text-xs uppercase text-gray-500">Supplier</th><th className="px-6 py-4 text-xs uppercase text-gray-500">Status</th><th className="px-6 py-4 text-xs uppercase text-gray-500 text-right">Total</th><th className="px-6 py-4 text-xs uppercase text-gray-500 text-center">Aksi</th></tr></thead>
-                        <tbody className="divide-y">
+                    <table className="w-full text-left">
+                        <thead className="bg-canvas border-b border-hairline text-mute uppercase font-medium text-[10px] tracking-widest">
+                            <tr>
+                                <th className="px-6 py-4 font-normal">NO. PO</th>
+                                <th className="px-6 py-4 font-normal">SUPPLIER</th>
+                                <th className="px-6 py-4 font-normal">STATUS</th>
+                                <th className="px-6 py-4 text-right font-normal">TOTAL</th>
+                                <th className="px-6 py-4 text-center font-normal">AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
                             {realTimePOs.filter(o => o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) || o.supplierName.toLowerCase().includes(searchTerm.toLowerCase())).map(order => {
-                                // Enable edit/cancel for Partman IF status is Pending or Draft
                                 const isPendingOrDraft = order.status === 'Pending Approval' || order.status === 'Draft';
                                 const canModify = isManager || (isPartman && isPendingOrDraft);
 
                                 return (
-                                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-mono font-bold text-indigo-700">{order.poNumber}</td>
-                                    <td className="px-6 py-4 font-bold text-gray-800">{order.supplierName}</td>
+                                <tr key={order.id} className="hover:bg-soft-cloud transition-colors">
+                                    <td className="px-6 py-4 font-display text-[20px] text-ink">{order.poNumber}</td>
+                                    <td className="px-6 py-4 font-medium text-[14px] text-ink uppercase">{order.supplierName}</td>
                                     <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
-                                    <td className="px-6 py-4 text-right font-black text-indigo-900">{formatCurrency(order.totalAmount)}</td>
+                                    <td className="px-6 py-4 text-right font-medium text-[14px] text-ink">{formatCurrency(order.totalAmount)}</td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center gap-2">
-                                            <button onClick={() => { setSelectedPO(order); setViewMode('detail'); }} className="text-indigo-500 hover:text-indigo-700 bg-indigo-50 p-2 rounded-full transition-colors" title="Lihat Detail"><Eye size={18}/></button>
+                                            <button onClick={() => { setSelectedPO(order); setViewMode('detail'); }} className="px-3 py-1 border border-hairline hover:border-ink text-ink text-[10px] font-medium uppercase tracking-widest transition-colors">LIHAT</button>
                                             
                                             {canModify && (
                                                 <button 
                                                     onClick={() => handleEditPO(order)} 
-                                                    className="text-orange-500 hover:text-orange-700 bg-orange-50 p-2 rounded-full transition-colors"
-                                                    title="Edit PO"
+                                                    className="px-3 py-1 border border-hairline hover:border-ink text-ink text-[10px] font-medium uppercase tracking-widest transition-colors"
                                                 >
-                                                    <Edit size={18}/>
+                                                    EDIT
                                                 </button>
                                             )}
 
-                                            {['Ordered', 'Partial', 'Received'].includes(order.status) && <button onClick={() => handlePrintPO(order)} className="text-emerald-500 hover:text-emerald-700 bg-emerald-50 p-2 rounded-full transition-colors" title="Print PO"><Printer size={18}/></button>}
+                                            {['Ordered', 'Partial', 'Received'].includes(order.status) && <button onClick={() => handlePrintPO(order)} className="px-3 py-1 border border-hairline hover:border-ink text-ink text-[10px] font-medium uppercase tracking-widest transition-colors">PRINT</button>}
                                             
                                             {canModify && order.status !== 'Received' && (
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); handleCancelPO(order); }} 
-                                                    className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-full transition-colors"
-                                                    title="Batalkan PO"
+                                                    className="px-3 py-1 border border-hairline hover:border-ink text-ink text-[10px] font-medium uppercase tracking-widest transition-colors"
                                                 >
-                                                    <X size={18}/>
+                                                    BATAL
                                                 </button>
                                             )}
                                         </div>

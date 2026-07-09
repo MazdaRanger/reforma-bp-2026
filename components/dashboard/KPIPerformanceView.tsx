@@ -1,14 +1,6 @@
-
-// ... existing imports ...
 import React, { useState, useMemo } from 'react';
 import { Job, CashierTransaction, Settings } from '../../types';
 import { formatCurrency, formatDateIndo } from '../../utils/helpers';
-import { 
-    Trophy, Users, User, Calendar, Target, 
-    PhoneCall, 
-    Wallet, Hammer, MessageSquare, AlertCircle, TrendingUp,
-    Zap, Flag, CheckCircle2, Info
-} from 'lucide-react';
 
 interface KPIProps {
   jobs: Job[];
@@ -20,7 +12,6 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Helper untuk parsing tanggal (Timestamp Firebase atau Date Object) agar robust
   const parseDate = (dateInput: any): Date => {
       if (!dateInput) return new Date();
       if (dateInput instanceof Date) return dateInput;
@@ -31,7 +22,6 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
   };
 
   const stats = useMemo(() => {
-    // ... (Existing SA and Financial KPI logic remains unchanged) ...
     const now = new Date();
     const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
 
@@ -141,32 +131,26 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
     };
     const totalAR = agingProfile.current + agingProfile.warning + agingProfile.critical;
 
-    // 7. KPI PRODUKSI (MEKANIK) - UPDATED LOGIC FOR SPECIFIC PANELS
+    // KPI PRODUKSI (MEKANIK)
     const mechMap: Record<string, any> = {};
     (settings.mechanicNames || []).forEach(name => {
         mechMap[name] = { panels: 0, reworks: 0, units: 0 };
     });
 
     closedInPeriod.forEach(j => {
-        // Fallback total panels if individual assignment missing
         const totalJobPanels = j.estimateData?.jasaItems?.reduce((acc, i) => acc + (i.panelCount || 0), 0) || 0;
         const involvedMechs = Array.from(new Set(j.assignedMechanics?.map(a => a.name) || []));
-        
-        // If mechanics are assigned, use their specific counts. 
-        // If specific count is undefined (old data), split equally or assign total (here we assign total for compatibility if multiple mechanics not common on old data)
         
         if (involvedMechs.length > 0) {
              involvedMechs.forEach((m: any) => {
                 if (!mechMap[m]) mechMap[m] = { panels: 0, reworks: 0, units: 0 };
                 
-                // Find specific assignment for this mechanic
                 const specificAssignment = j.assignedMechanics?.find(a => a.name === m);
                 const assignedPanels = specificAssignment?.panelCount;
 
                 if (assignedPanels !== undefined) {
                     mechMap[m].panels += assignedPanels;
                 } else {
-                    // Fallback for old data: Full panels
                     mechMap[m].panels += totalJobPanels;
                 }
                 mechMap[m].units += 1;
@@ -184,7 +168,6 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         });
     });
 
-    // SA Estimates Count
     jobs.filter(j => {
         if (j.isDeleted) return false;
         const d = parseDate(j.createdAt);
@@ -208,165 +191,163 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
   const isTargetInflated = stats.adjustedWeeklyTarget > (settings.monthlyTarget / 4);
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="animate-fade-in pb-[48px]">
         {/* HEADER */}
-        <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
-            <div className="absolute right-0 top-0 p-4 opacity-10 rotate-12 scale-150"><Trophy size={200}/></div>
-            <div className="relative z-10 text-center md:text-left">
-                <h1 className="text-3xl font-black tracking-tight flex items-center justify-center md:justify-start gap-3">
-                    <Trophy className="text-yellow-400" size={32}/> Staff Performance & Target
-                </h1>
-                <p className="text-indigo-300 font-medium mt-1">Monitoring Laba Kotor (Realized Gross Profit) & Catch-Up Target Tim.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-[48px] border-b border-hairline pb-[24px]">
+            <div>
+                <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">KPI & PERFORMANCE</h1>
+                <p className="text-[16px] text-mute font-normal mt-[18px]">Monitoring Laba Kotor & Catch-Up Target Tim</p>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/10 p-2 rounded-2xl backdrop-blur-md border border-white/10 relative z-10">
-                <Calendar className="text-indigo-300 ml-2" size={20}/>
-                <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer py-2">
+            <div className="flex items-center gap-2 mt-6 md:mt-0 bg-soft-cloud rounded-full px-4 py-2">
+                <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
                     {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
-                        <option key={i} value={i} className="text-gray-900">{m}</option>
+                        <option key={i} value={i}>{m}</option>
                     ))}
                 </select>
-                <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer border-l border-white/20 pl-4 py-2">
-                    {[2024, 2025, 2026].map(y => <option key={y} value={y} className="text-gray-900">{y}</option>)}
+                <span className="text-mute">/</span>
+                <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
+                    {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
             </div>
         </div>
-
-        {/* ... (Keep Target Cards & SA Table as is) ... */}
         
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Monthly Card & Weekly Card Code Omitted for brevity - they remain unchanged */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] mb-[24px]">
              {/* Monthly Card */}
-            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:scale-110 transition-transform"><Flag size={120}/></div>
-                <div className="flex justify-between items-start mb-6">
+            <div className="bg-canvas p-6 md:p-8 border border-hairline">
+                <div className="flex justify-between items-start mb-12">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Monthly GP Target (Realized)</p>
-                        <h3 className="text-3xl font-black text-gray-900">{formatCurrency(settings.monthlyTarget)}</h3>
+                        <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Monthly GP Target (Realized)</p>
+                        <h3 className="text-[48px] font-medium text-ink tracking-tight leading-[1]">{formatCurrency(settings.monthlyTarget)}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${monthlyProgress >= 100 ? 'bg-emerald-500 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200'} text-white shadow-xl`}>
-                        <CheckCircle2 size={24}/>
+                    <div className="text-right">
+                        <span className="text-[32px] font-medium text-ink">{monthlyProgress.toFixed(1)}%</span>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Pencapaian Real (Faktur)</span>
-                            <span className="text-xl font-black text-indigo-600">{formatCurrency(stats.totalGPRealizedMonth)}</span>
-                        </div>
-                        <div className="text-right">
-                             <span className={`text-3xl font-black ${monthlyProgress >= 80 ? 'text-emerald-600' : monthlyProgress >= 50 ? 'text-amber-600' : 'text-indigo-600'}`}>{monthlyProgress.toFixed(1)}%</span>
+                            <span className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Pencapaian Real</span>
+                            <span className="text-[24px] font-medium text-ink">{formatCurrency(stats.totalGPRealizedMonth)}</span>
                         </div>
                     </div>
-                    <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-                        <div className={`h-full transition-all duration-1000 ease-out ${monthlyProgress >= 100 ? 'bg-emerald-500' : monthlyProgress >= 80 ? 'bg-indigo-500' : 'bg-indigo-400'}`} style={{ width: `${monthlyProgress}%` }}></div>
+                    <div className="w-full h-1 bg-soft-cloud border border-hairline relative">
+                        <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-1000" style={{ width: `${monthlyProgress}%` }}></div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] font-bold">
-                        <div className="flex items-center gap-1 text-amber-500"><AlertCircle size={12}/> Sisa Target: {formatCurrency(Math.max(settings.monthlyTarget - stats.totalGPRealizedMonth, 0))}</div>
-                        <span className="text-gray-400">Pekan ke-{stats.currentWeekNum} dari sisa {stats.remainingWeeks} pekan</span>
+                    <div className="flex items-center justify-between text-[12px] font-medium text-mute uppercase tracking-widest mt-4">
+                        <div>SISA TARGET: {formatCurrency(Math.max(settings.monthlyTarget - stats.totalGPRealizedMonth, 0))}</div>
+                        <div>PEKAN KE-{stats.currentWeekNum} / {stats.remainingWeeks} SISA</div>
                     </div>
                 </div>
             </div>
 
             {/* Weekly Card */}
-            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:scale-110 transition-transform"><Zap size={120}/></div>
-                <div className="flex justify-between items-start mb-6">
+            <div className="bg-canvas p-6 md:p-8 border border-hairline">
+                <div className="flex justify-between items-start mb-12">
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Adjusted Weekly Target</p>
-                            {isTargetInflated && <span className="bg-rose-50 text-rose-600 text-[8px] px-1.5 py-0.5 rounded border border-rose-200 font-black animate-pulse">CATCH-UP ACTIVE</span>}
+                        <div className="flex items-center gap-3 mb-1">
+                            <p className="text-[14px] font-medium text-mute uppercase tracking-widest">Adjusted Weekly Target</p>
+                            {isTargetInflated && <span className="bg-ink text-canvas text-[10px] px-2 py-0.5 rounded-full font-medium tracking-widest">CATCH-UP ACTIVE</span>}
                         </div>
-                        <h3 className={`text-3xl font-black ${isTargetInflated ? 'text-rose-700' : 'text-gray-900'}`}>{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
+                        <h3 className="text-[48px] font-medium text-ink tracking-tight leading-[1]">{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${weeklyProgress >= 100 ? 'bg-emerald-500' : isTargetInflated ? 'bg-rose-600 shadow-rose-100' : 'bg-orange-500'} text-white shadow-xl animate-pulse`}><TrendingUp size={24}/></div>
+                    <div className="text-right">
+                        <span className="text-[32px] font-medium text-ink">{weeklyProgress.toFixed(1)}%</span>
+                    </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Closing 7 Hari Terakhir</span>
-                            <span className={`text-xl font-black ${weeklyProgress >= 100 ? 'text-emerald-600' : 'text-orange-600'}`}>{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
-                        </div>
-                        <div className="text-right">
-                             <span className={`text-3xl font-black ${weeklyProgress >= 100 ? 'text-emerald-600' : isTargetInflated ? 'text-rose-600' : 'text-orange-600'}`}>{weeklyProgress.toFixed(1)}%</span>
+                            <span className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Closing 7 Hari Terakhir</span>
+                            <span className="text-[24px] font-medium text-ink">{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
                         </div>
                     </div>
-                    <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-                        <div className={`h-full transition-all duration-1000 ease-out ${weeklyProgress >= 100 ? 'bg-emerald-500' : isTargetInflated ? 'bg-rose-500' : 'bg-orange-500'}`} style={{ width: `${weeklyProgress}%` }}></div>
+                    <div className="w-full h-1 bg-soft-cloud border border-hairline relative">
+                        <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-1000" style={{ width: `${weeklyProgress}%` }}></div>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex items-center gap-3">
-                         <div className={`p-2 rounded-lg ${isTargetInflated ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'}`}><Info size={14}/></div>
-                         <p className="text-[9px] text-gray-500 font-bold leading-tight">{isTargetInflated ? `Target naik karena kekurangan pekan sebelumnya dibagi rata ke ${stats.remainingWeeks} pekan sisa.` : `Target pekanan stabil. Pertahankan ritme produksi.`}</p>
+                    <div className="mt-4 pt-4 border-t border-hairline">
+                         <p className="text-[12px] text-mute font-normal italic">
+                            {isTargetInflated ? `Target naik karena kekurangan pekan sebelumnya dibagi rata ke ${stats.remainingWeeks} pekan sisa.` : `Target pekanan stabil. Pertahankan ritme produksi.`}
+                         </p>
                     </div>
                 </div>
             </div>
         </div>
 
         {/* DETAILS GRID */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px]">
             {/* SA TABLE */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
-                    <h3 className="font-black text-indigo-900 flex items-center gap-2 uppercase tracking-widest text-xs"><Users size={18}/> Service Advisor Performance (Realized GP)</h3>
+            <div className="bg-canvas border border-hairline flex flex-col">
+                <div className="p-6 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Service Advisor Performance</h3>
                 </div>
-                <div className="p-6 overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b"><tr><th className="pb-3">Nama SA / User</th><th className="pb-3 text-center">Closing Rate</th><th className="pb-3 text-center">Invoiced Units</th><th className="pb-3 text-right">GP Contribution</th></tr></thead>
-                        <tbody className="divide-y divide-gray-50">
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="text-[12px] font-medium text-mute uppercase tracking-widest border-b border-hairline bg-soft-cloud">
+                            <tr>
+                                <th className="py-4 px-6 font-normal">Nama SA</th>
+                                <th className="py-4 px-6 text-center font-normal">Closing Rate</th>
+                                <th className="py-4 px-6 text-center font-normal">Invoiced</th>
+                                <th className="py-4 px-6 text-right font-normal">GP Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
                             {Object.entries(stats.saMap).length > 0 ? Object.entries(stats.saMap).map(([name, data]: any) => {
                                 const ratio = data.estCount > 0 ? (data.woCount / data.estCount) * 100 : 0;
                                 return (
-                                    <tr key={name} className="hover:bg-gray-50 transition-colors group">
-                                        <td className="py-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">{name[0]}</div><span className="font-bold text-gray-800">{name}</span></div></td>
-                                        <td className="py-4 text-center"><div className="flex flex-col items-center"><span className={`font-black ${ratio > 70 ? 'text-emerald-600' : 'text-amber-600'}`}>{ratio.toFixed(0)}%</span><span className="text-[9px] text-gray-400 uppercase">{data.woCount} Invoiced / {data.estCount} BE</span></div></td>
-                                        <td className="py-4 text-center font-bold text-indigo-600">{data.woCount}</td>
-                                        <td className="py-4 text-right"><div className="font-black text-emerald-700">{formatCurrency(data.gpContribution)}</div><div className="text-[9px] text-gray-400 uppercase">Total Profit Terealisasi</div></td>
+                                    <tr key={name} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="py-4 px-6 font-medium text-ink">{name}</td>
+                                        <td className="py-4 px-6 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <span className="font-medium text-ink text-[16px]">{ratio.toFixed(0)}%</span>
+                                                <span className="text-[10px] text-mute uppercase">{data.woCount} / {data.estCount}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.woCount}</td>
+                                        <td className="py-4 px-6 text-right">
+                                            <div className="font-medium text-ink text-[16px]">{formatCurrency(data.gpContribution)}</div>
+                                        </td>
                                     </tr>
                                 );
-                            }) : <tr><td colSpan={4} className="py-8 text-center text-gray-400 italic">Belum ada data.</td></tr>}
+                            }) : <tr><td colSpan={4} className="py-8 px-6 text-center text-mute text-[14px]">Belum ada data.</td></tr>}
                         </tbody>
                     </table>
                 </div>
             </div>
 
             {/* MEKANIK TABLE */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full max-h-[500px]">
-                <div className="p-6 bg-blue-50 border-b border-blue-100 flex justify-between items-center shrink-0">
-                    <h3 className="font-black text-blue-900 flex items-center gap-2 uppercase tracking-widest text-xs"><Hammer size={18}/> Produksi & Kualitas (Closed WOs)</h3>
+            <div className="bg-canvas border border-hairline flex flex-col">
+                <div className="p-6 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Produksi & Kualitas</h3>
                 </div>
                 <div className="p-0 overflow-hidden flex flex-col h-full">
-                    <div className="overflow-y-auto scrollbar-thin h-full p-6">
-                        <table className="w-full text-left text-sm relative">
-                            <thead className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b bg-white sticky top-0 z-10">
+                    <div className="overflow-y-auto scrollbar-thin h-[400px]">
+                        <table className="w-full text-left relative">
+                            <thead className="text-[12px] font-medium text-mute uppercase tracking-widest border-b border-hairline bg-soft-cloud sticky top-0 z-10">
                                 <tr>
-                                    <th className="pb-3">Mekanik</th>
-                                    <th className="pb-3 text-center">Unit Selesai</th>
-                                    <th className="pb-3 text-center">Total Panel</th>
-                                    <th className="pb-3 text-center">Kualitas</th>
+                                    <th className="py-4 px-6 font-normal">Mekanik</th>
+                                    <th className="py-4 px-6 text-center font-normal">Selesai</th>
+                                    <th className="py-4 px-6 text-center font-normal">Panel</th>
+                                    <th className="py-4 px-6 text-center font-normal">Kualitas</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-hairline">
                                 {Object.entries(stats.mechMap).map(([name, data]: any) => (
-                                    <tr key={name} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">
-                                                    {(name || 'M')[0]}
-                                                </div>
-                                                <span className="font-bold text-gray-800">{name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-center font-black text-gray-600">{data.units}</td>
-                                        <td className="py-4 text-center font-black text-blue-700">{data.panels.toFixed(1)}</td>
-                                        <td className="py-4 text-center">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${data.reworks > 0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                                                {data.reworks === 0 ? 'PERFECT' : `${data.reworks} REWORK`}
-                                            </span>
+                                    <tr key={name} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="py-4 px-6 font-medium text-ink">{name}</td>
+                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.units}</td>
+                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.panels.toFixed(1)}</td>
+                                        <td className="py-4 px-6 text-center">
+                                            {data.reworks === 0 ? (
+                                                <span className="text-[12px] font-medium text-mute uppercase tracking-widest">PERFECT</span>
+                                            ) : (
+                                                <span className="text-[12px] font-medium text-ink uppercase tracking-widest border-b border-ink">{data.reworks} REWORK</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
                                 {Object.keys(stats.mechMap).length === 0 && (
-                                    <tr><td colSpan={4} className="py-8 text-center text-gray-400 italic">Belum ada data produksi periode ini.</td></tr>
+                                    <tr><td colSpan={4} className="py-8 px-6 text-center text-mute text-[14px]">Belum ada data produksi periode ini.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -374,57 +355,55 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
                 </div>
             </div>
 
-            {/* CRC & Finance Cards Omitted for brevity but assumed present */}
             {/* CRC CARD */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center"><h3 className="font-black text-emerald-900 flex items-center gap-2 uppercase tracking-widest text-xs"><MessageSquare size={18}/> CRM & Customer Care</h3></div>
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-canvas border border-hairline flex flex-col">
+                <div className="p-6 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">CRM & Customer Care</h3>
+                </div>
+                <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div>
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-xs font-bold text-gray-500 uppercase">Success Ratio (Booking+Pickup+FollowUp)</span>
-                                <span className="text-2xl font-black text-emerald-600">{stats.successRatio.toFixed(1)}%</span>
+                            <div className="flex justify-between items-end mb-4">
+                                <span className="text-[14px] font-medium text-mute uppercase tracking-widest">Success Ratio</span>
+                                <span className="text-[32px] font-medium text-ink leading-none">{stats.successRatio.toFixed(1)}%</span>
                             </div>
-                            <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
-                                <div className={`bg-emerald-500 h-full transition-all duration-1000`} style={{ width: `${stats.successRatio}%` }}></div>
+                            <div className="w-full bg-soft-cloud h-1 relative border border-hairline">
+                                <div className="bg-ink h-full absolute top-0 left-0 transition-all duration-1000" style={{ width: `${stats.successRatio}%` }}></div>
                             </div>
-                            <p className="text-[10px] text-gray-400 font-bold mt-2 flex items-center gap-1">
-                                <PhoneCall size={10}/> Total {stats.totalContacted} customer dihubungi (Semua Jalur)
+                            <p className="text-[12px] text-mute mt-4">
+                                Total {stats.totalContacted} customer dihubungi
                             </p>
                         </div>
                     </div>
-                    <div className="bg-gray-50 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
-                        <div className="p-4 bg-white rounded-full shadow-sm mb-4"><Target size={32} className="text-emerald-500"/></div>
-                        <h4 className="font-black text-gray-800 text-sm">CRC Goal</h4>
-                        <p className="text-xs text-gray-500 mt-2">Target: Konversi Potensi Booking Menjadi Unit Masuk (Inap) Tepat Waktu & Respon Follow Up.</p>
+                    <div className="bg-soft-cloud border border-hairline p-6 flex flex-col items-center justify-center text-center">
+                        <h4 className="font-medium text-ink text-[16px] uppercase tracking-widest">CRC Goal</h4>
+                        <p className="text-[12px] text-mute mt-2 max-w-[200px]">Konversi Potensi Booking Menjadi Unit Masuk (Inap) Tepat Waktu & Respon Follow Up.</p>
                     </div>
                 </div>
             </div>
 
             {/* FINANCE CARD */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
-                    <h3 className="font-black text-rose-900 flex items-center gap-2 uppercase tracking-widest text-xs">
-                        <Wallet size={18}/> Finance & Receivables
-                    </h3>
+            <div className="bg-canvas border border-hairline flex flex-col">
+                <div className="p-6 border-b border-hairline flex justify-between items-center">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Finance & Receivables</h3>
                     <div className="text-right">
-                        <span className="text-[10px] font-black text-rose-400 uppercase block leading-none">Total Piutang (AR)</span>
-                        <span className="text-sm font-black text-rose-700">{formatCurrency(stats.totalAR)}</span>
+                        <span className="text-[10px] font-medium text-mute uppercase block leading-none tracking-widest mb-1">Total Piutang (AR)</span>
+                        <span className="text-[16px] font-medium text-ink">{formatCurrency(stats.totalAR)}</span>
                     </div>
                 </div>
-                <div className="p-8 space-y-8">
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
-                            <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">0 - 7 Hari</p>
-                            <p className="text-sm font-black text-emerald-900">{formatCurrency(stats.agingProfile.current)}</p>
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-3 gap-[24px]">
+                        <div className="p-4 bg-soft-cloud border border-hairline text-center">
+                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">0 - 7 Hari</p>
+                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.current)}</p>
                         </div>
-                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-center">
-                            <p className="text-[10px] font-black text-amber-600 uppercase mb-1">8 - 14 Hari</p>
-                            <p className="text-sm font-black text-emerald-900">{formatCurrency(stats.agingProfile.warning)}</p>
+                        <div className="p-4 bg-soft-cloud border border-hairline text-center">
+                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">8 - 14 Hari</p>
+                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.warning)}</p>
                         </div>
-                        <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-center">
-                            <p className="text-[10px] font-black text-rose-600 uppercase mb-1">{'>'} 14 Hari</p>
-                            <p className="text-sm font-black text-emerald-900">{formatCurrency(stats.agingProfile.critical)}</p>
+                        <div className="p-4 bg-soft-cloud border border-hairline text-center">
+                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">{'>'} 14 Hari</p>
+                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.critical)}</p>
                         </div>
                     </div>
                 </div>

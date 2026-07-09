@@ -13,51 +13,62 @@
     <title>ReForma BP System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              primary: {
-                DEFAULT: '#7a9c84',
-                foreground: '#ffffff'
-              },
-              secondary: {
-                DEFAULT: '#e2e8e4',
-                foreground: '#1c2024'
-              },
-              accent: {
-                DEFAULT: '#d1ded5',
-                foreground: '#1c2024'
-              },
-              muted: {
-                DEFAULT: '#f0f4f1',
-                foreground: '#666666'
-              },
-              background: '#f9f9f9',
-              foreground: '#1c2024',
-              destructive: {
-                DEFAULT: '#e23b3b',
-                foreground: '#ffffff'
-              },
-              card: {
-                DEFAULT: '#ffffff',
-                foreground: '#1c2024'
-              },
-              border: '#e2e8e4',
-              textPrimary: '#1c2024',
-              textSecondary: '#666666'
+              ink: '#111111',
+              canvas: '#ffffff',
+              'soft-cloud': '#f5f5f5',
+              hairline: '#cacacb',
+              'hairline-soft': '#e5e5e5',
+              charcoal: '#39393b',
+              ash: '#4b4b4d',
+              mute: '#707072',
+              stone: '#9e9ea0',
+              sale: '#d30005',
+              'sale-deep': '#780700',
+              success: '#007d48',
+              'success-bright': '#1eaa52',
+              info: '#1151ff',
+              'info-deep': '#0034e3',
+              'on-primary': '#ffffff',
+              // Semantic mapping to keep older components running before full refactor
+              primary: { DEFAULT: '#111111', foreground: '#ffffff' },
+              background: '#f5f5f5',
+              foreground: '#111111',
+              card: { DEFAULT: '#ffffff', foreground: '#111111' },
+              border: '#cacacb',
+              textPrimary: '#111111',
+              textSecondary: '#707072'
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              display: ['Bebas Neue', 'sans-serif']
+            },
+            spacing: {
+              xxs: '2px',
+              xs: '4px',
+              sm: '8px',
+              md: '12px',
+              lg: '18px',
+              xl: '24px',
+              xxl: '30px',
+              section: '48px',
             },
             borderRadius: {
-              DEFAULT: '0.35rem',
-              md: '0.35rem',
-              lg: '0.5rem',
-              xl: '0.75rem',
+              none: '0px',
+              sm: '18px',
+              md: '24px',
+              lg: '30px',
+              full: '9999px',
+            },
+            boxShadow: {
+              none: 'none',
+              'inset-bottom': 'inset 0 -1px 0 #e5e5e5'
             }
           }
         }
