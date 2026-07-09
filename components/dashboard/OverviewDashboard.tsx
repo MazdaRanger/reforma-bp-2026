@@ -315,20 +315,14 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                   <button
                       key={w}
                       onClick={() => setActiveWeek(w)}
-                      className={cn(
-                          "text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap",
-                          activeWeek === w ? "bg-ink text-canvas" : "text-ink bg-canvas hover:bg-soft-cloud"
-                      )}
+                      className={`text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap ${activeWeek === w ? 'bg-ink text-canvas' : 'text-ink bg-canvas hover:bg-soft-cloud'}`}
                   >
                       Minggu {w}
                   </button>
               ))}
               <button
                   onClick={() => setActiveWeek('total')}
-                  className={cn(
-                      "text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap",
-                      activeWeek === 'total' ? "bg-ink text-canvas" : "text-ink bg-canvas hover:bg-soft-cloud"
-                  )}
+                  className={`text-left px-4 py-2 rounded-full text-[16px] transition-colors whitespace-nowrap ${activeWeek === 'total' ? 'bg-ink text-canvas' : 'text-ink bg-canvas hover:bg-soft-cloud'}`}
               >
                   Total Keseluruhan
               </button>
