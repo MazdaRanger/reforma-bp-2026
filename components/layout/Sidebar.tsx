@@ -235,7 +235,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
 
-  const navigate = (viewId: string, itemLabel: string) => { 
+  const navigate = (viewId: string, itemLabel?: string) => { 
       const isManager = userData.role === 'Manager';
       const permissions = settings.menuPermissions?.[userData.role || ''] || [];
       const hasBeenSetup = !!settings.menuPermissions?.[userData.role || ''];
@@ -243,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       const isAllowed = isManager || (!hasBeenSetup) || permissions.includes(viewId);
 
       if (!isAllowed) {
-          setAccessDeniedModal({ isOpen: true, menuName: itemLabel });
+          setAccessDeniedModal({ isOpen: true, menuName: itemLabel || viewId });
           return;
       }
       
