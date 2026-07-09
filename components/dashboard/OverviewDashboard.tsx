@@ -2,12 +2,12 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
-import { Doughnut, Line } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement, Filler
+  Chart as ChartJS, ArcElement, Tooltip, Legend
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, Filler);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface OverviewProps {
   allJobs: Job[];
@@ -78,7 +78,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               row1: "Unit Terfaktur",
               row2: "Total Produksi Panel",
               row3: "Gross Profit",
-              chart1: "Distribusi Produksi Aktif",
               chart2: "Rasio Faktur"
           },
           en: {
@@ -94,7 +93,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               row1: "Invoiced Units",
               row2: "Production Panels",
               row3: "Gross Profit",
-              chart1: "Active Production Stages",
               chart2: "Invoice Ratio"
           }
       };
@@ -252,69 +250,16 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         return acc + (totalNetRevenue - totalCOGS);
     }, 0);
 
-    const statusCounts: Record<string, number> = {};
-    allJobs.filter(j => !j.isClosed && !j.isDeleted && j.statusPekerjaan).forEach(j => {
-      const status = j.statusPekerjaan || 'Unknown';
-      statusCounts[status] = (statusCounts[status] || 0) + 1;
-    });
-
     return { 
         activeJobsCount, 
         completedWaiting, 
         revenue, 
-        statusCounts, 
         totalInvoicedUnits, 
         totalPanels, 
         grossProfit,
         weeklyData
     };
   }, [allJobs, selectedMonth, selectedYear, settings.internalHolidays]);
-
-  const lineChartData = {
-    labels: Object.keys(stats.statusCounts),
-    datasets: [{
-      label: 'Units',
-      data: Object.values(stats.statusCounts),
-      fill: true,
-      backgroundColor: (context: any) => {
-        const chart = context.chart;
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return null;
-        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        gradient.addColorStop(0, 'rgba(10, 114, 129, 0.4)'); // Accent Teal
-        gradient.addColorStop(1, 'rgba(10, 114, 129, 0.0)');
-        return gradient;
-      },
-      borderColor: '#0a7281',
-      borderWidth: 2,
-      tension: 0.4,
-      pointBackgroundColor: '#ffffff',
-      pointBorderColor: '#0a7281',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-    }]
-  };
-
-  const lineChartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-          legend: { display: false },
-          tooltip: {
-              backgroundColor: 'rgba(17, 17, 17, 0.95)',
-              titleFont: { family: 'Inter', size: 13 },
-              bodyFont: { family: 'Inter', size: 15, weight: 'bold' as const },
-              padding: 12,
-              cornerRadius: 8,
-              displayColors: false,
-          }
-      },
-      scales: {
-          y: { beginAtZero: true, grid: { color: '#e5e5e5' }, border: { display: false } },
-          x: { grid: { display: false }, border: { display: false } }
-      }
-  };
 
   const doughnutData = {
       labels: ['Invoiced', 'Active'],
@@ -437,17 +382,6 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px]">
-          <div className="lg:col-span-2 bg-canvas p-6 border border-hairline">
-              <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest">{t('chart1')}</h3>
-                  <button onClick={() => onNavigate('job_control')} className="text-[14px] font-medium text-ink hover:underline">
-                      Kanban Board &rarr;
-                  </button>
-              </div>
-              <div className="h-72">
-                  <Line data={lineChartData} options={lineChartOptions} />
-              </div>
-          </div>
           <div className="bg-canvas p-6 border border-hairline flex flex-col">
               <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest mb-8">{t('chart2')}</h3>
               <div className="flex-grow flex items-center justify-center relative">
