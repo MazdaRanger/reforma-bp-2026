@@ -159,12 +159,12 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     };
 
     const weeklyData: Record<string, any> = {
-        1: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(1) },
-        2: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(2) },
-        3: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(3) },
-        4: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(4) },
-        5: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: getWorkingDaysInWeek(5) },
-        total: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, workingDays: 0 }
+        1: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(1) },
+        2: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(2) },
+        3: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(3) },
+        4: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(4) },
+        5: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(5) },
+        total: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: 0 }
     };
 
     weeklyData.total.workingDays = [1,2,3,4,5].reduce((acc, w) => acc + weeklyData[w].workingDays, 0);
@@ -211,6 +211,16 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                     weeklyData.total.bahanCost += (cost.hargaModalBahan || 0);
                     weeklyData.total.partCost += (cost.hargaBeliPart || 0);
                 }
+
+                const revJasa = j.hargaJasa || 0;
+                const revPart = j.hargaPart || 0;
+                const costBahan = cost?.hargaModalBahan || 0;
+                const costPart = cost?.hargaBeliPart || 0;
+                const costSublet = cost?.jasaExternal || 0;
+                const gp = (revJasa + revPart) - (costBahan + costPart + costSublet);
+
+                weeklyData[w].grossProfit += gp;
+                weeklyData.total.grossProfit += gp;
             }
         }
     });
@@ -417,6 +427,10 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                   <div className="col-span-2 bg-card-ruby text-canvas p-6">
                       <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
                       <p className="text-[24px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
+                  </div>
+                  <div className="col-span-2 md:col-span-4 bg-card-emerald text-canvas p-6 rounded-b-[24px] shadow-sm">
+                      <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">Gross Profit (GP) Periode Ini</p>
+                      <p className="text-[32px] font-medium tracking-tight">{formatCurrency(stats.weeklyData[activeWeek].grossProfit)}</p>
                   </div>
               </div>
           </div>
