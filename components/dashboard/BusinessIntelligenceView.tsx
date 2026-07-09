@@ -102,9 +102,11 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
     labels: ['Asuransi', 'Pribadi / Umum'],
     datasets: [{
       data: [data.insCount, data.priCount],
-      backgroundColor: ['#111111', '#cacacb'],
-      borderWidth: 0,
-      hoverOffset: 10
+      backgroundColor: ['#0a7281', '#111111'],
+      hoverBackgroundColor: ['#0c8b9d', '#39393b'],
+      borderWidth: 4,
+      borderColor: '#ffffff',
+      hoverOffset: 15
     }]
   };
 
@@ -113,7 +115,17 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
     datasets: [{
       label: 'Jumlah Unit',
       data: data.topRegions.map(r => r[1]),
-      backgroundColor: '#111111',
+      backgroundColor: (context: any) => {
+        const chart = context.chart;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return null;
+        const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+        gradient.addColorStop(0, '#111111');
+        gradient.addColorStop(1, '#0a7281');
+        return gradient;
+      },
+      borderRadius: { topRight: 20, bottomRight: 20 },
+      borderSkipped: false,
     }]
   };
 
@@ -178,7 +190,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                     </h3>
                 </div>
                 <div className="relative h-64 w-64">
-                    <Doughnut data={marketShareData} options={{ cutout: '75%', plugins: { legend: { display: false } } }} />
+                    <Doughnut data={marketShareData} options={{ cutout: '75%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(17, 17, 17, 0.95)', cornerRadius: 8 } } }} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span className="text-[48px] font-medium text-ink leading-none">{data.totalOrder}</span>
                         <span className="text-[12px] font-medium text-mute uppercase tracking-widest mt-2">Unit Masuk</span>
@@ -239,12 +251,23 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                         <Bar 
                             data={regionChartData} 
                             options={{ 
+                                indexAxis: 'y',
                                 responsive: true, 
                                 maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
+                                plugins: { 
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(17, 17, 17, 0.95)',
+                                        titleFont: { family: 'Inter', size: 13 },
+                                        bodyFont: { family: 'Inter', size: 15, weight: 'bold' as const },
+                                        padding: 12,
+                                        cornerRadius: 8,
+                                        displayColors: false,
+                                    }
+                                },
                                 scales: { 
-                                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                                    y: { beginAtZero: true } 
+                                    x: { grid: { display: false }, border: { display: false }, ticks: { display: false } },
+                                    y: { grid: { display: false }, border: { display: false } } 
                                 }
                             }} 
                         />

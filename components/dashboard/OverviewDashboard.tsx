@@ -2,12 +2,12 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut, Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement, Filler
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, Filler);
 
 interface OverviewProps {
   allJobs: Job[];
@@ -245,23 +245,61 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     };
   }, [allJobs, selectedMonth, selectedYear, settings.internalHolidays]);
 
-  const barChartData = {
+  const lineChartData = {
     labels: Object.keys(stats.statusCounts),
     datasets: [{
       label: 'Units',
       data: Object.values(stats.statusCounts),
-      backgroundColor: '#111111',
-      hoverBackgroundColor: '#39393b',
+      fill: true,
+      backgroundColor: (context: any) => {
+        const chart = context.chart;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return null;
+        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        gradient.addColorStop(0, 'rgba(10, 114, 129, 0.4)'); // Accent Teal
+        gradient.addColorStop(1, 'rgba(10, 114, 129, 0.0)');
+        return gradient;
+      },
+      borderColor: '#0a7281',
+      borderWidth: 2,
+      tension: 0.4,
+      pointBackgroundColor: '#ffffff',
+      pointBorderColor: '#0a7281',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     }]
+  };
+
+  const lineChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+          legend: { display: false },
+          tooltip: {
+              backgroundColor: 'rgba(17, 17, 17, 0.95)',
+              titleFont: { family: 'Inter', size: 13 },
+              bodyFont: { family: 'Inter', size: 15, weight: 'bold' as const },
+              padding: 12,
+              cornerRadius: 8,
+              displayColors: false,
+          }
+      },
+      scales: {
+          y: { beginAtZero: true, grid: { color: '#e5e5e5' }, border: { display: false } },
+          x: { grid: { display: false }, border: { display: false } }
+      }
   };
 
   const doughnutData = {
       labels: ['Invoiced', 'Active'],
       datasets: [{
           data: [stats.totalInvoicedUnits, stats.activeJobsCount],
-          backgroundColor: ['#111111', '#cacacb'],
+          backgroundColor: ['#d4af37', '#f5f5f5'],
+          hoverBackgroundColor: ['#c5a059', '#e5e5e5'],
           borderWidth: 0,
-          cutout: '75%'
+          borderRadius: 20,
+          cutout: '85%'
       }]
   };
 
@@ -377,12 +415,16 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                       Kanban Board &rarr;
                   </button>
               </div>
-              <div className="h-72"><Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
+              <div className="h-72">
+                  <Line data={lineChartData} options={lineChartOptions} />
+              </div>
           </div>
           <div className="bg-canvas p-6 border border-hairline flex flex-col">
               <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest mb-8">{t('chart2')}</h3>
               <div className="flex-grow flex items-center justify-center relative">
-                  <div className="h-48 w-48"><Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } } }} /></div>
+                  <div className="h-48 w-48">
+                      <Doughnut data={doughnutData} options={{ plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(17, 17, 17, 0.95)', cornerRadius: 8 } } }} />
+                  </div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <p className="text-[32px] font-medium tracking-tight text-ink">{stats.totalInvoicedUnits}</p>
                       <p className="text-[14px] font-medium text-mute uppercase tracking-widest">Closing</p>
