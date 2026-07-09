@@ -16,22 +16,37 @@ interface OverviewProps {
   onNavigate: (view: string) => void;
 }
 
-const StatCard = ({ title, value, subValue, trend, info }: any) => (
-  <div className="bg-canvas p-6 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-hairline last:border-0 md:last:border-r-0">
-    <div>
-        <p className="text-[14px] font-medium text-mute uppercase tracking-widest">{title}</p>
-        <h3 className="text-[32px] font-medium text-ink mt-2 tracking-tight">{value}</h3>
+const StatCard = ({ title, value, subValue, trend, info, variant = 'default' }: any) => {
+  const getColors = () => {
+    switch (variant) {
+      case 'ink': return 'bg-ink text-canvas border-ink';
+      case 'teal': return 'bg-card-teal text-canvas border-card-teal';
+      case 'emerald': return 'bg-card-emerald text-canvas border-card-emerald';
+      case 'navy': return 'bg-card-navy text-canvas border-card-navy';
+      case 'ruby': return 'bg-card-ruby text-canvas border-card-ruby';
+      default: return 'bg-canvas text-ink border-hairline';
+    }
+  };
+  const muteColor = variant === 'default' ? 'text-mute' : 'text-canvas opacity-80';
+  const borderColor = variant === 'default' ? 'border-hairline' : 'border-white border-opacity-20';
+
+  return (
+    <div className={`${getColors()} p-6 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r last:border-0 md:last:border-r-0 transition-colors`}>
+      <div>
+          <p className={`text-[14px] font-medium ${muteColor} uppercase tracking-widest`}>{title}</p>
+          <h3 className={`text-[32px] font-medium mt-2 tracking-tight`}>{value}</h3>
+      </div>
+      {(subValue || info) && (
+          <div className={`mt-8 pt-4 border-t ${borderColor}`}>
+              {subValue && (
+                  <p className={`text-[14px] font-medium ${muteColor}`}>{trend === 'up' ? '↗ ' : ''}{subValue}</p>
+              )}
+              {info && <p className={`text-[14px] ${muteColor} mt-1 italic`}>{info}</p>}
+          </div>
+      )}
     </div>
-    {(subValue || info) && (
-        <div className="mt-8 pt-4 border-t border-hairline">
-            {subValue && (
-                <p className="text-[14px] font-medium text-mute">{trend === 'up' ? '↗ ' : ''}{subValue}</p>
-            )}
-            {info && <p className="text-[14px] text-mute mt-1 italic">{info}</p>}
-        </div>
-    )}
-  </div>
-);
+  );
+};
 
 const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, settings, onNavigate }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -314,9 +329,9 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
           </div>
 
           <div className="flex flex-col md:flex-row items-end gap-6 mt-6 md:mt-0">
-              <div className="flex flex-col items-end pr-6">
-                  <p className="text-[14px] font-medium text-mute uppercase tracking-widest">{t('card_db')}</p>
-                  <p className="text-[32px] font-medium text-ink tracking-tight">{totalUnits}</p>
+              <div className="flex flex-col items-end px-6 py-4 bg-card-navy text-canvas rounded-[24px]">
+                  <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest">{t('card_db')}</p>
+                  <p className="text-[32px] font-medium tracking-tight">{totalUnits}</p>
               </div>
 
               <div className="flex items-center gap-2 bg-soft-cloud rounded-full px-4 py-2">
@@ -334,15 +349,15 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-[48px]">
-        <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} />
-        <StatCard title={t('card3')} value={stats.completedWaiting} subValue={t('card3_sub')} />
-        <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" />
+        <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} variant="teal" />
+        <StatCard title={t('card3')} value={stats.completedWaiting} subValue={t('card3_sub')} variant="ink" />
+        <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" variant="emerald" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-[48px]">
-          <StatCard title={t('row1')} value={stats.totalInvoicedUnits} />
+          <StatCard title={t('row1')} value={stats.totalInvoicedUnits} variant="navy" />
           <StatCard title={t('row2')} value={stats.totalPanels.toFixed(1)} />
-          <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} />
+          <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} variant="emerald" />
       </div>
 
       {/* WEEKLY SIDEBAR SECTION */}
@@ -377,31 +392,31 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-[24px]">
-                  <div className="bg-soft-cloud p-6">
+                  <div className="bg-canvas border border-hairline p-6">
                       <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Unit Masuk</p>
                       <p className="text-[24px] font-medium text-ink">{stats.weeklyData[activeWeek].entry}</p>
                   </div>
-                  <div className="bg-soft-cloud p-6">
+                  <div className="bg-canvas border border-hairline p-6">
                       <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Unit Keluar</p>
                       <p className="text-[24px] font-medium text-ink">{stats.weeklyData[activeWeek].out}</p>
                   </div>
                   
-                  <div className="col-span-2 bg-soft-cloud p-6">
-                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Total Jasa Nett</p>
-                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
+                  <div className="col-span-2 bg-card-navy text-canvas p-6">
+                      <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Jasa Nett</p>
+                      <p className="text-[24px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
                   </div>
-                  <div className="col-span-2 bg-soft-cloud p-6">
-                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">Total Part Nett</p>
-                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
+                  <div className="col-span-2 bg-card-emerald text-canvas p-6">
+                      <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Part Nett</p>
+                      <p className="text-[24px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
                   </div>
 
-                  <div className="col-span-2 bg-soft-cloud p-6">
-                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">HPP Bahan</p>
-                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
+                  <div className="col-span-2 bg-card-ruby text-canvas p-6">
+                      <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Bahan</p>
+                      <p className="text-[24px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
                   </div>
-                  <div className="col-span-2 bg-soft-cloud p-6">
-                      <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-2">HPP Part</p>
-                      <p className="text-[24px] font-medium text-ink">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
+                  <div className="col-span-2 bg-card-ruby text-canvas p-6">
+                      <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
+                      <p className="text-[24px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
                   </div>
               </div>
           </div>

@@ -214,27 +214,27 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] mb-[24px]">
              {/* Monthly Card */}
-            <div className="bg-canvas p-6 md:p-8 border border-hairline">
+            <div className="bg-card-navy text-canvas p-6 md:p-8 rounded-[24px] shadow-lg">
                 <div className="flex justify-between items-start mb-12">
                     <div>
-                        <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Monthly GP Target (Realized)</p>
-                        <h3 className="text-[48px] font-medium text-ink tracking-tight leading-[1]">{formatCurrency(settings.monthlyTarget)}</h3>
+                        <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Monthly GP Target (Realized)</p>
+                        <h3 className="text-[48px] font-medium tracking-tight leading-[1]">{formatCurrency(settings.monthlyTarget)}</h3>
                     </div>
                     <div className="text-right">
-                        <span className="text-[32px] font-medium text-ink">{monthlyProgress.toFixed(1)}%</span>
+                        <span className="text-[32px] font-medium">{monthlyProgress.toFixed(1)}%</span>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Pencapaian Real</span>
-                            <span className="text-[24px] font-medium text-ink">{formatCurrency(stats.totalGPRealizedMonth)}</span>
+                            <span className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Pencapaian Real</span>
+                            <span className="text-[24px] font-medium">{formatCurrency(stats.totalGPRealizedMonth)}</span>
                         </div>
                     </div>
-                    <div className="w-full h-1 bg-soft-cloud border border-hairline relative">
-                        <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-1000" style={{ width: `${monthlyProgress}%` }}></div>
+                    <div className="w-full h-1 bg-white/20 relative">
+                        <div className="absolute top-0 left-0 h-full bg-canvas transition-all duration-1000" style={{ width: `${monthlyProgress}%` }}></div>
                     </div>
-                    <div className="flex items-center justify-between text-[12px] font-medium text-mute uppercase tracking-widest mt-4">
+                    <div className="flex items-center justify-between text-[12px] font-medium opacity-80 uppercase tracking-widest mt-4">
                         <div>SISA TARGET: {formatCurrency(Math.max(settings.monthlyTarget - stats.totalGPRealizedMonth, 0))}</div>
                         <div>PEKAN KE-{stats.currentWeekNum} / {stats.remainingWeeks} SISA</div>
                     </div>
@@ -242,31 +242,31 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             </div>
 
             {/* Weekly Card */}
-            <div className="bg-canvas p-6 md:p-8 border border-hairline">
+            <div className="bg-card-emerald text-canvas p-6 md:p-8 rounded-[24px] shadow-lg">
                 <div className="flex justify-between items-start mb-12">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <p className="text-[14px] font-medium text-mute uppercase tracking-widest">Adjusted Weekly Target</p>
-                            {isTargetInflated && <span className="bg-ink text-canvas text-[10px] px-2 py-0.5 rounded-full font-medium tracking-widest">CATCH-UP ACTIVE</span>}
+                            <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest">Adjusted Weekly Target</p>
+                            {isTargetInflated && <span className="bg-white text-card-emerald text-[10px] px-2 py-0.5 rounded-full font-medium tracking-widest">CATCH-UP ACTIVE</span>}
                         </div>
-                        <h3 className="text-[48px] font-medium text-ink tracking-tight leading-[1]">{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
+                        <h3 className="text-[48px] font-medium tracking-tight leading-[1]">{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
                     </div>
                     <div className="text-right">
-                        <span className="text-[32px] font-medium text-ink">{weeklyProgress.toFixed(1)}%</span>
+                        <span className="text-[32px] font-medium">{weeklyProgress.toFixed(1)}%</span>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-[14px] font-medium text-mute uppercase tracking-widest mb-1">Closing 7 Hari Terakhir</span>
-                            <span className="text-[24px] font-medium text-ink">{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
+                            <span className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Closing 7 Hari Terakhir</span>
+                            <span className="text-[24px] font-medium">{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
                         </div>
                     </div>
-                    <div className="w-full h-1 bg-soft-cloud border border-hairline relative">
-                        <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-1000" style={{ width: `${weeklyProgress}%` }}></div>
+                    <div className="w-full h-1 bg-white/20 relative">
+                        <div className="absolute top-0 left-0 h-full bg-canvas transition-all duration-1000" style={{ width: `${weeklyProgress}%` }}></div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-hairline">
-                         <p className="text-[12px] text-mute font-normal italic">
+                    <div className="mt-4 pt-4 border-t border-white/20">
+                         <p className="text-[12px] opacity-80 font-normal italic">
                             {isTargetInflated ? `Target naik karena kekurangan pekan sebelumnya dibagi rata ke ${stats.remainingWeeks} pekan sisa.` : `Target pekanan stabil. Pertahankan ritme produksi.`}
                          </p>
                     </div>

@@ -162,19 +162,19 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
         </div>
 
         {/* FORECAST GROSS PROFIT CARD */}
-        <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-[24px]">
+        <div className="bg-card-emerald text-canvas p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-[24px] rounded-[24px] shadow-lg">
             <div>
-                <h3 className="font-medium text-mute uppercase tracking-widest text-[14px] mb-2">
+                <h3 className="font-medium opacity-80 uppercase tracking-widest text-[14px] mb-2">
                     Forecast Gross Profit
                 </h3>
-                <p className="text-[48px] font-medium text-ink tracking-tight leading-[1]">
+                <p className="text-[48px] font-medium tracking-tight leading-[1]">
                     {formatCurrency(data.forecastGP)}
                 </p>
                 <div className="mt-6 flex flex-col md:flex-row items-start md:items-center gap-4">
-                    <div className="bg-ink px-4 py-2 rounded-full text-canvas font-medium text-[12px] uppercase tracking-widest">
+                    <div className="bg-white/20 px-4 py-2 rounded-full font-medium text-[12px] uppercase tracking-widest">
                         {data.forecastCount} Unit WO Belum Faktur
                     </div>
-                    <p className="text-[12px] text-mute italic">
+                    <p className="text-[12px] opacity-80 italic">
                         *Asumsi: HPP Bahan 15%, HPP Part 80%
                     </p>
                 </div>
@@ -197,13 +197,13 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                     </div>
                 </div>
                 <div className="w-full mt-8 space-y-4">
-                    <div className="flex justify-between items-center p-4 bg-soft-cloud border border-hairline">
-                        <span className="text-[14px] font-medium text-ink uppercase tracking-widest">Asuransi</span>
-                        <span className="font-medium text-ink text-[16px]">{data.insCount} <span className="text-[12px] text-mute ml-2">({((data.insCount/data.totalOrder || 0)*100).toFixed(1)}%)</span></span>
+                    <div className="flex justify-between items-center p-4 bg-card-teal text-canvas rounded-lg shadow-sm">
+                        <span className="text-[14px] font-medium uppercase tracking-widest">Asuransi</span>
+                        <span className="font-medium text-[16px]">{data.insCount} <span className="text-[12px] opacity-80 ml-2">({((data.insCount/data.totalOrder || 0)*100).toFixed(1)}%)</span></span>
                     </div>
-                    <div className="flex justify-between items-center p-4 bg-soft-cloud border border-hairline">
-                        <span className="text-[14px] font-medium text-ink uppercase tracking-widest">Pribadi / Umum</span>
-                        <span className="font-medium text-ink text-[16px]">{data.priCount} <span className="text-[12px] text-mute ml-2">({((data.priCount/data.totalOrder || 0)*100).toFixed(1)}%)</span></span>
+                    <div className="flex justify-between items-center p-4 bg-ink text-canvas rounded-lg shadow-sm">
+                        <span className="text-[14px] font-medium uppercase tracking-widest">Pribadi / Umum</span>
+                        <span className="font-medium text-[16px]">{data.priCount} <span className="text-[12px] opacity-80 ml-2">({((data.priCount/data.totalOrder || 0)*100).toFixed(1)}%)</span></span>
                     </div>
                 </div>
             </div>
