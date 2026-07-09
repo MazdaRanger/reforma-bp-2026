@@ -76,11 +76,11 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
   };
 
   return (
-    <div className="animate-fade-in pb-[48px]">
+    <div className="animate-fade-in pb-6">
       
       {/* FILTER & CONTROLS */}
-      <div className="bg-canvas border border-hairline p-6 mb-[48px]">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div className="bg-canvas border border-hairline p-4 mb-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex-grow w-full lg:w-auto">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                     <input 
@@ -123,7 +123,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
       </div>
 
       {/* JOB CARDS */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-[24px]">
+      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
         {allData.map((job) => {
            const config = getStatusConfig(job.statusKendaraan, job.statusPekerjaan);
            const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
@@ -131,10 +131,10 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
            return (
               <div key={job.id} className="bg-canvas border border-hairline flex flex-col hover:border-ink transition-colors">
                   
-                  <div className="p-6 md:p-8 flex-grow">
-                      <div className="flex justify-between items-start mb-6">
+                  <div className="p-4 flex-grow">
+                      <div className="flex justify-between items-start mb-4">
                           <div>
-                              <h3 className="text-[28px] font-medium text-ink tracking-tight leading-[1.1]">{job.policeNumber}</h3>
+                              <h3 className="text-[16px] font-medium text-ink tracking-tight leading-[1.1]">{job.policeNumber}</h3>
                               <p className="text-[12px] font-medium text-mute uppercase tracking-widest mt-2">{job.carModel} • {job.warnaMobil}</p>
                           </div>
                           {config.ribbon && (
@@ -144,7 +144,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
                           )}
                       </div>
 
-                      <div className="space-y-4 mb-8">
+                      <div className="space-y-4 mb-4">
                           <div className="flex items-center justify-between text-[14px] border-b border-hairline pb-2">
                               <span className="font-medium text-ink uppercase truncate mr-4">{job.customerName}</span>
                               <span className="text-[12px] text-mute uppercase whitespace-nowrap">{job.namaAsuransi}</span>
@@ -167,7 +167,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
                       </div>
                   </div>
 
-                  <div className="p-6 md:p-8 pt-0 flex items-center justify-between">
+                  <div className="p-4 pt-0 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                           <button onClick={() => openModal('create_estimation', job)} className="px-6 py-2.5 bg-canvas border border-ink text-ink hover:bg-ink hover:text-canvas text-[12px] font-medium tracking-widest uppercase rounded-full transition-colors">
                               DETAIL
@@ -180,7 +180,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
                       </div>
                       <div className="text-right">
                           <div className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">TOTAL BILL</div>
-                          <div className="text-[20px] font-medium text-ink">{formatCurrency(job.estimateData?.grandTotal || 0)}</div>
+                          <div className="text-[16px] font-medium text-ink">{formatCurrency(job.estimateData?.grandTotal || 0)}</div>
                       </div>
                   </div>
               </div>

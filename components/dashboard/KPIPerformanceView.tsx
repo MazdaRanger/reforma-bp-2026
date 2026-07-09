@@ -250,44 +250,44 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
   };
 
   return (
-    <div className="animate-fade-in pb-[48px]">
+    <div className="animate-fade-in pb-6">
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-[48px] border-b border-hairline pb-[24px]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-hairline pb-4">
             <div>
-                <h1 className="text-[96px] font-display uppercase leading-[0.9] text-ink">KPI & PERFORMANCE</h1>
-                <p className="text-[16px] text-mute font-normal mt-[18px]">Monitoring Laba Kotor & Catch-Up Target Tim</p>
+                <h1 className="text-[20px] font-bold font-display uppercase leading-tight text-ink">KPI & PERFORMANCE</h1>
+                <p className="text-[12px] text-mute font-normal mt-2">Monitoring Laba Kotor & Catch-Up Target Tim</p>
             </div>
 
             <div className="flex items-center gap-2 mt-6 md:mt-0 bg-soft-cloud rounded-full px-4 py-2">
-                <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
+                <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent border-none text-[12px] font-medium text-ink focus:ring-0 cursor-pointer">
                     {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
                         <option key={i} value={i}>{m}</option>
                     ))}
                 </select>
                 <span className="text-mute">/</span>
-                <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-[16px] font-medium text-ink focus:ring-0 cursor-pointer">
+                <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent border-none text-[12px] font-medium text-ink focus:ring-0 cursor-pointer">
                     {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
             </div>
         </div>
         
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] mb-[24px]">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
              {/* Monthly Card */}
-            <div className="bg-card-navy text-canvas p-6 md:p-8 rounded-[24px] shadow-lg">
-                <div className="flex justify-between items-start mb-12">
+            <div className="bg-card-navy text-canvas p-4 rounded-[12px] shadow-lg">
+                <div className="flex justify-between items-start mb-4">
                     <div>
-                        <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Monthly GP Target (Realized)</p>
-                        <h3 className="text-[48px] font-medium tracking-tight leading-[1]">{formatCurrency(settings.monthlyTarget)}</h3>
+                        <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-1">Monthly GP Target (Realized)</p>
+                        <h3 className="text-[20px] font-bold font-medium tracking-tight leading-[1]">{formatCurrency(settings.monthlyTarget)}</h3>
                     </div>
                     <div className="text-right">
-                        <span className="text-[32px] font-medium">{monthlyProgress.toFixed(1)}%</span>
+                        <span className="text-[18px] font-medium">{monthlyProgress.toFixed(1)}%</span>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Pencapaian Real</span>
-                            <span className="text-[24px] font-medium">{formatCurrency(stats.totalGPRealizedMonth)}</span>
+                            <span className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-1">Pencapaian Real</span>
+                            <span className="text-[12px] font-medium">{formatCurrency(stats.totalGPRealizedMonth)}</span>
                         </div>
                     </div>
                     <div className="w-full h-1 bg-white/20 relative">
@@ -301,24 +301,24 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             </div>
 
             {/* Weekly Card */}
-            <div className="bg-card-emerald text-canvas p-6 md:p-8 rounded-[24px] shadow-lg">
-                <div className="flex justify-between items-start mb-12">
+            <div className="bg-card-emerald text-canvas p-4 rounded-[12px] shadow-lg">
+                <div className="flex justify-between items-start mb-4">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <p className="text-[14px] font-medium opacity-80 uppercase tracking-widest">Adjusted Weekly Target</p>
+                            <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest">Adjusted Weekly Target</p>
                             {isTargetInflated && <span className="bg-white text-card-emerald text-[10px] px-2 py-0.5 rounded-full font-medium tracking-widest">CATCH-UP ACTIVE</span>}
                         </div>
-                        <h3 className="text-[48px] font-medium tracking-tight leading-[1]">{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
+                        <h3 className="text-[20px] font-bold font-medium tracking-tight leading-[1]">{formatCurrency(stats.adjustedWeeklyTarget)}</h3>
                     </div>
                     <div className="text-right">
-                        <span className="text-[32px] font-medium">{weeklyProgress.toFixed(1)}%</span>
+                        <span className="text-[18px] font-medium">{weeklyProgress.toFixed(1)}%</span>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
                         <div className="flex flex-col">
-                            <span className="text-[14px] font-medium opacity-80 uppercase tracking-widest mb-1">Closing 7 Hari Terakhir</span>
-                            <span className="text-[24px] font-medium">{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
+                            <span className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-1">Closing 7 Hari Terakhir</span>
+                            <span className="text-[12px] font-medium">{formatCurrency(stats.currentAchievedWeeklyGP)}</span>
                         </div>
                     </div>
                     <div className="w-full h-1 bg-white/20 relative">
@@ -334,9 +334,9 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         </div>
 
         {/* CHARTS */}
-        <div className="mb-[24px] bg-canvas p-6 border border-hairline">
+        <div className="mb-4 bg-canvas p-4 border border-hairline">
             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-[16px] font-medium text-ink uppercase tracking-widest">Distribusi Produksi Aktif</h3>
+                <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest">Distribusi Produksi Aktif</h3>
             </div>
             <div className="h-72">
                 <Line data={lineChartData} options={lineChartOptions as any} />
@@ -344,20 +344,20 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         </div>
 
         {/* DETAILS GRID */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px]">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* SA TABLE */}
             <div className="bg-canvas border border-hairline flex flex-col">
-                <div className="p-6 border-b border-hairline">
-                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Service Advisor Performance</h3>
+                <div className="p-4 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Service Advisor Performance</h3>
                 </div>
                 <div className="p-0 overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="text-[12px] font-medium text-mute uppercase tracking-widest border-b border-hairline bg-soft-cloud">
                             <tr>
-                                <th className="py-4 px-6 font-normal">Nama SA</th>
-                                <th className="py-4 px-6 text-center font-normal">Closing Rate</th>
-                                <th className="py-4 px-6 text-center font-normal">Invoiced</th>
-                                <th className="py-4 px-6 text-right font-normal">GP Contribution</th>
+                                <th className="py-2 px-4 font-normal">Nama SA</th>
+                                <th className="py-2 px-4 text-center font-normal">Closing Rate</th>
+                                <th className="py-2 px-4 text-center font-normal">Invoiced</th>
+                                <th className="py-2 px-4 text-right font-normal">GP Contribution</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-hairline">
@@ -365,20 +365,20 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
                                 const ratio = data.estCount > 0 ? (data.woCount / data.estCount) * 100 : 0;
                                 return (
                                     <tr key={name} className="hover:bg-soft-cloud transition-colors">
-                                        <td className="py-4 px-6 font-medium text-ink">{name}</td>
-                                        <td className="py-4 px-6 text-center">
+                                        <td className="py-2 px-4 font-medium text-ink">{name}</td>
+                                        <td className="py-2 px-4 text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className="font-medium text-ink text-[16px]">{ratio.toFixed(0)}%</span>
+                                                <span className="font-medium text-ink text-[12px]">{ratio.toFixed(0)}%</span>
                                                 <span className="text-[10px] text-mute uppercase">{data.woCount} / {data.estCount}</span>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.woCount}</td>
-                                        <td className="py-4 px-6 text-right">
-                                            <div className="font-medium text-ink text-[16px]">{formatCurrency(data.gpContribution)}</div>
+                                        <td className="py-2 px-4 text-center font-medium text-ink text-[12px]">{data.woCount}</td>
+                                        <td className="py-2 px-4 text-right">
+                                            <div className="font-medium text-ink text-[12px]">{formatCurrency(data.gpContribution)}</div>
                                         </td>
                                     </tr>
                                 );
-                            }) : <tr><td colSpan={4} className="py-8 px-6 text-center text-mute text-[14px]">Belum ada data.</td></tr>}
+                            }) : <tr><td colSpan={4} className="py-2 px-4 text-center text-mute text-[12px]">Belum ada data.</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -386,27 +386,27 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
 
             {/* MEKANIK TABLE */}
             <div className="bg-canvas border border-hairline flex flex-col">
-                <div className="p-6 border-b border-hairline">
-                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Produksi & Kualitas</h3>
+                <div className="p-4 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Produksi & Kualitas</h3>
                 </div>
                 <div className="p-0 overflow-hidden flex flex-col h-full">
                     <div className="overflow-y-auto scrollbar-thin h-[400px]">
                         <table className="w-full text-left relative">
                             <thead className="text-[12px] font-medium text-mute uppercase tracking-widest border-b border-hairline bg-soft-cloud sticky top-0 z-10">
                                 <tr>
-                                    <th className="py-4 px-6 font-normal">Mekanik</th>
-                                    <th className="py-4 px-6 text-center font-normal">Selesai</th>
-                                    <th className="py-4 px-6 text-center font-normal">Panel</th>
-                                    <th className="py-4 px-6 text-center font-normal">Kualitas</th>
+                                    <th className="py-2 px-4 font-normal">Mekanik</th>
+                                    <th className="py-2 px-4 text-center font-normal">Selesai</th>
+                                    <th className="py-2 px-4 text-center font-normal">Panel</th>
+                                    <th className="py-2 px-4 text-center font-normal">Kualitas</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-hairline">
                                 {Object.entries(stats.mechMap).map(([name, data]: any) => (
                                     <tr key={name} className="hover:bg-soft-cloud transition-colors">
-                                        <td className="py-4 px-6 font-medium text-ink">{name}</td>
-                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.units}</td>
-                                        <td className="py-4 px-6 text-center font-medium text-ink text-[16px]">{data.panels.toFixed(1)}</td>
-                                        <td className="py-4 px-6 text-center">
+                                        <td className="py-2 px-4 font-medium text-ink">{name}</td>
+                                        <td className="py-2 px-4 text-center font-medium text-ink text-[12px]">{data.units}</td>
+                                        <td className="py-2 px-4 text-center font-medium text-ink text-[12px]">{data.panels.toFixed(1)}</td>
+                                        <td className="py-2 px-4 text-center">
                                             {data.reworks === 0 ? (
                                                 <span className="text-[12px] font-medium text-mute uppercase tracking-widest">PERFECT</span>
                                             ) : (
@@ -416,7 +416,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
                                     </tr>
                                 ))}
                                 {Object.keys(stats.mechMap).length === 0 && (
-                                    <tr><td colSpan={4} className="py-8 px-6 text-center text-mute text-[14px]">Belum ada data produksi periode ini.</td></tr>
+                                    <tr><td colSpan={4} className="py-2 px-4 text-center text-mute text-[12px]">Belum ada data produksi periode ini.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -426,15 +426,15 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
 
             {/* CRC CARD */}
             <div className="bg-canvas border border-hairline flex flex-col">
-                <div className="p-6 border-b border-hairline">
-                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">CRM & Customer Care</h3>
+                <div className="p-4 border-b border-hairline">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">CRM & Customer Care</h3>
                 </div>
-                <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-6">
                         <div>
                             <div className="flex justify-between items-end mb-4">
-                                <span className="text-[14px] font-medium text-mute uppercase tracking-widest">Success Ratio</span>
-                                <span className="text-[32px] font-medium text-ink leading-none">{stats.successRatio.toFixed(1)}%</span>
+                                <span className="text-[12px] font-medium text-mute uppercase tracking-widest">Success Ratio</span>
+                                <span className="text-[18px] font-medium text-ink leading-none">{stats.successRatio.toFixed(1)}%</span>
                             </div>
                             <div className="w-full bg-soft-cloud h-1 relative border border-hairline">
                                 <div className="bg-ink h-full absolute top-0 left-0 transition-all duration-1000" style={{ width: `${stats.successRatio}%` }}></div>
@@ -444,8 +444,8 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
                             </p>
                         </div>
                     </div>
-                    <div className="bg-soft-cloud border border-hairline p-6 flex flex-col items-center justify-center text-center">
-                        <h4 className="font-medium text-ink text-[16px] uppercase tracking-widest">CRC Goal</h4>
+                    <div className="bg-soft-cloud border border-hairline p-4 flex flex-col items-center justify-center text-center">
+                        <h4 className="font-medium text-ink text-[12px] uppercase tracking-widest">CRC Goal</h4>
                         <p className="text-[12px] text-mute mt-2 max-w-[200px]">Konversi Potensi Booking Menjadi Unit Masuk (Inap) Tepat Waktu & Respon Follow Up.</p>
                     </div>
                 </div>
@@ -453,26 +453,26 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
 
             {/* FINANCE CARD */}
             <div className="bg-canvas border border-hairline flex flex-col">
-                <div className="p-6 border-b border-hairline flex justify-between items-center">
-                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Finance & Receivables</h3>
+                <div className="p-4 border-b border-hairline flex justify-between items-center">
+                    <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Finance & Receivables</h3>
                     <div className="text-right">
                         <span className="text-[10px] font-medium text-mute uppercase block leading-none tracking-widest mb-1">Total Piutang (AR)</span>
-                        <span className="text-[16px] font-medium text-ink">{formatCurrency(stats.totalAR)}</span>
+                        <span className="text-[12px] font-medium text-ink">{formatCurrency(stats.totalAR)}</span>
                     </div>
                 </div>
-                <div className="p-6 md:p-8">
-                    <div className="grid grid-cols-3 gap-[24px]">
+                <div className="p-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="p-4 bg-soft-cloud border border-hairline text-center">
                             <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">0 - 7 Hari</p>
-                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.current)}</p>
+                            <p className="text-[12px] font-medium text-ink">{formatCurrency(stats.agingProfile.current)}</p>
                         </div>
                         <div className="p-4 bg-soft-cloud border border-hairline text-center">
                             <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">8 - 14 Hari</p>
-                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.warning)}</p>
+                            <p className="text-[12px] font-medium text-ink">{formatCurrency(stats.agingProfile.warning)}</p>
                         </div>
                         <div className="p-4 bg-soft-cloud border border-hairline text-center">
                             <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">{'>'} 14 Hari</p>
-                            <p className="text-[16px] font-medium text-ink">{formatCurrency(stats.agingProfile.critical)}</p>
+                            <p className="text-[12px] font-medium text-ink">{formatCurrency(stats.agingProfile.critical)}</p>
                         </div>
                     </div>
                 </div>
