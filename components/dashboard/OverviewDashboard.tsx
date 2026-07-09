@@ -2,12 +2,12 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
-import { Doughnut } from 'react-chartjs-2';
+import { Doughnut, Bar } from 'react-chartjs-2';
 import {
-  Chart as ChartJS, ArcElement, Tooltip, Legend
+  Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement
 } from 'chart.js';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 interface OverviewProps {
   allJobs: Job[];
@@ -156,13 +156,24 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         return -1;
     };
 
+    const getValidWeeks = (year: number, month: number) => {
+        const valid = [];
+        for (let w = 1; w <= 5; w++) {
+            const { start, end } = getWeekBounds(year, month, w);
+            if (start <= end) {
+                valid.push(w);
+            }
+        }
+        return valid;
+    };
+
     const weeklyData: Record<string, any> = {
-        1: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(1) },
-        2: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(2) },
-        3: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(3) },
-        4: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(4) },
-        5: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: getWorkingDaysInWeek(5) },
-        total: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, workingDays: 0 }
+        1: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: getWorkingDaysInWeek(1) },
+        2: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: getWorkingDaysInWeek(2) },
+        3: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: getWorkingDaysInWeek(3) },
+        4: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: getWorkingDaysInWeek(4) },
+        5: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: getWorkingDaysInWeek(5) },
+        total: { entry: 0, out: 0, jasaNett: 0, partNett: 0, bahanCost: 0, partCost: 0, grossProfit: 0, panels: 0, workingDays: 0 }
     };
 
     weeklyData.total.workingDays = [1,2,3,4,5].reduce((acc, w) => acc + weeklyData[w].workingDays, 0);
@@ -202,6 +213,10 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                     weeklyData[w].partNett += (est.subtotalPart || 0);
                     weeklyData.total.jasaNett += (est.subtotalJasa || 0);
                     weeklyData.total.partNett += (est.subtotalPart || 0);
+
+                    const panels = est.jasaItems?.reduce((pAcc: any, item: any) => pAcc + (item.panelCount || 0), 0) || 0;
+                    weeklyData[w].panels += panels;
+                    weeklyData.total.panels += panels;
                 }
                 if (cost) {
                     weeklyData[w].bahanCost += (cost.hargaModalBahan || 0);
@@ -250,6 +265,8 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         return acc + (totalNetRevenue - totalCOGS);
     }, 0);
 
+    const validWeeks = getValidWeeks(selectedYear, selectedMonth);
+
     return { 
         activeJobsCount, 
         completedWaiting, 
@@ -257,7 +274,8 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
         totalInvoicedUnits, 
         totalPanels, 
         grossProfit,
-        weeklyData
+        weeklyData,
+        validWeeks
     };
   }, [allJobs, selectedMonth, selectedYear, settings.internalHolidays]);
 
@@ -316,10 +334,10 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       </div>
 
       {/* WEEKLY SIDEBAR SECTION */}
-      <div className="flex flex-col md:flex-row bg-canvas border border-hairline mb-6">
-          <div className="flex flex-row md:flex-col border-b md:border-b-0 md:border-r border-hairline md:w-[220px] shrink-0 p-4 gap-4 overflow-x-auto">
-              <h3 className="hidden md:block text-[12px] font-medium text-ink mb-4">PERFORMA</h3>
-              {[1, 2, 3, 4, 5].map((w) => (
+      <div className="flex flex-col xl:flex-row bg-canvas border border-hairline mb-6">
+          <div className="flex flex-row xl:flex-col border-b xl:border-b-0 xl:border-r border-hairline xl:w-[220px] shrink-0 p-4 gap-4 overflow-x-auto">
+              <h3 className="hidden xl:block text-[12px] font-medium text-ink mb-4">PERFORMA</h3>
+              {stats.validWeeks.map((w) => (
                   <button
                       key={w}
                       onClick={() => setActiveWeek(w)}
@@ -336,46 +354,105 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               </button>
           </div>
           
-          <div className="flex-1 p-4 md:p-4">
-              <div className="mb-4">
-                  <h3 className="text-[18px] font-medium text-ink tracking-tight mb-2">
-                      {activeWeek === 'total' ? 'TOTAL KESELURUHAN' : `DETAIL MINGGU ${activeWeek}`}
-                  </h3>
-                  <p className="text-[12px] text-mute font-normal">
-                      Total Hari Kerja: <span className="text-ink font-medium">{stats.weeklyData[activeWeek].workingDays} Hari</span>
-                  </p>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-canvas border border-hairline p-4">
-                      <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Masuk</p>
-                      <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].entry}</p>
-                  </div>
-                  <div className="bg-canvas border border-hairline p-4">
-                      <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Keluar</p>
-                      <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].out}</p>
+          <div className="flex-1 p-4 md:p-4 flex flex-col xl:flex-row gap-6">
+              <div className="flex-1">
+                  <div className="mb-4">
+                      <h3 className="text-[18px] font-medium text-ink tracking-tight mb-2">
+                          {activeWeek === 'total' ? 'TOTAL KESELURUHAN' : `DETAIL MINGGU ${activeWeek}`}
+                      </h3>
+                      <p className="text-[12px] text-mute font-normal">
+                          Total Hari Kerja: <span className="text-ink font-medium">{stats.weeklyData[activeWeek].workingDays} Hari</span>
+                      </p>
                   </div>
                   
-                  <div className="col-span-2 bg-card-navy text-canvas p-4">
-                      <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Jasa Nett</p>
-                      <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
-                  </div>
-                  <div className="col-span-2 bg-card-emerald text-canvas p-4">
-                      <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Part Nett</p>
-                      <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
-                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-canvas border border-hairline p-4">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Masuk</p>
+                          <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].entry}</p>
+                      </div>
+                      <div className="bg-canvas border border-hairline p-4">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Keluar</p>
+                          <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].out}</p>
+                      </div>
+                      
+                      <div className="bg-canvas border border-hairline p-4 col-span-2 md:col-span-2">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Total Panel</p>
+                          <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].panels?.toFixed(1) || '0.0'}</p>
+                      </div>
 
-                  <div className="col-span-2 bg-card-ruby text-canvas p-4">
-                      <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Bahan</p>
-                      <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
+                      <div className="col-span-2 bg-card-navy text-canvas p-4">
+                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Jasa Nett</p>
+                          <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
+                      </div>
+                      <div className="col-span-2 bg-card-emerald text-canvas p-4">
+                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Part Nett</p>
+                          <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
+                      </div>
+
+                      <div className="col-span-2 bg-card-ruby text-canvas p-4">
+                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Bahan</p>
+                          <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
+                      </div>
+                      <div className="col-span-2 bg-card-ruby text-canvas p-4">
+                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
+                          <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
+                      </div>
+                      <div className="col-span-2 md:col-span-4 bg-card-emerald text-canvas p-4 rounded-b-[12px] shadow-sm">
+                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Gross Profit (GP) Periode Ini</p>
+                          <p className="text-[18px] font-medium tracking-tight">{formatCurrency(stats.weeklyData[activeWeek].grossProfit)}</p>
+                      </div>
                   </div>
-                  <div className="col-span-2 bg-card-ruby text-canvas p-4">
-                      <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
-                      <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
-                  </div>
-                  <div className="col-span-2 md:col-span-4 bg-card-emerald text-canvas p-4 rounded-b-[12px] shadow-sm">
-                      <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Gross Profit (GP) Periode Ini</p>
-                      <p className="text-[18px] font-medium tracking-tight">{formatCurrency(stats.weeklyData[activeWeek].grossProfit)}</p>
+              </div>
+              
+              {/* Bar Chart Section */}
+              <div className="xl:w-[400px] flex flex-col justify-center border-t xl:border-t-0 xl:border-l border-hairline pt-6 xl:pt-0 xl:pl-6">
+                  <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest mb-4">Grafik Performa Mingguan</h3>
+                  <div className="w-full h-[250px] relative">
+                      <Bar 
+                          data={{
+                              labels: stats.validWeeks.map(w => `Minggu ${w}`),
+                              datasets: [
+                                  {
+                                      label: 'Gross Profit',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].grossProfit),
+                                      backgroundColor: '#10b981',
+                                      borderRadius: 4
+                                  }
+                              ]
+                          }} 
+                          options={{ 
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: { 
+                                  legend: { display: false }, 
+                                  tooltip: { 
+                                      backgroundColor: 'rgba(17, 17, 17, 0.95)',
+                                      cornerRadius: 8,
+                                      callbacks: {
+                                          label: (context) => formatCurrency(context.raw as number)
+                                      }
+                                  } 
+                              },
+                              scales: {
+                                  y: {
+                                      beginAtZero: true,
+                                      ticks: {
+                                          font: { size: 10 },
+                                          callback: (value) => {
+                                              if (Number(value) >= 1000000) return `${(Number(value) / 1000000).toFixed(0)}Jt`;
+                                              if (Number(value) >= 1000) return `${(Number(value) / 1000).toFixed(0)}k`;
+                                              return value;
+                                          }
+                                      }
+                                  },
+                                  x: {
+                                      ticks: {
+                                          font: { size: 10 }
+                                      }
+                                  }
+                              }
+                          }} 
+                      />
                   </div>
               </div>
           </div>
