@@ -354,8 +354,8 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               </button>
           </div>
           
-          <div className="flex-1 p-4 md:p-4 flex flex-col xl:flex-row gap-6">
-              <div className="flex-1">
+          <div className="flex-1 p-4 md:p-4 flex flex-col gap-6">
+              <div className="w-full">
                   <div className="mb-4">
                       <h3 className="text-[18px] font-medium text-ink tracking-tight mb-2">
                           {activeWeek === 'total' ? 'TOTAL KESELURUHAN' : `DETAIL MINGGU ${activeWeek}`}
@@ -405,18 +405,60 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               </div>
               
               {/* Bar Chart Section */}
-              <div className="xl:w-[400px] flex flex-col justify-center border-t xl:border-t-0 xl:border-l border-hairline pt-6 xl:pt-0 xl:pl-6">
+              <div className="w-full flex flex-col border-t border-hairline pt-6">
                   <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest mb-4">Grafik Performa Mingguan</h3>
-                  <div className="w-full h-[250px] relative">
+                  <div className="w-full h-[350px] relative mt-2">
                       <Bar 
                           data={{
                               labels: stats.validWeeks.map(w => `Minggu ${w}`),
                               datasets: [
                                   {
+                                      label: 'Unit Masuk',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].entry),
+                                      backgroundColor: '#0a9396',
+                                      yAxisID: 'y1'
+                                  },
+                                  {
+                                      label: 'Unit Keluar',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].out),
+                                      backgroundColor: '#005f73',
+                                      yAxisID: 'y1'
+                                  },
+                                  {
+                                      label: 'Total Panel',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].panels),
+                                      backgroundColor: '#ca6702',
+                                      yAxisID: 'y1'
+                                  },
+                                  {
+                                      label: 'Total Jasa Nett',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].jasaNett),
+                                      backgroundColor: '#1b263b',
+                                      yAxisID: 'y'
+                                  },
+                                  {
+                                      label: 'Total Part Nett',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].partNett),
+                                      backgroundColor: '#415a77',
+                                      yAxisID: 'y'
+                                  },
+                                  {
+                                      label: 'HPP Bahan',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].bahanCost),
+                                      backgroundColor: '#9b2226',
+                                      yAxisID: 'y'
+                                  },
+                                  {
+                                      label: 'HPP Part',
+                                      data: stats.validWeeks.map(w => stats.weeklyData[w].partCost),
+                                      backgroundColor: '#ae2012',
+                                      yAxisID: 'y'
+                                  },
+                                  {
                                       label: 'Gross Profit',
                                       data: stats.validWeeks.map(w => stats.weeklyData[w].grossProfit),
                                       backgroundColor: '#10b981',
-                                      borderRadius: 4
+                                      yAxisID: 'y'
                                   }
                               ]
                           }} 
@@ -424,17 +466,33 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                               responsive: true,
                               maintainAspectRatio: false,
                               plugins: { 
-                                  legend: { display: false }, 
+                                  legend: { 
+                                      display: true,
+                                      position: 'bottom',
+                                      labels: { font: { size: 10 }, boxWidth: 12, padding: 16 }
+                                  }, 
                                   tooltip: { 
                                       backgroundColor: 'rgba(17, 17, 17, 0.95)',
                                       cornerRadius: 8,
                                       callbacks: {
-                                          label: (context) => formatCurrency(context.raw as number)
+                                          label: (context: any) => {
+                                              let label = context.dataset.label || '';
+                                              if (label) label += ': ';
+                                              if (context.dataset.yAxisID === 'y') {
+                                                  label += formatCurrency(context.raw as number);
+                                              } else {
+                                                  label += context.raw;
+                                              }
+                                              return label;
+                                          }
                                       }
                                   } 
                               },
                               scales: {
                                   y: {
+                                      type: 'linear' as const,
+                                      display: true,
+                                      position: 'left' as const,
                                       beginAtZero: true,
                                       ticks: {
                                           font: { size: 10 },
@@ -445,10 +503,16 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                                           }
                                       }
                                   },
+                                  y1: {
+                                      type: 'linear' as const,
+                                      display: true,
+                                      position: 'right' as const,
+                                      beginAtZero: true,
+                                      grid: { drawOnChartArea: false },
+                                      ticks: { font: { size: 10 } }
+                                  },
                                   x: {
-                                      ticks: {
-                                          font: { size: 10 }
-                                      }
+                                      ticks: { font: { size: 10 } }
                                   }
                               }
                           }} 
