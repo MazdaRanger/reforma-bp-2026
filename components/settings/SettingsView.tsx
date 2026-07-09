@@ -236,7 +236,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
             { id: 'unit_catalog', label: 'KATALOG UNIT' },
             { id: 'insurance', label: 'DATABASE ASURANSI' },
             { id: 'whatsapp', label: 'WHATSAPP & PESAN' },
-            { id: 'services', label: 'MASTER JASA & PANEL' }
+            { id: 'services', label: 'MASTER JASA & PANEL' },
+            { id: 'menu_access', label: 'HAK AKSES MENU' }
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-4 text-[12px] font-medium uppercase tracking-widest transition-colors flex-shrink-0 ${activeTab === tab.id ? 'bg-ink text-canvas border-t border-l border-r border-ink' : 'text-mute hover:text-ink border-transparent'}`}>
               {tab.label}
@@ -1024,6 +1025,105 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
 
                   <div className="flex items-center gap-4 p-6 bg-canvas border border-ink">
                       <p className="text-[10px] text-ink font-medium uppercase tracking-widest">JANGAN LUPA KLIK "SIMPAN PERUBAHAN" DI BAGIAN ATAS HALAMAN SETELAH SELESAI MENGEDIT.</p>
+                  </div>
+          )}
+          
+          {activeTab === 'menu_access' && (
+              <div className={`space-y-[48px] ${restrictedClass}`}>
+                  <RestrictedOverlay/>
+                  <section className="bg-canvas border border-hairline p-6">
+                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">PENGATURAN HAK AKSES MENU PER ROLE</h3>
+                      <p className="text-[10px] text-mute mb-6 uppercase tracking-widest">CENTANG KOTAK UNTUK MEMBERIKAN AKSES. ROLE MANAGER SELALU MEMILIKI AKSES PENUH.</p>
+                      
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                              <thead>
+                                  <tr>
+                                      <th className="p-4 border-b border-hairline bg-soft-cloud text-[10px] font-medium text-mute uppercase tracking-widest min-w-[200px]">NAMA MENU</th>
+                                      {localSettings.roleOptions.map(role => (
+                                          <th key={role} className="p-4 border-b border-hairline bg-soft-cloud text-[10px] font-medium text-mute uppercase tracking-widest text-center whitespace-nowrap">{role}</th>
+                                      ))}
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  {[
+                                    { id: 'overview_main', label: 'Dashboard Utama' },
+                                    { id: 'overview_business', label: 'Analisis Bisnis' },
+                                    { id: 'overview_kpi', label: 'Performa Staff (KPI)' },
+                                    { id: 'overview_ai', label: 'AI Strategic Insight' },
+                                    { id: 'input_data', label: 'Input Unit Baru' },
+                                    { id: 'estimation_create', label: 'Buat Estimasi' },
+                                    { id: 'entry_data', label: 'Daftar Pekerjaan (WO)' },
+                                    { id: 'production_spkl', label: 'SPKL (Jasa Luar)' },
+                                    { id: 'claims_control', label: 'Admin Claim Control' },
+                                    { id: 'crc_dashboard', label: 'CRC / Customer Care' },
+                                    { id: 'job_control', label: 'Job Control (Kanban)' },
+                                    { id: 'part_monitoring', label: 'Monitoring Part WO' },
+                                    { id: 'inventory', label: 'Master Stok' },
+                                    { id: 'purchase_order', label: 'Purchase Order (PO)' },
+                                    { id: 'part_issuance', label: 'Keluar Part (WO)' },
+                                    { id: 'material_issuance', label: 'Pakai Bahan' },
+                                    { id: 'general_affairs', label: 'Aset & Operasional' },
+                                    { id: 'finance_invoice', label: 'Pembuatan Faktur' },
+                                    { id: 'finance_cashier', label: 'Kasir & Gatepass' },
+                                    { id: 'finance_tax', label: 'Manajemen Pajak' },
+                                    { id: 'finance_debt', label: 'Hutang & Piutang' },
+                                    { id: 'finance_dashboard', label: 'Laporan Keuangan' },
+                                    { id: 'report_center', label: 'Pusat Laporan' }
+                                  ].map((menu, idx) => (
+                                      <tr key={menu.id} className={idx % 2 === 0 ? 'bg-canvas' : 'bg-soft-cloud'}>
+                                          <td className="p-4 border-b border-hairline text-[12px] font-medium text-ink uppercase">{menu.label}</td>
+                                          {localSettings.roleOptions.map(role => {
+                                              const isManagerRole = role === 'Manager';
+                                              const permissions = localSettings.menuPermissions?.[role] || [];
+                                              // Jika belum pernah di-set (undefined array length 0) dan bukan manager, biarkan false.
+                                              // Namun secara default awal, kita biarkan checked jika admin belum setup menuPermissions?
+                                              // Mari kita buat default true jika menuPermissions[role] belum pernah dibuat.
+                                              const hasBeenSetup = !!localSettings.menuPermissions?.[role];
+                                              const isChecked = isManagerRole || (!hasBeenSetup) || permissions.includes(menu.id);
+                                              
+                                              return (
+                                                  <td key={role} className="p-4 border-b border-hairline text-center">
+                                                      <input 
+                                                          type="checkbox" 
+                                                          disabled={!isManager || isManagerRole}
+                                                          checked={isChecked}
+                                                          onChange={(e) => {
+                                                              const checked = e.target.checked;
+                                                              let newPerms = hasBeenSetup ? [...permissions] : [
+                                                                'overview_main', 'overview_business', 'overview_kpi', 'overview_ai',
+                                                                'input_data', 'estimation_create', 'entry_data', 'production_spkl', 'claims_control', 'crc_dashboard',
+                                                                'job_control', 'part_monitoring', 'inventory', 'purchase_order', 'part_issuance', 'material_issuance', 'general_affairs',
+                                                                'finance_invoice', 'finance_cashier', 'finance_tax', 'finance_debt', 'finance_dashboard', 'report_center'
+                                                              ];
+                                                              
+                                                              if (checked) {
+                                                                  if (!newPerms.includes(menu.id)) newPerms.push(menu.id);
+                                                              } else {
+                                                                  newPerms = newPerms.filter(id => id !== menu.id);
+                                                              }
+                                                              setLocalSettings(prev => ({
+                                                                  ...prev,
+                                                                  menuPermissions: {
+                                                                      ...(prev.menuPermissions || {}),
+                                                                      [role]: newPerms
+                                                                  }
+                                                              }));
+                                                          }}
+                                                          className="w-4 h-4 cursor-pointer accent-ink"
+                                                      />
+                                                  </td>
+                                              );
+                                          })}
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                  </section>
+                  
+                  <div className="flex items-center gap-4 p-6 bg-canvas border border-ink">
+                      <p className="text-[10px] text-ink font-medium uppercase tracking-widest">JANGAN LUPA KLIK "SIMPAN PERUBAHAN" DI BAGIAN ATAS HALAMAN SETELAH SELESAI MENGEDIT HAK AKSES.</p>
                   </div>
               </div>
           )}

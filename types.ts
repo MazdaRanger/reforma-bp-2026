@@ -57,6 +57,7 @@ export interface Settings {
   taxProfile?: 'UMKM' | 'UMUM';
   fixedPph25Amount?: number;
   language: 'id' | 'en'; 
+  menuPermissions?: Record<string, string[]>;
 }
 
 export interface UserProfile {

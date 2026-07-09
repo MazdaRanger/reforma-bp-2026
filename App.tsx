@@ -73,23 +73,11 @@ const AppContent: React.FC = () => {
         setSuppliers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
     }, handleError("Suppliers"));
 
-    const unsubTransactions = onSnapshot(query(collection(db, CASHIER_COLLECTION), orderBy('createdAt', 'desc'), limit(200)), (snap) => {
-        setTransactions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CashierTransaction)));
-    }, handleError("Transactions"));
-
-    const unsubAssets = onSnapshot(query(collection(db, ASSETS_COLLECTION)), (snap) => {
-        setAssets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset)));
-    }, handleError("Assets"));
-
-    // FIXED: Inventory Listener (Increased limit to 5000 to cover full warehouse for accurate Job Control mapping)
     const unsubInventory = onSnapshot(query(collection(db, SPAREPART_COLLECTION), limit(5000)), (snap) => {
         setInventoryItems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
     }, handleError("Inventory"));
 
-    // FIXED: Purchase Orders Listener Added (Integration Restore)
-    const unsubPOs = onSnapshot(query(collection(db, PURCHASE_ORDERS_COLLECTION), orderBy('createdAt', 'desc'), limit(100)), (snap) => {
-        setPurchaseOrders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
-    }, handleError("PurchaseOrders"));
+    // Heavy Listeners are now separated below based on RBAC logic
 
     const unsubSettings = onSnapshot(collection(db, SETTINGS_COLLECTION), (snap) => {
        if (!snap.empty) {
@@ -100,10 +88,59 @@ const AppContent: React.FC = () => {
     setLoadingData(false);
     return () => { 
         unsubVehicles(); unsubJobs(); 
-        unsubSuppliers(); unsubTransactions(); unsubAssets(); 
-        unsubInventory(); unsubPOs(); unsubSettings();
+        unsubSuppliers(); unsubInventory(); unsubSettings();
     };
   }, [user]);
+
+  // Conditional Heavy Listeners for Data Optimization
+  useEffect(() => {
+     if (!user) return;
+     const role = userData.role || 'Staff';
+     const isManager = role === 'Manager';
+     const permissions = appSettings.menuPermissions?.[role];
+     const hasBeenSetup = !!permissions;
+     const allowedMenus = isManager ? ['ALL'] : (hasBeenSetup ? permissions : ['ALL']);
+
+     const needsFinance = isManager || !hasBeenSetup || allowedMenus.some(m => ['overview_kpi', 'overview_ai', 'finance_tax', 'finance_dashboard', 'finance_cashier', 'finance_debt', 'report_center'].includes(m));
+     const needsAssets = isManager || !hasBeenSetup || allowedMenus.some(m => ['general_affairs', 'finance_dashboard'].includes(m));
+     const needsPO = isManager || !hasBeenSetup || allowedMenus.some(m => ['purchase_order', 'finance_dashboard', 'report_center', 'finance_tax', 'finance_debt'].includes(m));
+
+     let unsubTransactions = () => {};
+     let unsubAssets = () => {};
+     let unsubPOs = () => {};
+
+     const handleError = (context: string) => (error: any) => console.error(`Error in ${context} listener:`, error);
+
+     if (needsFinance) {
+         unsubTransactions = onSnapshot(query(collection(db, CASHIER_COLLECTION), orderBy('createdAt', 'desc'), limit(200)), (snap) => {
+             setTransactions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CashierTransaction)));
+         }, handleError("Transactions"));
+     } else {
+         setTransactions([]);
+     }
+
+     if (needsAssets) {
+         unsubAssets = onSnapshot(query(collection(db, ASSETS_COLLECTION)), (snap) => {
+             setAssets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset)));
+         }, handleError("Assets"));
+     } else {
+         setAssets([]);
+     }
+
+     if (needsPO) {
+         unsubPOs = onSnapshot(query(collection(db, PURCHASE_ORDERS_COLLECTION), orderBy('createdAt', 'desc'), limit(100)), (snap) => {
+             setPurchaseOrders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
+         }, handleError("PurchaseOrders"));
+     } else {
+         setPurchaseOrders([]);
+     }
+
+     return () => {
+         unsubTransactions();
+         unsubAssets();
+         unsubPOs();
+     };
+  }, [user, userData.role, appSettings.menuPermissions]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { UserProfile, UserPermissions, Settings as SystemSettings } from '../../types';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import Modal from '../ui/Modal';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -135,6 +136,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isExpanded, setIsExpanded]     = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const [accessDeniedModal, setAccessDeniedModal] = useState<{isOpen: boolean, menuName: string}>({isOpen: false, menuName: ''});
 
   const lang = settings.language || 'id';
   const t = (key: string) => DICTIONARY[lang]?.[key] || key;
@@ -232,7 +235,21 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
 
-  const navigate = (viewId: string) => { setCurrentView(viewId); setIsOpen(false); };
+  const navigate = (viewId: string, itemLabel: string) => { 
+      const isManager = userData.role === 'Manager';
+      const permissions = settings.menuPermissions?.[userData.role || ''] || [];
+      const hasBeenSetup = !!settings.menuPermissions?.[userData.role || ''];
+      
+      const isAllowed = isManager || (!hasBeenSetup) || permissions.includes(viewId);
+
+      if (!isAllowed) {
+          setAccessDeniedModal({ isOpen: true, menuName: itemLabel });
+          return;
+      }
+      
+      setCurrentView(viewId); 
+      setIsOpen(false); 
+  };
 
   const toggleGroup = (groupId: string) =>
     setExpandedGroup(prev => (prev === groupId ? null : groupId));
@@ -274,7 +291,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => navigate(item.id)}
+                    onClick={() => navigate(item.id, item.label)}
                     className={cn(
                       'flex items-center gap-3 text-left px-2 py-2.5 w-full transition-colors',
                       isActive ? 'text-ink' : 'text-mute hover:text-ink'
@@ -327,6 +344,25 @@ const Sidebar: React.FC<SidebarProps> = ({
           <MobileNav />
         </SheetContent>
       </Sheet>
+      
+      <Modal isOpen={accessDeniedModal.isOpen} onClose={() => setAccessDeniedModal({ isOpen: false, menuName: '' })} title="AKSES DITOLAK">
+          <div className="p-6 bg-canvas border border-ink text-center flex flex-col items-center">
+              <ShieldCheck size={48} className="text-mute mb-4" strokeWidth={1.5} />
+              <h3 className="font-display text-[24px] uppercase text-ink tracking-tight mb-2">RESTRICTED AREA</h3>
+              <p className="text-[12px] font-medium text-mute uppercase tracking-widest leading-relaxed">
+                  ANDA TIDAK MEMILIKI AKSES KE MENU <span className="text-ink font-bold border-b border-hairline pb-0.5">{accessDeniedModal.menuName}</span>.
+              </p>
+              <p className="text-[10px] text-mute uppercase tracking-widest mt-4">
+                  HUBUNGI MANAGER UNTUK MENDAPATKAN AKSES INFORMASI TERSEBUT.
+              </p>
+              <button 
+                  onClick={() => setAccessDeniedModal({ isOpen: false, menuName: '' })}
+                  className="mt-[32px] w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors"
+              >
+                  MENGERTI
+              </button>
+          </div>
+      </Modal>
 
       {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
       <motion.aside
@@ -431,7 +467,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           return (
                             <button
                               key={item.id}
-                              onClick={() => navigate(item.id)}
+                              onClick={() => navigate(item.id, item.label)}
                               className={cn(
                                 'w-full flex items-center gap-3 text-left pl-4 pr-4 py-[7px] transition-colors',
                                 isActive ? 'text-ink' : 'text-mute hover:text-ink'
