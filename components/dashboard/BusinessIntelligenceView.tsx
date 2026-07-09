@@ -134,7 +134,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-hairline pb-4">
             <div>
-                <h1 className="text-[20px] font-bold font-display uppercase leading-tight text-ink">BISNIS & PASAR</h1>
+                <h1 className="text-[48px] font-bold font-display uppercase leading-[1] text-ink tracking-tight">BISNIS & PASAR</h1>
                 <p className="text-[12px] text-mute font-normal mt-2">Insight strategis sumber order dan demografi pelanggan.</p>
             </div>
 
