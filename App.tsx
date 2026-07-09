@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, onSnapshot, query, orderBy, Timestamp, limit, where } from 'firebase/firestore'; 
 import { db, UNITS_MASTER_COLLECTION, SERVICE_JOBS_COLLECTION, SETTINGS_COLLECTION, SPAREPART_COLLECTION, SUPPLIERS_COLLECTION, CASHIER_COLLECTION, PURCHASE_ORDERS_COLLECTION, ASSETS_COLLECTION, SERVICES_MASTER_COLLECTION, USERS_COLLECTION } from './services/firebase';
@@ -40,6 +40,23 @@ const AppContent: React.FC = () => {
   const { user, userData, userPermissions, settings: defaultSettings, loading: authLoading, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('overview_main'); 
+  const hasRedirectedRef = useRef(false);
+
+  // Default Landing Page Redirect based on Role
+  useEffect(() => {
+    if (userData?.role && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      const role = userData.role.toLowerCase();
+      
+      if (role === 'service advisor' || role === 'crc' || role === 'foreman') {
+        setCurrentView('overview_kpi');
+      } 
+      else if (role === 'sparepart') {
+        setCurrentView('part_monitoring');
+      }
+    }
+  }, [userData?.role]);
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [poNavigationJobId, setPoNavigationJobId] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<Settings>(defaultSettings);
