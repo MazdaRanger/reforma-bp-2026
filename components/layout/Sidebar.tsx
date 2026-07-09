@@ -93,7 +93,10 @@ const DICTIONARY: Record<string, Record<string, string>> = {
 // ─── Icon Maps ────────────────────────────────────────────────────────────────
 const GROUP_ICONS: Record<string, React.ReactNode> = {
   overview_root:   <LayoutDashboard size={17} strokeWidth={1.5} />,
+  input_data_root: <Car             size={17} strokeWidth={1.5} />,
   estimation_root: <ClipboardList   size={17} strokeWidth={1.5} />,
+  claims_control_root: <ShieldCheck size={17} strokeWidth={1.5} />,
+  crc_dashboard_root: <Headphones   size={17} strokeWidth={1.5} />,
   production_root: <Kanban          size={17} strokeWidth={1.5} />,
   sparepart_root:  <Package         size={17} strokeWidth={1.5} />,
   finance_root:    <BarChart        size={17} strokeWidth={1.5} />,
@@ -149,13 +152,28 @@ const Sidebar: React.FC<SidebarProps> = ({
         ],
       },
       {
-        id: 'estimation_root', label: t('estimation_root'),
+        id: 'input_data_root', label: t('input_data'),
         items: [
           { id: 'input_data',        label: t('input_data')  },
+        ],
+      },
+      {
+        id: 'estimation_root', label: t('estimation_root'),
+        items: [
           { id: 'estimation_create', label: t('est_create')  },
           { id: 'entry_data',        label: t('job_list')    },
           { id: 'production_spkl',   label: t('spkl')        },
+        ],
+      },
+      {
+        id: 'claims_control_root', label: t('claims'),
+        items: [
           { id: 'claims_control',    label: t('claims')      },
+        ],
+      },
+      {
+        id: 'crc_dashboard_root', label: t('crc'),
+        items: [
           { id: 'crc_dashboard',     label: t('crc')         },
         ],
       },
