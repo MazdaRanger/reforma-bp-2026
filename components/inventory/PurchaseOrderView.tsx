@@ -294,6 +294,27 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           return; 
       }
       
+      // --- PRE-CHECK: Baca harga terbaru dari estimasi SA sebelum validasi ---
+      // Kumpulkan semua refJobId unik untuk di-fetch
+      const uniqueJobIds = [...new Set(
+          selectedItemsToReceive
+              .map(idx => selectedPO.items[idx].refJobId)
+              .filter(Boolean) as string[]
+      )];
+
+      // Fetch semua job yang relevan untuk mendapatkan harga estimasi terkini
+      const latestJobDataMap: Record<string, EstimateItem[]> = {};
+      for (const jobId of uniqueJobIds) {
+          try {
+              const jobSnap = await getDoc(doc(db, SERVICE_JOBS_COLLECTION, jobId));
+              if (jobSnap.exists()) {
+                  latestJobDataMap[jobId] = jobSnap.data().estimateData?.partItems || [];
+              }
+          } catch (e) {
+              console.warn(`Gagal fetch job ${jobId} untuk validasi harga:`, e);
+          }
+      }
+
       for (const idx of selectedItemsToReceive) {
           const item = selectedPO.items[idx];
           const remaining = item.qty - (item.qtyReceived || 0);
@@ -309,9 +330,23 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           }
 
           const isLinkedToExisting = item.inventoryId && inventoryItems.some(i => i.id === item.inventoryId);
-          if (!isLinkedToExisting && item.estimatedSellPrice && item.estimatedSellPrice < item.price) {
-              showNotification(`BLOKIR: HARGA JUAL ESTIMASI ${item.name} (${formatCurrency(item.estimatedSellPrice)}) LEBIH RENDAH DARI MODAL BELI (${formatCurrency(item.price)}). REVISI DI MENU ESTIMASI TERLEBIH DAHULU!`, "error");
-              return;
+          if (!isLinkedToExisting) {
+              // Baca harga jual terbaru: prioritas dari data estimasi SA yang sudah diupdate
+              let currentSellPrice = item.estimatedSellPrice || 0;
+              if (item.refJobId && item.refPartIndex !== undefined && latestJobDataMap[item.refJobId]) {
+                  const latestPart = latestJobDataMap[item.refJobId][item.refPartIndex];
+                  if (latestPart && latestPart.price) {
+                      currentSellPrice = latestPart.price; // Pakai harga SA terkini
+                  }
+              }
+
+              if (currentSellPrice > 0 && currentSellPrice < item.price) {
+                  showNotification(
+                      `BLOKIR: HARGA JUAL ESTIMASI ${item.name} (${formatCurrency(currentSellPrice)}) LEBIH RENDAH DARI MODAL BELI (${formatCurrency(item.price)}). REVISI DI MENU ESTIMASI TERLEBIH DAHULU!`,
+                      "error"
+                  );
+                  return;
+              }
           }
       }
 
@@ -331,8 +366,17 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               
               let targetInventoryId = item.inventoryId;
               const newBuyPrice = item.price;
-              const newSellPrice = (!targetInventoryId && item.estimatedSellPrice && item.estimatedSellPrice > newBuyPrice) 
-                                      ? item.estimatedSellPrice 
+
+              // Cari harga jual terkini: prioritaskan dari data estimasi SA yang sudah di-update
+              let resolvedSellPrice = item.estimatedSellPrice || 0;
+              if (item.refJobId && item.refPartIndex !== undefined && latestJobDataMap[item.refJobId]) {
+                  const latestPart = latestJobDataMap[item.refJobId][item.refPartIndex];
+                  if (latestPart && latestPart.price) {
+                      resolvedSellPrice = latestPart.price;
+                  }
+              }
+              const newSellPrice = (!targetInventoryId && resolvedSellPrice > newBuyPrice)
+                                      ? resolvedSellPrice
                                       : Math.round(newBuyPrice * 1.3);
 
               const isLinkedToExisting = targetInventoryId && inventoryItems.some(i => i.id === targetInventoryId);
@@ -384,30 +428,38 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
               if (item.refJobId && item.refPartIndex !== undefined) {
                   const jobId = item.refJobId;
+                  // Gunakan data yang sudah di-fetch saat pre-check (latestJobDataMap) — tidak perlu fetch ulang
                   if (!jobUpdateMap[jobId]) {
-                      const jobRef = doc(db, SERVICE_JOBS_COLLECTION, jobId);
-                      const jobSnap = await getDoc(jobRef);
-                      if (jobSnap.exists()) {
+                      const cachedParts = latestJobDataMap[jobId];
+                      if (cachedParts) {
                           jobUpdateMap[jobId] = {
-                              parts: [...(jobSnap.data().estimateData?.partItems || [])],
+                              parts: [...cachedParts],
                               changed: false
                           };
+                      } else {
+                          // Fallback: fetch jika belum ada di cache (item tanpa refJobId di pre-check)
+                          try {
+                              const jobSnap = await getDoc(doc(db, SERVICE_JOBS_COLLECTION, jobId));
+                              if (jobSnap.exists()) {
+                                  jobUpdateMap[jobId] = {
+                                      parts: [...(jobSnap.data().estimateData?.partItems || [])],
+                                      changed: false
+                                  };
+                              }
+                          } catch (e) {
+                              console.warn(`Gagal fetch job ${jobId} saat receive:`, e);
+                          }
                       }
                   }
 
                   if (jobUpdateMap[jobId] && jobUpdateMap[jobId].parts[item.refPartIndex]) {
                       const jobPart = jobUpdateMap[jobId].parts[item.refPartIndex];
                       jobPart.inventoryId = targetInventoryId;
-                      jobPart.hasArrived = true; 
+                      jobPart.hasArrived = true;
+                      // Hapus flag mismatch jika ada (SA sudah update harga)
+                      jobPart.isPriceMismatch = false;
+                      jobPart.mismatchSuggestedPrice = undefined;
                       jobUpdateMap[jobId].changed = true;
-
-                      if (inventoryItems.find(i => i.id === targetInventoryId)) {
-                          if (jobPart.price < newSellPrice) {
-                              jobPart.isPriceMismatch = true;
-                              jobPart.mismatchSuggestedPrice = newSellPrice;
-                              mismatchCount++;
-                          }
-                      }
                   }
               }
           }

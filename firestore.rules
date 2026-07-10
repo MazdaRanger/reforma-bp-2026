@@ -49,7 +49,11 @@ service cloud.firestore {
 
     // Rules untuk Purchase Orders (PO)
     match /bengkel-purchase-orders/{poId} {
-      // Menggunakan read dan write (create, update, delete) secara eksplisit
+      allow read, write: if isAuthenticated();
+    }
+
+    // Rules untuk Bukti Serah Terima / Receipt BST (Penerimaan Barang dari PO)
+    match /receiptBsts/{bstId} {
       allow read, write: if isAuthenticated();
     }
 
