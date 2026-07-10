@@ -291,132 +291,7 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
         };
     };
 
-<<<<<<< HEAD
     const totals = prepareEstimateData();
-=======
-      {/* JASA SECTION */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative">
-          <div className="flex justify-between items-center mb-6">
-              <h4 className="font-black text-gray-800 tracking-tight">{t('sec_jasa')}</h4>
-              <button onClick={() => addItem('jasa')} disabled={isLocked} className="flex items-center gap-1 text-sm bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-xl font-black hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"><Plus size={16}/> {t('btn_add_jasa')}</button>
-          </div>
-          <div className="relative">
-              <table className="w-full text-sm text-left border-separate border-spacing-y-2">
-                  <thead>
-                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          <th className="px-4 py-2 w-10 text-center">No</th>
-                          <th className="px-4 py-2 w-24">{t('col_type')}</th>
-                          <th className="px-4 py-2">{t('col_desc')}</th>
-                          <th className="px-4 py-2 w-24 text-center">{t('col_panel')}</th>
-                          <th className="px-4 py-2 w-48 text-right">{t('col_cost')}</th>
-                          <th className="px-4 py-2 w-10"></th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {jasaItems.map((item, i) => (
-                          <tr key={i} className="group hover:bg-gray-50 transition-colors">
-                              <td className="px-4 py-3 text-center text-gray-400 font-bold bg-gray-50/50 rounded-l-xl border-y border-l border-gray-100">{i+1}</td>
-                              <td className="px-4 py-3 border-y border-gray-100">
-                                  <select
-                                      value={item.workType || 'KC'}
-                                      onChange={e => updateItemRaw('jasa', i, 'workType', e.target.value)}
-                                      className="w-full bg-transparent font-bold text-xs outline-none cursor-pointer text-gray-600 disabled:opacity-50"
-                                      disabled={isLocked}
-                                  >
-                                      <option value="KC">KC</option>
-                                      <option value="GTC">GTC</option>
-                                      <option value="BP">BP</option>
-                                      <option value="Lainnya">Lainnya</option>
-                                  </select>
-                              </td>
-                              <td className="px-4 py-3 border-y border-gray-100 relative">
-                                  <div className="relative">
-                                      <input
-                                          type="text"
-                                          value={item.name}
-                                          onFocus={() => { setActiveSearch({ type: 'jasa', index: i }); setSearchQuery(''); }}
-                                          onChange={e => { setSearchQuery(e.target.value); updateItemRaw('jasa', i, 'name', e.target.value); }}
-                                          className="w-full p-2 bg-gray-50 border-none rounded-lg font-bold text-gray-700 focus:ring-2 ring-indigo-500 transition-all disabled:opacity-60 placeholder-gray-400"
-                                          placeholder="Ketik nama pekerjaan..."
-                                          disabled={isLocked}
-                                      />
-                                      {/* Service Dropdown */}
-                                      {activeSearch?.type === 'jasa' && activeSearch.index === i && (
-                                          <div ref={searchRef} className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] max-h-60 overflow-y-auto animate-pop-in">
-                                              {filteredServices.map(s => (
-                                                  <div key={s.id} onClick={() => selectService(i, s)} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                                      <div className="flex items-start justify-between">
-                                                          <div className="font-bold text-sm text-gray-800">{s.serviceName}</div>
-                                                          <span className={`shrink-0 ml-2 px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-widest ${
-                                                              s.workType === 'KC' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                                              s.workType === 'GTC' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                              s.workType === 'BP' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                              'bg-gray-100 text-gray-600 border-gray-200'
-                                                          }`}>{s.workType || 'Umum'}</span>
-                                                      </div>
-                                                      <div className="text-[10px] text-gray-400 flex justify-between mt-1">
-                                                          <span>Kode: {s.serviceCode || '-'}</span>
-                                                          <span className="font-bold text-indigo-600">{formatCurrency(s.basePrice)}</span>
-                                                      </div>
-                                                  </div>
-                                              ))}
-                                              {filteredServices.length === 0 && <div className="p-3 text-center text-xs text-gray-400">Tidak ada jasa ditemukan.</div>}
-                                          </div>
-                                      )}
-                                  </div>
-                              </td>
-                              <td className="px-4 py-3 border-y border-gray-100 text-center">
-                                  <span className="font-mono font-bold text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{item.panelCount || 0}</span>
-                              </td>
-                              <td className="px-4 py-3 border-y border-gray-100 text-right">
-                                  <input type="number" value={item.price} onChange={e => updateItemRaw('jasa', i, 'price', Number(e.target.value))} className="w-full p-2 text-right bg-gray-50 border-none rounded-lg font-bold text-gray-800 focus:ring-2 ring-indigo-500 transition-all disabled:opacity-60" disabled={isLocked} />
-                              </td>
-                              <td className="px-4 py-3 border-y border-r border-gray-100 bg-gray-50/50 rounded-r-xl text-center">
-                                  <button onClick={() => removeItem('jasa', i)} className="text-red-300 hover:text-red-500 transition-colors disabled:opacity-20" disabled={isLocked}><Trash2 size={16}/></button>
-                              </td>
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </div>
-      </div>
-
-      {/* PART SECTION */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-              <h4 className="font-black text-gray-800 tracking-tight">{t('sec_part')}</h4>
-              <button onClick={() => addItem('part')} disabled={isLocked} className="flex items-center gap-1 text-sm bg-orange-50 text-orange-700 px-4 py-1.5 rounded-xl font-black hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"><Plus size={16}/> {t('btn_add_part')}</button>
-          </div>
-          <div className="relative">
-              <table className="w-full text-sm text-left border-separate border-spacing-y-2 min-w-[700px]">
-                  <thead>
-                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          <th className="px-4 py-2 w-10 text-center">No</th>
-                          <th className="px-4 py-2 w-40">{t('col_part_no')}</th>
-                          <th className="px-4 py-2">{t('col_part_name')}</th>
-                          <th className="px-4 py-2 w-20 text-center">{t('col_qty')}</th>
-                          <th className="px-4 py-2 w-40 text-right">{t('col_price')}</th>
-                          <th className="px-4 py-2 w-40 text-right">{t('col_total')}</th>
-                          <th className="px-4 py-2 w-10"></th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {partItems.map((item, i) => (
-                          <tr key={i} className={`group transition-colors ${item.isPriceMismatch ? 'bg-red-50/70 hover:bg-red-50' : 'hover:bg-gray-50'}`}>
-                              <td className="px-4 py-3 text-center text-gray-400 font-bold bg-gray-50/50 rounded-l-xl border-y border-l border-gray-100">{i+1}</td>
-                              <td className="px-4 py-3 border-y border-gray-100">
-                                  <input type="text" value={item.number || ''} onFocus={() => { setActiveSearch({ type: 'part', index: i }); setSearchQuery(item.number || ''); }} onChange={e => { setSearchQuery(e.target.value); updateItemRaw('part', i, 'number', e.target.value); }} className="w-full p-2 bg-gray-50 border-none rounded-lg uppercase font-mono text-xs font-bold focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" placeholder="CARI..." disabled={isLocked} />
-                              </td>
-                              <td className="px-4 py-3 border-y border-gray-100 relative">
-                                  <div className="relative">
-                                      <input type="text" value={item.name} onFocus={() => { setActiveSearch({ type: 'part', index: i }); setSearchQuery(item.name); }} onChange={e => { setSearchQuery(e.target.value); updateItemRaw('part', i, 'name', e.target.value); }} className="w-full p-2 bg-gray-50 border-none rounded-lg font-bold text-gray-700 focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" placeholder="SEARCH (DB)..." disabled={isLocked} />
-
-                                      {item.isPriceMismatch && (
-                                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-red-600 animate-pulse bg-red-100 px-2 py-0.5 rounded text-[9px] font-black uppercase">
-                                              <AlertTriangle size={12}/> Price Mismatch
-                                          </div>
-                                      )}
->>>>>>> 1d143c8ac542cbae7ef06188da3d42432d40e451
 
     const handleSaveAction = async (saveType: 'estimate' | 'wo') => {
         setIsSubmitting(true);
@@ -525,8 +400,8 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                             className="w-full bg-transparent font-bold text-xs outline-none cursor-pointer text-gray-600 disabled:opacity-50"
                                             disabled={isLocked}
                                         >
-                                            <option value="KC">K/C</option>
-                                            <option value="GTC">GT/C</option>
+                                            <option value="KC">KC</option>
+                                            <option value="GTC">GTC</option>
                                             <option value="BP">BP</option>
                                             <option value="Lainnya">Lainnya</option>
                                         </select>
