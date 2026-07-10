@@ -400,9 +400,9 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                       className="w-full bg-transparent font-bold text-xs outline-none cursor-pointer text-gray-600 disabled:opacity-50"
                                       disabled={isLocked}
                                   >
-                                      <option value="KC">Kaca/Body</option>
-                                      <option value="GTC">GTC</option>
-                                      <option value="BP">Body Paint</option>
+                                      <option value="KC">K/C</option>
+                                      <option value="GTC">GT/C</option>
+                                      <option value="BP">BP</option>
                                       <option value="Lainnya">Lainnya</option>
                                   </select>
                               </td>
