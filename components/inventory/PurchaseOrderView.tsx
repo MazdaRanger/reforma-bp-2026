@@ -456,9 +456,9 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                       const jobPart = jobUpdateMap[jobId].parts[item.refPartIndex];
                       jobPart.inventoryId = targetInventoryId;
                       jobPart.hasArrived = true;
-                      // Hapus flag mismatch jika ada (SA sudah update harga)
+                      // Hapus flag mismatch — gunakan delete agar tidak ada field 'undefined' di Firestore
                       jobPart.isPriceMismatch = false;
-                      jobPart.mismatchSuggestedPrice = undefined;
+                      delete jobPart.mismatchSuggestedPrice;
                       jobUpdateMap[jobId].changed = true;
                   }
               }
@@ -466,12 +466,21 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
           for (const [jobId, data] of Object.entries(jobUpdateMap)) {
               if (data.changed) {
+                  // Sanitasi: hapus semua field undefined dari setiap item part agar Firestore tidak crash
+                  const sanitizedParts = data.parts.map((p: any) => {
+                      const clean: any = {};
+                      Object.keys(p).forEach(k => {
+                          if (p[k] !== undefined) clean[k] = p[k];
+                      });
+                      return clean;
+                  });
+
                   const updatePayload: any = {
-                      'estimateData.partItems': data.parts,
+                      'estimateData.partItems': sanitizedParts,
                       updatedAt: serverTimestamp()
                   };
                   
-                  const partsComplete = data.parts.every(p => p.hasArrived || !p.isOrdered);
+                  const partsComplete = sanitizedParts.every((p: any) => p.hasArrived || !p.isOrdered);
                   
                   if (partsComplete) {
                       const jobRef = doc(db, SERVICE_JOBS_COLLECTION, jobId);
