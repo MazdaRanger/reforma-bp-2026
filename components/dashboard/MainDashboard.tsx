@@ -79,7 +79,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
     <div className="animate-fade-in pb-6">
       
       {/* FILTER & CONTROLS */}
-      <div className="bg-canvas border border-hairline p-4 mb-4">
+      <div className="bg-canvas border border-hairline p-4 mb-4 rounded-2xl overflow-hidden">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex-grow w-full lg:w-auto">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -129,7 +129,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({
            const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
            
            return (
-              <div key={job.id} className="bg-canvas border border-hairline flex flex-col hover:border-ink transition-colors">
+              <div key={job.id} className="bg-canvas border border-hairline flex flex-col hover:border-ink transition-colors rounded-2xl overflow-hidden">
                   
                   <div className="p-4 flex-grow">
                       <div className="flex justify-between items-start mb-4">

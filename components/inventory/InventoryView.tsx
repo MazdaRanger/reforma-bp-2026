@@ -127,7 +127,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ userPermissions, showNoti
             </button>
         </div>
 
-        <div className="bg-canvas border border-hairline flex flex-col h-full">
+        <div className="bg-canvas border border-hairline flex flex-col h-full rounded-2xl overflow-hidden">
             {/* SEARCH BAR */}
             <form onSubmit={handleManualSearch} className="p-4 border-b border-hairline bg-soft-cloud flex items-center gap-4">
                 <input 
@@ -135,7 +135,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ userPermissions, showNoti
                     placeholder={`SEARCH ${activeTab === 'sparepart' ? 'PART' : 'BAHAN'}...`}
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="flex-1 bg-canvas border border-hairline p-4 focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink"
+                    className="flex-1 bg-canvas border border-hairline p-4 focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink rounded-2xl overflow-hidden"
                 />
                 <button type="submit" className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors">CARI</button>
             </form>
@@ -176,7 +176,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ userPermissions, showNoti
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="bg-canvas text-ink px-2 py-1 border border-hairline text-[10px] font-medium uppercase tracking-widest">
+                                            <span className="bg-canvas text-ink px-2 py-1 border border-hairline text-[10px] font-medium uppercase tracking-widest rounded-2xl overflow-hidden">
                                                 {item.brand || 'NO BRAND'}
                                             </span>
                                         </td>

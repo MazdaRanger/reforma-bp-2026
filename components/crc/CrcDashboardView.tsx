@@ -303,19 +303,19 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
 
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-[24px] mb-[48px]">
-            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">{t('stats_ready')}</p>
                 <h2 className="text-[40px] font-display text-ink leading-none">{readyPickupJobs.length}</h2>
             </div>
-            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Potensi Booking</p>
                 <h2 className="text-[40px] font-display text-ink leading-none">{bookingJobs.length}</h2>
             </div>
-            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Perlu Follow Up</p>
                 <h2 className="text-[40px] font-display text-ink leading-none">{followUpJobs.length}</h2>
             </div>
-            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-4">Avg. Rating (CSI)</p>
                 <h2 className="text-[40px] font-display text-ink leading-none">{avgRating} / 5</h2>
             </div>
@@ -347,7 +347,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
 
             {/* READY FOR PICKUP */}
             {activeTab === 'ready' && (
-                <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                     <div className="p-6 bg-soft-cloud border-b border-hairline">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">{t('ready_title')}</h3>
                         <p className="text-[12px] text-mute uppercase tracking-widest mt-1">{t('ready_subtitle')}</p>
@@ -398,7 +398,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
 
             {/* BOOKING */}
             {activeTab === 'booking' && (
-                <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
@@ -444,7 +444,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
 
             {/* FOLLOW UP */}
             {activeTab === 'followup' && (
-                <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
@@ -498,7 +498,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
             {activeTab === 'broadcast' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
                     <div className="lg:col-span-1 space-y-[24px]">
-                        <div className="bg-canvas border border-hairline p-6 md:p-8">
+                        <div className="bg-canvas border border-hairline p-6 md:p-8 rounded-2xl overflow-hidden">
                             <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-4 border-b border-hairline pb-4">Pesan Promo / Blast</h3>
                             <textarea 
                                 className="w-full p-4 border border-hairline bg-soft-cloud text-[14px] text-ink focus:outline-none focus:border-ink min-h-[200px]" 
@@ -515,7 +515,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
                         </div>
                     </div>
                     
-                    <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col">
+                    <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                         <div className="p-6 bg-soft-cloud border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Daftar Pelanggan</h3>
                             <div className="flex gap-2">
@@ -569,7 +569,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
 
             {/* HISTORY */}
             {activeTab === 'history' && (
-                <div className="bg-canvas border border-hairline animate-fade-in">
+                <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
@@ -695,7 +695,7 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
                     <div className="animate-fade-in space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {settings.csiIndicators.map((indicator, idx) => (
-                                <div key={idx} className="bg-canvas p-4 border border-hairline flex flex-col gap-4">
+                                <div key={idx} className="bg-canvas p-4 border border-hairline flex flex-col gap-4 rounded-2xl overflow-hidden">
                                     <p className="text-[12px] font-medium text-ink uppercase tracking-widest">{indicator}</p>
                                     <div className="flex gap-2">
                                         {[1, 2, 3, 4, 5].map(val => (

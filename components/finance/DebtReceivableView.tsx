@@ -185,7 +185,7 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
 
         {/* SUMMARY CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] mb-[48px]">
-            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">
                     Total Piutang (Receivables)
                 </p>
@@ -197,7 +197,7 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
                 </div>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors">
+            <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col justify-between hover:bg-soft-cloud transition-colors rounded-2xl overflow-hidden">
                 <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">
                     Total Hutang (Payables)
                 </p>
@@ -228,7 +228,7 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
 
         {/* CONTENT: RECEIVABLES */}
         {activeTab === 'receivable' && (
-            <div className="bg-canvas border border-hairline animate-fade-in">
+            <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                 <div className="p-6 bg-soft-cloud border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4 w-full md:w-auto">
                         <select 
@@ -301,7 +301,7 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
 
         {/* CONTENT: PAYABLES */}
         {activeTab === 'payable' && (
-            <div className="bg-canvas border border-hairline animate-fade-in">
+            <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                 <div className="p-6 bg-soft-cloud border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">HUTANG SUPPLIER</h3>
                 </div>

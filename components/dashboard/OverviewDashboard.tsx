@@ -177,8 +177,9 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     allJobs.forEach(j => {
         if (j.isDeleted) return;
 
-        if (j.actualStartDate) {
-            const entryDate = parseDate(j.actualStartDate);
+        const entryRaw = j.tanggalMasuk || j.createdAt;
+        if (entryRaw) {
+            const entryDate = parseDate(entryRaw);
             const w = getWeekNumber(entryDate, selectedYear, selectedMonth);
             if (w >= 1 && w <= 5) {
                 weeklyData[w].entry++;
@@ -324,20 +325,20 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
           </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6 rounded-2xl overflow-hidden">
         <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} variant="teal" />
         <StatCard title={t('card3')} value={stats.completedWaiting} subValue={t('card3_sub')} variant="ink" />
         <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" variant="emerald" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6 rounded-2xl overflow-hidden">
           <StatCard title={t('row1')} value={stats.totalInvoicedUnits} variant="navy" />
           <StatCard title={t('row2')} value={stats.totalPanels.toFixed(1)} />
           <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} variant="emerald" />
       </div>
 
       {/* WEEKLY SIDEBAR SECTION */}
-      <div className="flex flex-col xl:flex-row bg-canvas border border-hairline mb-6">
+      <div className="flex flex-col xl:flex-row bg-canvas border border-hairline mb-6 rounded-2xl overflow-hidden">
           <div className="flex flex-row xl:flex-col border-b xl:border-b-0 xl:border-r border-hairline xl:w-[220px] shrink-0 p-4 gap-4 overflow-x-auto">
               <h3 className="hidden xl:block text-[12px] font-medium text-ink mb-4">PERFORMA</h3>
               {stats.validWeeks.map((w) => (
@@ -369,34 +370,34 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-canvas border border-hairline p-4">
+                      <div className="bg-canvas border border-hairline p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Masuk</p>
                           <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].entry}</p>
                       </div>
-                      <div className="bg-canvas border border-hairline p-4">
+                      <div className="bg-canvas border border-hairline p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Unit Keluar</p>
                           <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].out}</p>
                       </div>
                       
-                      <div className="bg-canvas border border-hairline p-4 col-span-2 md:col-span-2">
+                      <div className="bg-canvas border border-hairline p-4 col-span-2 md:col-span-2 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Total Panel</p>
                           <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].panels?.toFixed(1) || '0.0'}</p>
                       </div>
 
-                      <div className="col-span-2 bg-card-navy text-canvas p-4">
+                      <div className="col-span-2 bg-card-navy text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Jasa Nett</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
                       </div>
-                      <div className="col-span-2 bg-card-emerald text-canvas p-4">
+                      <div className="col-span-2 bg-card-emerald text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Part Nett</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
                       </div>
 
-                      <div className="col-span-2 bg-card-ruby text-canvas p-4">
+                      <div className="col-span-2 bg-card-ruby text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Bahan</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
                       </div>
-                      <div className="col-span-2 bg-card-ruby text-canvas p-4">
+                      <div className="col-span-2 bg-card-ruby text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
                       </div>
@@ -459,7 +460,7 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-canvas p-4 border border-hairline flex flex-col">
+          <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
               <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest mb-8">{t('chart2')}</h3>
               <div className="flex-grow flex items-center justify-center relative">
                   <div className="h-48 w-48 relative">

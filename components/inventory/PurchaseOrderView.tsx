@@ -692,7 +692,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
           case 'Pending Approval': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px] animate-pulse">PENDING APPROVAL</span>;
           case 'Ordered': return <span className="px-2 py-1 bg-ink text-canvas border border-ink uppercase tracking-widest text-[10px]">ORDERED</span>;
           case 'Partial': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px]">PARTIAL</span>;
-          case 'Received': return <span className="px-2 py-1 bg-canvas text-ink border border-hairline uppercase tracking-widest text-[10px] opacity-70">RECEIVED</span>;
+          case 'Received': return <span className="px-2 py-1 bg-canvas text-ink border border-hairline uppercase tracking-widest text-[10px] opacity-70 rounded-2xl overflow-hidden">RECEIVED</span>;
           case 'Rejected': return <span className="px-2 py-1 bg-soft-cloud text-ink border border-ink uppercase tracking-widest text-[10px]">REJECTED</span>;
           case 'Cancelled': return <span className="px-2 py-1 bg-soft-cloud text-mute border border-hairline uppercase tracking-widest text-[10px]">CANCELLED</span>;
           default: return null;
@@ -735,7 +735,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
               </div>
 
               {poCreationMode === 'wo' && (
-                  <div className="mb-[48px] bg-canvas border border-hairline p-6 relative">
+                  <div className="mb-[48px] bg-canvas border border-hairline p-6 relative rounded-2xl overflow-hidden">
                       <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">CARI KEBUTUHAN PART DARI ESTIMASI SA</h3>
                       <div className="flex gap-4 mb-6 relative">
                           <div className="relative flex-grow">
@@ -752,7 +752,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                               />
                               
                               {isWoPickerOpen && (
-                                  <div ref={pickerRef} className="absolute left-0 right-0 top-full mt-2 bg-canvas border border-hairline shadow-2xl z-50 max-h-72 overflow-y-auto">
+                                  <div ref={pickerRef} className="absolute left-0 right-0 top-full mt-2 bg-canvas border border-hairline shadow-2xl z-50 max-h-72 overflow-y-auto rounded-2xl overflow-hidden">
                                       <div className="p-3 bg-soft-cloud border-b border-hairline sticky top-0 z-10">
                                           <span className="text-[10px] font-medium text-mute uppercase tracking-widest">PILIH WORK ORDER AKTIF</span>
                                       </div>
@@ -783,7 +783,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                       </div>
 
                       {foundJob && (
-                          <div className="bg-canvas border border-hairline overflow-hidden animate-fade-in">
+                          <div className="bg-canvas border border-hairline overflow-hidden animate-fade-in rounded-2xl overflow-hidden">
                               <div className="p-4 bg-soft-cloud flex justify-between items-center border-b border-hairline">
                                   <div className="flex items-center gap-4">
                                       <div className="flex items-center gap-2 font-medium text-ink uppercase text-[14px]">
@@ -807,7 +807,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                                                 <td className="p-4 text-center">{!part.isOrdered && <input type="checkbox" checked={selectedPartsFromWo[idx]?.selected || false} onChange={() => handleToggleWoPart(idx, 'selected')} className="w-4 h-4 cursor-pointer accent-ink"/>}</td>
                                                 <td className="p-4"><div className="font-medium text-[14px] text-ink uppercase">{part.name}</div><div className="text-[10px] text-mute uppercase tracking-widest mt-1">{part.number || 'TANPA NO PART'}</div></td>
                                                 <td className="p-4 text-center font-medium text-ink text-[14px]">{part.qty || 1}</td>
-                                                <td className="p-4 text-center">{!part.isOrdered && selectedPartsFromWo[idx]?.selected && <label className="inline-flex items-center gap-2 cursor-pointer text-[10px] bg-canvas px-3 py-1 border border-hairline"><input type="checkbox" checked={selectedPartsFromWo[idx]?.isIndent || false} onChange={() => handleToggleWoPart(idx, 'isIndent')} className="accent-ink"/><span className={selectedPartsFromWo[idx]?.isIndent ? 'text-ink font-medium uppercase' : 'text-mute font-medium uppercase'}>INDENT</span></label>}</td>
+                                                <td className="p-4 text-center">{!part.isOrdered && selectedPartsFromWo[idx]?.selected && <label className="inline-flex items-center gap-2 cursor-pointer text-[10px] bg-canvas px-3 py-1 border border-hairline rounded-2xl overflow-hidden"><input type="checkbox" checked={selectedPartsFromWo[idx]?.isIndent || false} onChange={() => handleToggleWoPart(idx, 'isIndent')} className="accent-ink"/><span className={selectedPartsFromWo[idx]?.isIndent ? 'text-ink font-medium uppercase' : 'text-mute font-medium uppercase'}>INDENT</span></label>}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -820,7 +820,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
 
               <div className="mb-[48px]">
                   <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">ITEM PESANAN {isEditing ? '(MODE EDIT)' : '(DRAFT)'}</h3>
-                  <div className="overflow-x-auto bg-canvas border border-hairline">
+                  <div className="overflow-x-auto bg-canvas border border-hairline rounded-2xl overflow-hidden">
                     <table className="w-full text-left">
                         <thead className="bg-soft-cloud border-b border-hairline font-medium text-[10px] text-mute uppercase tracking-widest">
                             <tr>
@@ -962,7 +962,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
                   </div>
               </div>
 
-              <div className="overflow-x-auto bg-canvas border border-hairline">
+              <div className="overflow-x-auto bg-canvas border border-hairline rounded-2xl overflow-hidden">
                   <table className="w-full text-left">
                       <thead className="bg-soft-cloud border-b border-hairline font-medium text-[10px] text-mute uppercase tracking-widest">
                           <tr>{isReceivable && <th className="p-4 font-normal w-12 text-center"></th>}<th className="p-4 font-normal">ITEM BARANG</th><th className="p-4 text-center font-normal">ORDER</th><th className="p-4 text-center font-normal bg-canvas border-l border-r border-hairline">DITERIMA</th>{isReceivable && <th className="p-4 text-center font-normal">DATANG</th>}<th className="p-4 text-right font-normal">HARGA</th><th className="p-4 text-right font-normal">TOTAL</th></tr>
@@ -1005,7 +1005,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
             <button onClick={() => setViewMode('create')} className="bg-ink text-canvas px-6 py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors whitespace-nowrap">BUAT PO BARU</button>
         </div>
 
-        <div className="bg-canvas border border-hairline overflow-hidden flex flex-col h-full">
+        <div className="bg-canvas border border-hairline overflow-hidden flex flex-col h-full rounded-2xl overflow-hidden">
             <div className="p-4 bg-soft-cloud border-b border-hairline flex items-center justify-between">
                 <input type="text" placeholder="CARI NO. PO ATAU SUPPLIER..." className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>

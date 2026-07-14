@@ -354,7 +354,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
         {/* MECHANIC LOAD BAR */}
         <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 scrollbar-hide border-b border-hairline mb-[24px]">
             {(settings.mechanicNames || []).map(mech => (
-                <div key={mech} className="bg-canvas border border-hairline px-4 py-3 flex items-center gap-4 min-w-[180px] shrink-0">
+                <div key={mech} className="bg-canvas border border-hairline px-4 py-3 flex items-center gap-4 min-w-[180px] shrink-0 rounded-2xl overflow-hidden">
                     <div>
                         <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">LOAD STALL</p>
                         <p className="text-[14px] font-medium text-ink uppercase tracking-widest">{mech}</p>
@@ -447,7 +447,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                                     <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full py-2 border border-hairline hover:border-ink text-[10px] font-medium text-ink uppercase tracking-widest transition-colors bg-canvas">ASSIGN MECHANIC</button>
                                                 )}
                                                 {assigningJobId === job.id && (
-                                                    <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in">
+                                                    <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                                                         {(settings.mechanicNames || []).map(m => (
                                                             <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${currentPIC === m ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
                                                                 {m}
@@ -534,7 +534,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
             maxWidth="max-w-7xl"
         >
             <div className="space-y-6">
-                <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="bg-canvas border border-hairline p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 rounded-2xl overflow-hidden">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 border border-hairline bg-soft-cloud p-2">
                             <input type="date" value={reportStartDate} onChange={e => setReportStartDate(e.target.value)} className="bg-transparent text-[12px] font-medium uppercase tracking-widest text-ink outline-none"/>
@@ -554,7 +554,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                     </div>
                 </div>
 
-                <div className="overflow-x-auto bg-canvas border border-hairline">
+                <div className="overflow-x-auto bg-canvas border border-hairline rounded-2xl overflow-hidden">
                     <table className="w-full text-left">
                         <thead className="bg-soft-cloud text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline">
                             <tr>
@@ -597,7 +597,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                     {Object.entries(aggregatedReport).map(([name, data]: [string, { totalUnit: number, totalPanel: number, details: any[] }]) => (
-                        <div key={name} className="bg-canvas border border-hairline p-6 h-64 overflow-y-auto scrollbar-hide">
+                        <div key={name} className="bg-canvas border border-hairline p-6 h-64 overflow-y-auto scrollbar-hide rounded-2xl overflow-hidden">
                             <h5 className="font-medium text-ink uppercase tracking-widest text-[14px] border-b border-hairline pb-4 mb-4 sticky top-0 bg-canvas">DETAIL: {name}</h5>
                             <ul className="space-y-4">
                                 {data.details.map((d: any, idx: number) => (

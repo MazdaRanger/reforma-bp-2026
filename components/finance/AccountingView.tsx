@@ -170,7 +170,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
 
         {/* SUMMARY CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-[24px] mb-[48px]">
-            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between">
+            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between rounded-2xl overflow-hidden">
                 <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">Revenue (Cash In)</p>
                 <div>
                     <h2 className="text-[32px] font-medium text-ink leading-none">{formatCurrency(financialData.totalRevenueCash)}</h2>
@@ -180,7 +180,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
                 </div>
             </div>
 
-            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between">
+            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between rounded-2xl overflow-hidden">
                 <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">Total Expenses (Cash Out)</p>
                 <div>
                     <h2 className="text-[32px] font-medium text-ink leading-none">{formatCurrency(financialData.cogsVendor + financialData.payrollExpense + financialData.operationalExpense + financialData.taxExpense + financialData.assetPurchase)}</h2>
@@ -190,7 +190,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
                 </div>
             </div>
 
-            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between">
+            <div className="bg-canvas p-6 md:p-8 border border-hairline flex flex-col justify-between rounded-2xl overflow-hidden">
                 <p className="text-[14px] font-medium text-mute uppercase tracking-widest mb-4 border-b border-hairline pb-4">Net Profit (Accounting)</p>
                 <div>
                     <h2 className="text-[32px] font-medium text-ink leading-none">
@@ -238,7 +238,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
         {/* TAB CONTENT: DASHBOARD */}
         {activeTab === 'dashboard' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
-                <div className="lg:col-span-2 bg-canvas p-6 md:p-8 border border-hairline">
+                <div className="lg:col-span-2 bg-canvas p-6 md:p-8 border border-hairline rounded-2xl overflow-hidden">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-8 border-b border-hairline pb-4">Analisa Arus Kas (6 Bulan)</h3>
                     <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -265,7 +265,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
                         </ResponsiveContainer>
                     </div>
                 </div>
-                <div className="bg-canvas p-6 md:p-8 border border-hairline">
+                <div className="bg-canvas p-6 md:p-8 border border-hairline rounded-2xl overflow-hidden">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-8 border-b border-hairline pb-4">Proporsi Pengeluaran</h3>
                     <div className="h-64 flex justify-center relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -305,7 +305,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
 
         {/* TAB CONTENT: P&L */}
         {activeTab === 'pnl' && (
-            <div className="bg-canvas border border-hairline animate-fade-in max-w-4xl mx-auto">
+            <div className="bg-canvas border border-hairline animate-fade-in max-w-4xl mx-auto rounded-2xl overflow-hidden">
                 <div className="p-8 border-b border-hairline flex justify-between items-center bg-soft-cloud">
                     <div>
                         <h3 className="text-[24px] font-medium text-ink uppercase tracking-widest">Profit & Loss Statement</h3>
@@ -377,7 +377,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
                         <h4 className="text-[16px] font-medium text-ink uppercase tracking-widest mb-6">
                             Laporan Arus Kas (Cash Flow)
                         </h4>
-                        <div className="bg-canvas border border-hairline p-6 space-y-4">
+                        <div className="bg-canvas border border-hairline p-6 space-y-4 rounded-2xl overflow-hidden">
                             <div className="flex justify-between text-[16px] font-medium text-ink">
                                 <span>Surplus Operasional</span>
                                 <span>{formatCurrency(financialData.totalRevenueCash - (financialData.cogsVendor + financialData.payrollExpense + financialData.operationalExpense + financialData.taxExpense))}</span>
@@ -399,7 +399,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
 
         {/* TAB CONTENT: LEDGER */}
         {activeTab === 'ledger' && (
-            <div className="bg-canvas border border-hairline animate-fade-in">
+            <div className="bg-canvas border border-hairline animate-fade-in rounded-2xl overflow-hidden">
                 <div className="p-6 bg-soft-cloud border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">General Ledger</h3>
                 </div>

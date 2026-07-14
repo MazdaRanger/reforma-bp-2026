@@ -394,7 +394,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           {activeTab === 'general' && (
               <div className={`space-y-[48px] ${restrictedClass}`}>
                   <RestrictedOverlay/>
-                  <section className="bg-canvas border border-hairline p-6">
+                  <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                     <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">BAHASA TAMPILAN</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="flex gap-4">
@@ -407,7 +407,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </div>
                     </div>
                   </section>
-                  <section className="bg-canvas border border-hairline p-6">
+                  <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                     <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">INFORMASI BENGKEL</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
                         <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA BENGKEL</label><input type="text" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.workshopName} onChange={e => handleChange('workshopName', e.target.value)} /></div>
@@ -416,9 +416,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">ALAMAT LENGKAP</label><textarea className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" rows={2} value={localSettings.workshopAddress} onChange={e => handleChange('workshopAddress', e.target.value)} /></div>
                     </div>
                   </section>
-                  <section className="bg-canvas border border-hairline p-6"><h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">TARGET & PAJAK</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]"><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PPN (%)</label><div className="relative"><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase pl-12" value={localSettings.ppnPercentage} onChange={e => handleChange('ppnPercentage', Number(e.target.value))} /><span className="absolute left-4 top-[1.15rem] text-[14px] font-medium text-mute">%</span></div></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET BULANAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.monthlyTarget} onChange={e => handleChange('monthlyTarget', Number(e.target.value))} /></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET MINGGUAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.weeklyTarget} onChange={e => handleChange('weeklyTarget', Number(e.target.value))} /></div></div></section>
+                  <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden"><h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">TARGET & PAJAK</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]"><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">PPN (%)</label><div className="relative"><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase pl-12" value={localSettings.ppnPercentage} onChange={e => handleChange('ppnPercentage', Number(e.target.value))} /><span className="absolute left-4 top-[1.15rem] text-[14px] font-medium text-mute">%</span></div></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET BULANAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.monthlyTarget} onChange={e => handleChange('monthlyTarget', Number(e.target.value))} /></div><div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">TARGET MINGGUAN (RP)</label><input type="number" className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase" value={localSettings.weeklyTarget} onChange={e => handleChange('weeklyTarget', Number(e.target.value))} /></div></div></section>
                   
-                  <section className="bg-canvas border border-hairline p-6">
+                  <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                       <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">KALENDER HARI KERJA & LIBUR</h3>
                       <div className="space-y-[24px]">
                           <div>
@@ -469,7 +469,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                               (document.getElementById('newHolidayInput') as HTMLInputElement).value = '';
                                           }
                                       }}
-                                      className="bg-canvas border border-hairline hover:border-ink text-ink px-6 py-3 text-[10px] font-medium uppercase tracking-widest transition-colors"
+                                      className="bg-canvas border border-hairline hover:border-ink text-ink px-6 py-3 text-[10px] font-medium uppercase tracking-widest transition-colors rounded-2xl overflow-hidden"
                                   >
                                       TAMBAH LIBUR
                                   </button>
@@ -477,7 +477,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                               <div className="flex flex-wrap gap-4">
                                   {(localSettings.internalHolidays || []).length === 0 && <span className="text-[10px] text-mute uppercase tracking-widest">BELUM ADA HARI LIBUR KHUSUS YANG DITAMBAHKAN.</span>}
                                   {(localSettings.internalHolidays || []).map((h, i) => (
-                                      <span key={i} className="bg-canvas border border-hairline text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest flex items-center gap-4">
+                                      <span key={i} className="bg-canvas border border-hairline text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest flex items-center gap-4 rounded-2xl overflow-hidden">
                                           {new Date(h).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                           <button onClick={() => {
                                               const currentHolidays = [...(localSettings.internalHolidays || [])];
@@ -497,7 +497,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
               <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-[48px]">
-                      <section className="bg-canvas border border-hairline p-6">
+                      <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                           <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">KONFIGURASI PENGIRIMAN</h3>
                           <div className="space-y-[24px]">
                               <div>
@@ -562,7 +562,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                           </div>
                       </section>
                       
-                      <section className="bg-canvas p-6 border border-hairline">
+                      <section className="bg-canvas p-6 border border-hairline rounded-2xl overflow-hidden">
                           <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">INTEGRASI AI GOOGLE GEMINI</h3>
                           <div className="space-y-[16px]">
                               <div>
@@ -609,7 +609,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
                   </div>
 
-                  <section className="bg-canvas border border-hairline p-6 mt-[48px]">
+                  <section className="bg-canvas border border-hairline p-6 mt-[48px] rounded-2xl overflow-hidden">
                       <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">
                           TEMPLATE PENILAIAN PELANGGAN (CSI SURVEY)
                       </h3>
@@ -639,7 +639,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                           <div className="flex-1 bg-soft-cloud p-6 border border-hairline max-h-60 overflow-y-auto">
                               <div className="flex flex-wrap gap-4">
                                   {(localSettings.csiIndicators || []).map((item, idx) => (
-                                      <div key={idx} className="bg-canvas text-ink px-4 py-2 border border-hairline text-[10px] font-medium uppercase tracking-widest flex items-center gap-4 group hover:border-ink transition-colors">
+                                      <div key={idx} className="bg-canvas text-ink px-4 py-2 border border-hairline text-[10px] font-medium uppercase tracking-widest flex items-center gap-4 group hover:border-ink transition-colors rounded-2xl overflow-hidden">
                                           {item}
                                           <button 
                                               onClick={() => removeItem('csiIndicators', idx)}
@@ -662,7 +662,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           {activeTab === 'unit_catalog' && (
               <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
-                  <section className="bg-canvas p-6 border border-hairline">
+                  <section className="bg-canvas p-6 border border-hairline rounded-2xl overflow-hidden">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">MASTER MERK KENDARAAN</h4>
                       <button onClick={() => addItem('carBrands', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
@@ -680,7 +680,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       ))}
                     </div>
                   </section>
-                  <section className="bg-canvas p-6 border border-hairline">
+                  <section className="bg-canvas p-6 border border-hairline rounded-2xl overflow-hidden">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">KATALOG MODEL / TIPE</h4>
                       <button onClick={() => addItem('carModels', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
@@ -698,7 +698,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       ))}
                     </div>
                   </section>
-                  <section className="bg-canvas p-6 border border-hairline">
+                  <section className="bg-canvas p-6 border border-hairline rounded-2xl overflow-hidden">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">KATALOG WARNA KENDARAAN</h4>
                       <button onClick={() => addItem('carColors', '')} className="text-[10px] border border-hairline hover:border-ink text-ink px-4 py-2 font-medium uppercase tracking-widest transition-colors">
@@ -740,7 +740,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-[48px]">
-                    <div className="lg:col-span-2 bg-canvas p-6 border border-hairline flex flex-col">
+                    <div className="lg:col-span-2 bg-canvas p-6 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-[24px]">
                         <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest">DAFTAR MASTER JASA (STANDAR PANEL)</h3>
                         <div className="flex flex-wrap gap-4">
@@ -782,7 +782,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </table>
                       </div>
                     </div>
-                    <div className="bg-canvas p-6 border border-hairline h-fit flex flex-col sticky top-4">
+                    <div className="bg-canvas p-6 border border-hairline h-fit flex flex-col sticky top-4 rounded-2xl overflow-hidden">
                       <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-2">{isEditingService ? 'EDIT JASA' : 'INPUT JASA BARU'}</h3>
                       
                       {/* KODE PANEL TERAKHIR DIGUNAKAN */}
@@ -884,7 +884,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                           <input 
                                               type="text" 
                                               placeholder="NAMA WARNA..." 
-                                              className="w-full bg-canvas border border-hairline p-2 text-[10px] font-medium text-ink uppercase focus:outline-none focus:border-ink"
+                                              className="w-full bg-canvas border border-hairline p-2 text-[10px] font-medium text-ink uppercase focus:outline-none focus:border-ink rounded-2xl overflow-hidden"
                                               value={rate.colorName}
                                               onChange={e => {
                                                   const newRates = [...localSettings.specialColorRates];
@@ -896,7 +896,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                               <span className="text-[10px] font-medium text-mute">RP</span>
                                               <input 
                                                   type="number" 
-                                                  className="w-full bg-canvas border border-hairline p-2 text-[12px] font-medium text-ink focus:outline-none focus:border-ink"
+                                                  className="w-full bg-canvas border border-hairline p-2 text-[12px] font-medium text-ink focus:outline-none focus:border-ink rounded-2xl overflow-hidden"
                                                   value={rate.surchargePerPanel}
                                                   onChange={e => {
                                                       const newRates = [...localSettings.specialColorRates];
@@ -945,7 +945,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                           
                           <div className="space-y-4 max-h-[400px] overflow-y-auto">
                               {systemUsers.map(user => (
-                                  <div key={user.uid} className="bg-canvas p-4 border border-hairline flex justify-between items-center group hover:border-ink transition-colors">
+                                  <div key={user.uid} className="bg-canvas p-4 border border-hairline flex justify-between items-center group hover:border-ink transition-colors rounded-2xl overflow-hidden">
                                       <div className="flex items-center gap-4">
                                           <div className="w-12 h-12 border border-ink flex items-center justify-center text-ink font-display text-[24px]">
                                               {(user.displayName || 'U')[0].toUpperCase()}
@@ -969,7 +969,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                           {!isManager && <div className="mt-[24px] p-4 bg-soft-cloud border border-ink text-ink text-[10px] font-medium uppercase tracking-widest">HANYA MANAGER YANG DAPAT MENDAFTARKAN/MENGHAPUS USER.</div>}
                       </div>
 
-                      <div className="bg-canvas p-6 border border-hairline h-fit">
+                      <div className="bg-canvas p-6 border border-hairline h-fit rounded-2xl overflow-hidden">
                           <h4 className="font-medium text-ink uppercase tracking-widest text-[14px] mb-[24px]">
                               KEAMANAN AKUN ANDA
                           </h4>
@@ -1016,7 +1016,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
                             {(localSettings.mechanicNames || []).map((mech, idx) => (
-                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors">
+                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors rounded-2xl overflow-hidden">
                                     <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-[12px] font-medium text-ink uppercase" value={mech} onChange={e => handleArrayChange('mechanicNames', idx, e.target.value)} />
                                     <button onClick={() => removeItem('mechanicNames', idx)} className="shrink-0 text-mute hover:text-ink px-3 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium uppercase tracking-widest">
                                         HAPUS
@@ -1038,7 +1038,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
                             {(localSettings.roleOptions || []).map((role, idx) => (
-                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors">
+                                <div key={idx} className="flex items-center gap-2 group animate-fade-in bg-canvas p-2 border border-hairline focus-within:border-ink transition-colors rounded-2xl overflow-hidden">
                                     <input type="text" className="flex-1 w-full min-w-0 p-2 bg-transparent outline-none text-[12px] font-medium text-ink uppercase" value={role} onChange={e => handleArrayChange('roleOptions', idx, e.target.value)} />
                                     <button onClick={() => removeItem('roleOptions', idx)} className="shrink-0 text-mute hover:text-ink px-3 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium uppercase tracking-widest">
                                         HAPUS
@@ -1090,7 +1090,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
 
                       <div className="flex flex-wrap gap-4 max-h-[300px] overflow-y-auto">
                           {(localSettings.internalHolidays || []).map((dateStr, idx) => (
-                              <div key={idx} className="flex items-center gap-4 bg-canvas p-4 border border-hairline transition-colors">
+                              <div key={idx} className="flex items-center gap-4 bg-canvas p-4 border border-hairline transition-colors rounded-2xl overflow-hidden">
                                   <span className="text-[14px] font-medium text-ink">{dateStr}</span>
                                   <button onClick={() => {
                                       const newHolidays = [...(localSettings.internalHolidays || [])];
@@ -1135,7 +1135,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
                   </div>
 
-                  <div className="bg-canvas border border-hairline overflow-hidden">
+                  <div className="bg-canvas border border-hairline overflow-hidden rounded-2xl overflow-hidden">
                       <div className="overflow-x-auto">
                           <table className="w-full text-left">
                               <thead className="bg-soft-cloud border-b border-hairline text-mute uppercase font-medium text-[10px] tracking-widest">
@@ -1162,7 +1162,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                                       handleChange('insuranceOptions', updated);
                                                   }}
                                                   placeholder="NAMA ASURANSI..."
-                                                  className="w-full p-4 bg-canvas border border-hairline focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase"
+                                                  className="w-full p-4 bg-canvas border border-hairline focus:outline-none focus:border-ink text-[12px] font-medium text-ink uppercase rounded-2xl overflow-hidden"
                                               />
                                           </td>
 
@@ -1246,7 +1246,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
           {activeTab === 'menu_access' && (
               <div className={`space-y-[48px] ${restrictedClass}`}>
                   <RestrictedOverlay/>
-                  <section className="bg-canvas border border-hairline p-6">
+                  <section className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                       <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">PENGATURAN HAK AKSES MENU PER ROLE</h3>
                       <p className="text-[10px] text-mute mb-6 uppercase tracking-widest">CENTANG KOTAK UNTUK MEMBERIKAN AKSES. ROLE MANAGER SELALU MEMILIKI AKSES PENUH.</p>
                       
@@ -1354,7 +1354,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
                       {/* DRAFTS */}
-                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full rounded-2xl overflow-hidden">
                           <div>
                               <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">ESTIMASI DRAFT USANG</h3>
                               <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">
@@ -1387,7 +1387,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
 
                       {/* SOFT DELETED */}
-                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full rounded-2xl overflow-hidden">
                           <div>
                               <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">TONG SAMPAH (SOFT DELETED)</h3>
                               <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">
@@ -1420,7 +1420,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
 
                       {/* ARCHIVE COMPLETED JOBS */}
-                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full rounded-2xl overflow-hidden">
                           <div>
                               <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">ARSIPKAN JOB SELESAI</h3>
                               <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">

@@ -322,7 +322,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </p>
             </div>
             
-            <div className="flex items-center gap-4 bg-canvas border border-hairline p-2">
+            <div className="flex items-center gap-4 bg-canvas border border-hairline p-2 rounded-2xl overflow-hidden">
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-canvas border-none focus:outline-none font-medium text-[12px] uppercase text-ink p-2"/>
                 <span className="text-mute font-medium text-[12px] uppercase">-</span>
                 <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-canvas border-none focus:outline-none font-medium text-[12px] uppercase text-ink p-2"/>
@@ -339,7 +339,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">DATABASE MASTER UNIT</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">DATA LENGKAP PELANGGAN & KENDARAAN DARI MENU INPUT UNIT (FULL SNAPSHOT).</p>
@@ -349,7 +349,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">LAPORAN PAJAK (AUDIT)</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">REKAPITULASI PPN MASUKAN/KELUARAN, PPH 23, DAN PPH 25 LENGKAP DENGAN TOTAL NOMINAL.</p>
@@ -359,7 +359,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">LAPORAN PIUTANG UNIT</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">DAFTAR SISA TAGIHAN PER WO YANG BELUM LUNAS DILENGKAPI RINGKASAN TOTAL PIUTANG.</p>
@@ -369,7 +369,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">LAPORAN HUTANG SUPPLIER</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">DAFTAR SISA HUTANG PO (RECEIVED) LENGKAP DENGAN TGL PO, CATATAN, DAN TOTAL HUTANG.</p>
@@ -379,7 +379,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">LOG UNIT & PRODUKSI</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">REKAPITULASI UNIT MASUK, STATUS PROGRESS, DAN REKAP TOTAL PANEL PRODUKSI (BY TANGGAL MASUK).</p>
@@ -389,7 +389,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">ARUS KASIR (AUDIT LOG)</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">HISTORI UANG MASUK/KELUAR LENGKAP DENGAN CATATAN, ADMIN, DAN TOTAL SALDO PERIODE.</p>
@@ -399,7 +399,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">LABA RUGI PER WO</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">ANALISA REVENUE, HPP, DAN GROSS PROFIT PER WO LENGKAP DENGAN TOTAL LABA KOTOR.</p>
@@ -409,7 +409,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
 
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">VALUASI STOK OPNAME</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">DAFTAR STOK AKHIR INVENTORY LENGKAP DENGAN HARGA BELI DAN TOTAL VALUASI GUDANG.</p>
@@ -419,7 +419,7 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                 </button>
             </div>
             
-            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between">
+            <div className="bg-canvas border border-hairline p-6 hover:border-ink transition-colors group flex flex-col justify-between rounded-2xl overflow-hidden">
                 <div>
                     <h3 className="font-medium text-[14px] text-ink uppercase tracking-widest mb-4">PRODUKTIVITAS MEKANIK</h3>
                     <p className="text-[10px] text-mute uppercase tracking-widest mb-8 leading-relaxed">REKAP PERFORMA MEKANIK (UNIT & PANEL) LENGKAP DENGAN TOTAL PENCAPAIAN TIM.</p>

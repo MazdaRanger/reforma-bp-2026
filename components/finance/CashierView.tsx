@@ -281,7 +281,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px]">
             {/* INPUT FORM */}
-            <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col">
+            <div className="lg:col-span-2 bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="p-6 md:p-8 border-b border-hairline flex flex-col md:flex-row justify-between items-start md:items-center bg-soft-cloud gap-4">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">TRANSACTION INPUT</h3>
                     <div className="flex gap-2">
@@ -344,7 +344,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
                                     </div>
                                     
                                     {woSearch && !selectedJob && activeJobs.length > 0 && (
-                                        <div className="absolute z-10 w-full bg-canvas border border-hairline mt-1 max-h-48 overflow-y-auto">
+                                        <div className="absolute z-10 w-full bg-canvas border border-hairline mt-1 max-h-48 overflow-y-auto rounded-2xl overflow-hidden">
                                             {activeJobs.map(job => (
                                                 <div 
                                                     key={job.id} 
@@ -374,7 +374,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
                                         <span className="font-medium text-ink">{formatCurrency(paymentSummary.totalBill)}</span>
                                     </div>
                                     {paymentSummary.totalPaid > 0 && (
-                                        <div className="flex justify-between bg-canvas p-2 border border-hairline">
+                                        <div className="flex justify-between bg-canvas p-2 border border-hairline rounded-2xl overflow-hidden">
                                             <span className="text-mute uppercase tracking-widest text-[10px]">PAID (HISTORI):</span>
                                             <span className="font-medium text-ink">-{formatCurrency(paymentSummary.totalPaid)}</span>
                                         </div>
@@ -458,7 +458,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="text-[10px] font-medium text-mute bg-canvas p-2 border border-hairline uppercase tracking-widest">
+                                            <div className="text-[10px] font-medium text-mute bg-canvas p-2 border border-hairline uppercase tracking-widest rounded-2xl overflow-hidden">
                                                 Total Pelunasan: {formatCurrency(Number(amount || 0) + Number(withholdingAmount || 0))}
                                             </div>
                                         </div>
@@ -526,7 +526,7 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
             </div>
 
             {/* RIWAYAT (REALTIME FROM PROPS) */}
-            <div className="bg-canvas border border-hairline flex flex-col h-[700px]">
+            <div className="bg-canvas border border-hairline flex flex-col h-[700px] rounded-2xl overflow-hidden">
                 <div className="p-6 bg-soft-cloud border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">TRANSACTION HISTORY</h3>
                 </div>

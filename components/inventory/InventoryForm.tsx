@@ -114,7 +114,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
             
             {activeCategory === 'material' && (
                 <div className="mb-6 space-y-4">
-                    <div className="bg-canvas p-4 border border-hairline flex items-start gap-4">
+                    <div className="bg-canvas p-4 border border-hairline flex items-start gap-4 rounded-2xl overflow-hidden">
                         <input 
                             type="checkbox" 
                             id="isStockManaged"
@@ -203,7 +203,7 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
             </div>
         </div>
 
-        <div className="p-6 bg-canvas border border-hairline">
+        <div className="p-6 bg-canvas border border-hairline rounded-2xl overflow-hidden">
             <h4 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4 border-b border-hairline pb-4">HARGA & MODAL</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
                 <div>

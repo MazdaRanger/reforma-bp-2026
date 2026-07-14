@@ -158,7 +158,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* MARKET SHARE CARD */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col items-center">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col items-center rounded-2xl overflow-hidden">
                 <div className="w-full flex justify-between items-center mb-8 border-b border-hairline pb-4">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">
                         Penetrasi Pasar
@@ -202,7 +202,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
             </div>
 
             {/* TOP INSURANCE RANKING */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="flex justify-between items-center mb-8 border-b border-hairline pb-4">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">
                         Top 5 Sumber Order
@@ -233,7 +233,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
             </div>
 
             {/* TOP REGIONS CARD */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="flex justify-between items-center mb-8 border-b border-hairline pb-4">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">
                         Demografi Pelanggan
@@ -270,7 +270,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
         {/* PRODUCT TRENDS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* TOP BRANDS */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <h3 className="text-[12px] font-medium text-mute uppercase tracking-widest mb-8 border-b border-hairline pb-4">Dominasi Merk</h3>
                 <div className="space-y-8 flex-grow">
                     {data.topBrands.map(([name, count], idx) => (
@@ -288,7 +288,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
             </div>
 
             {/* TOP MODELS */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <h3 className="text-[12px] font-medium text-mute uppercase tracking-widest mb-8 border-b border-hairline pb-4">Tipe / Model Terlaris</h3>
                 <div className="space-y-4 flex-grow">
                     {data.topModels.map(([name, count], idx) => (
@@ -301,7 +301,7 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
             </div>
 
             {/* TOP COLORS */}
-            <div className="bg-canvas p-4 border border-hairline flex flex-col">
+            <div className="bg-canvas p-4 border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <h3 className="text-[12px] font-medium text-mute uppercase tracking-widest mb-8 border-b border-hairline pb-4">Varian Warna Dominan</h3>
                 <div className="space-y-6 flex-grow">
                     {data.topColors.map(([name, count], idx) => (

@@ -148,7 +148,7 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
         </div>
 
         {/* SEARCH WORK ORDER */}
-        <div className="mb-[48px] bg-canvas border border-hairline relative">
+        <div className="mb-[48px] bg-canvas border border-hairline relative rounded-2xl overflow-hidden">
             <div className="relative">
                 <input 
                     type="text" 
@@ -197,7 +197,7 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
                         </div>
                     </div>
 
-                    <div className="bg-canvas p-6 border border-hairline">
+                    <div className="bg-canvas p-6 border border-hairline rounded-2xl overflow-hidden">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-6 border-b border-hairline pb-4">BUAT SPKL BARU</h3>
                         <form onSubmit={handleAddSpkl} className="space-y-6">
                             <div>
@@ -268,7 +268,7 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
 
                 {/* RIGHT: SPKL ITEMS LIST */}
                 <div className="lg:col-span-2 space-y-[24px]">
-                    <div className="bg-canvas border border-hairline flex flex-col h-full">
+                    <div className="bg-canvas border border-hairline flex flex-col h-full rounded-2xl overflow-hidden">
                         <div className="p-6 bg-soft-cloud border-b border-hairline flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                             <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">DAFTAR ITEM PEKERJAAN LUAR</h3>
                             <div className="text-[12px] font-medium text-ink uppercase tracking-widest border border-ink px-4 py-2 bg-canvas">

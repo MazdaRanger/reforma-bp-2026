@@ -288,7 +288,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         </div>
 
         {/* CHARTS */}
-        <div className="mb-4 bg-canvas p-4 border border-hairline">
+        <div className="mb-4 bg-canvas p-4 border border-hairline rounded-2xl overflow-hidden">
             <div className="flex justify-between items-center mb-8">
                 <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest">Distribusi Produksi Aktif</h3>
             </div>
@@ -316,7 +316,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
         {/* DETAILS GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* SA TABLE */}
-            <div className="bg-canvas border border-hairline flex flex-col">
+            <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Service Advisor Performance</h3>
                 </div>
@@ -355,7 +355,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             </div>
 
             {/* MEKANIK TABLE */}
-            <div className="bg-canvas border border-hairline flex flex-col">
+            <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Produksi & Kualitas</h3>
                 </div>
@@ -395,7 +395,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             </div>
 
             {/* CRC CARD */}
-            <div className="bg-canvas border border-hairline flex flex-col">
+            <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">CRM & Customer Care</h3>
                 </div>
@@ -422,7 +422,7 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             </div>
 
             {/* FINANCE CARD */}
-            <div className="bg-canvas border border-hairline flex flex-col">
+            <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-hairline flex justify-between items-center">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[12px]">Finance & Receivables</h3>
                     <div className="text-right">

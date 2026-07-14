@@ -9,8 +9,9 @@ import {
   Car, FileText, ClipboardList, Wrench, ShieldCheck, Headphones,
   Kanban, ScanSearch, Package, ShoppingBag, PackageOpen, Droplets, Building2,
   Receipt, Landmark, CreditCard, Scale, BarChart, FolderOpen,
-  Settings2, LogOut, ChevronDown,
+  Settings2, LogOut, ChevronDown, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -255,12 +256,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     setExpandedGroup(prev => (prev === groupId ? null : groupId));
 
   // ─── User initials ────────────────────────────────────────────────────────
-  const initials = (userData.displayName || userData.email || 'U')
-    .split(' ')
-    .map(w => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  const initials = useMemo(() => {
+    if (!userData.displayName) return 'U';
+    return userData.displayName.substring(0, 2).toUpperCase();
+  }, [userData.displayName]);
+
+  const { theme, toggleTheme } = useTheme();
 
   // ─── Shared label transition ──────────────────────────────────────────────
   const labelVariants = {
@@ -514,20 +515,25 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {userData.displayName || userData.email || 'User'}
                   </span>
                 </div>
-                <div className="flex items-center gap-5">
-                  <button
-                    onClick={() => navigate('settings')}
-                    className="flex items-center gap-2 text-[12px] text-mute hover:text-ink transition-colors"
-                  >
-                    <Settings2 size={12} strokeWidth={1.5} />
-                    <span>{t('settings')}</span>
-                  </button>
-                  <button
-                    onClick={onLogout}
-                    className="flex items-center gap-2 text-[12px] text-mute hover:text-ink transition-colors"
-                  >
-                    <LogOut size={12} strokeWidth={1.5} />
-                    <span>{t('logout')}</span>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-5">
+                    <button
+                      onClick={() => navigate('settings')}
+                      className="flex items-center gap-2 text-[12px] text-mute hover:text-ink transition-colors"
+                    >
+                      <Settings2 size={12} strokeWidth={1.5} />
+                      <span>{t('settings')}</span>
+                    </button>
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-2 text-[12px] text-mute hover:text-ink transition-colors"
+                    >
+                      <LogOut size={12} strokeWidth={1.5} />
+                      <span>{t('logout')}</span>
+                    </button>
+                  </div>
+                  <button onClick={toggleTheme} className="text-mute hover:text-ink transition-colors" title="Toggle Theme">
+                    {theme === 'dark' ? <Sun size={14} strokeWidth={1.5} /> : <Moon size={14} strokeWidth={1.5} />}
                   </button>
                 </div>
               </motion.div>
@@ -550,6 +556,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                   title={t('settings')}
                 >
                   <Settings2 size={15} strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="text-mute hover:text-ink transition-colors"
+                  title="Toggle Theme"
+                >
+                  {theme === 'dark' ? <Sun size={15} strokeWidth={1.5} /> : <Moon size={15} strokeWidth={1.5} />}
                 </button>
                 <button
                   onClick={onLogout}

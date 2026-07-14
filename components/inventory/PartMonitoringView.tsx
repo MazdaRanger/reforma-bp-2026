@@ -287,14 +287,14 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
         </div>
 
         {/* LIST */}
-        <div className="bg-canvas border border-hairline flex flex-col">
+        <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-hairline bg-soft-cloud flex items-center gap-4">
                 <input 
                     type="text" 
                     placeholder="CARI NO. POLISI, WO, ATAU PELANGGAN..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="flex-1 bg-canvas border border-hairline p-4 focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink"
+                    className="flex-1 bg-canvas border border-hairline p-4 focus:outline-none focus:border-ink font-medium uppercase text-[14px] text-ink rounded-2xl overflow-hidden"
                 />
             </div>
 
@@ -399,7 +399,7 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
             {selectedJob && (
                 <div className="space-y-[24px]">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-                        <div className="bg-canvas border border-hairline p-6 flex flex-col gap-2">
+                        <div className="bg-canvas border border-hairline p-6 flex flex-col gap-2 rounded-2xl overflow-hidden">
                             <span className="text-[10px] font-medium text-mute uppercase tracking-widest">DETAIL PELANGGAN & WO</span>
                             <div className="flex items-center gap-4">
                                 <span className="font-display text-[24px] text-ink">{selectedJob.woNumber}</span>
@@ -424,7 +424,7 @@ const PartMonitoringView: React.FC<PartMonitoringViewProps> = ({ jobs, inventory
                         </div>
                     </div>
 
-                    <div className="bg-canvas border border-hairline overflow-hidden">
+                    <div className="bg-canvas border border-hairline overflow-hidden rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-canvas border-b border-hairline text-mute uppercase text-[10px] font-medium tracking-widest">

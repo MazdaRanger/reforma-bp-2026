@@ -91,7 +91,7 @@ export const EfferdDashboard2: React.FC<EfferdDashboard2Props> = ({ jobs, title 
   }, [jobs]);
 
   return (
-    <div className="bg-canvas border border-hairline p-6 mt-8 animate-fade-in">
+    <div className="bg-canvas border border-hairline p-6 mt-8 animate-fade-in rounded-2xl overflow-hidden">
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
             <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest">{title}</h3>

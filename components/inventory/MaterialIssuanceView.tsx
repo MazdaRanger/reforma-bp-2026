@@ -368,7 +368,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
         </div>
 
         {/* WORK ORDER SELECTOR */}
-        <div className="bg-canvas border border-hairline mb-[48px] relative">
+        <div className="bg-canvas border border-hairline mb-[48px] relative rounded-2xl overflow-hidden">
             <div className="relative">
                 <input 
                     type="text" 
@@ -402,20 +402,29 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                 {/* LEFT COLUMN: ACTION FORM/LIST */}
                 <div className="lg:col-span-2 space-y-[24px]">
                     {/* INFO CARD */}
-                    <div className="bg-ink text-canvas p-6 border border-ink flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="bg-ink text-canvas p-6 border border-ink flex flex-col md:flex-row justify-between items-start md:items-center gap-4 rounded-2xl overflow-hidden">
                         <div>
                             <span className="text-[10px] font-medium text-mute uppercase tracking-widest">UNIT TERPILIH</span>
                             <h2 className="text-[32px] font-display mt-2 leading-none">{selectedJob.policeNumber}</h2>
                             <p className="text-[14px] text-mute uppercase tracking-widest mt-2">{selectedJob.carModel} | {selectedJob.customerName}</p>
                         </div>
-                        <div className="md:text-right border-t md:border-t-0 md:border-l border-mute/30 pt-4 md:pt-0 md:pl-4">
-                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NO. WO</p>
-                            <p className="text-[16px] font-medium text-canvas border border-canvas px-3 py-1 bg-ink">{selectedJob.woNumber}</p>
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-t md:border-t-0 md:border-l border-mute/30 pt-4 md:pt-0 md:pl-4">
+                            <div className="md:text-right">
+                                <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NO. WO</p>
+                                <p className="text-[16px] font-medium text-canvas border border-canvas px-3 py-1 bg-ink">{selectedJob.woNumber}</p>
+                            </div>
+                            <button 
+                                onClick={() => { setSelectedJobId(''); setFilterWo(''); setMaterialItems([{ inventoryItem: null, query: '', qty: '', inputUnit: '', notes: '' }]); }}
+                                className="mt-2 md:mt-0 px-4 py-2 bg-sale text-canvas text-[12px] font-medium uppercase tracking-widest hover:bg-sale-deep transition-colors flex items-center gap-2 rounded-lg"
+                                title="Batalkan Pilihan Kendaraan"
+                            >
+                                <X size={14} /> Reset
+                            </button>
                         </div>
                     </div>
 
                     {issuanceType === 'sparepart' && (
-                        <div className="bg-canvas border border-hairline flex flex-col">
+                        <div className="bg-canvas border border-hairline flex flex-col rounded-2xl overflow-hidden">
                             <div className="p-6 bg-soft-cloud border-b border-hairline flex justify-between items-center">
                                 <h3 className="font-medium text-[16px] text-ink uppercase tracking-widest">CHECKLIST KELUAR BARANG</h3>
                                 <span className="text-[12px] font-medium bg-canvas text-ink px-4 py-2 border border-ink uppercase tracking-widest">{selectedJob.estimateData?.partItems?.length || 0} ITEM</span>
@@ -494,14 +503,14 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                     )}
 
                     {issuanceType === 'material' && (
-                        <div className="bg-canvas border border-hairline p-6">
+                        <div className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
                                 <div className="flex justify-between items-center mb-6 border-b border-hairline pb-4">
                                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">INPUT PEMAKAIAN BAHAN</h3>
                                     <button 
                                         type="button" 
                                         onClick={addMaterialRow} 
                                         disabled={isSubmitting} 
-                                        className="flex items-center gap-2 text-[12px] bg-soft-cloud text-ink px-4 py-2 font-medium hover:bg-canvas border border-hairline disabled:opacity-50 transition-all uppercase tracking-widest"
+                                        className="flex items-center gap-2 text-[12px] bg-soft-cloud text-ink px-4 py-2 font-medium hover:bg-canvas border border-hairline disabled:opacity-50 transition-all uppercase tracking-widest rounded-2xl overflow-hidden"
                                     >
                                         <Plus size={14} /> TAMBAH BAHAN
                                     </button>
@@ -553,7 +562,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                                                                 />
                                                                 {activeMaterialSearch === i && item.query.length >= 2 && (
                                                                     <div 
-                                                                        className="absolute top-full left-0 w-[400px] bg-canvas border border-hairline mt-1 z-50 max-h-60 overflow-y-auto divide-y divide-hairline shadow-lg"
+                                                                        className="absolute top-full left-0 w-[400px] bg-canvas border border-hairline mt-1 z-50 max-h-60 overflow-y-auto divide-y divide-hairline shadow-lg rounded-2xl overflow-hidden"
                                                                         onMouseDown={() => { materialDropdownMouseDown.current = true; }}
                                                                     >
                                                                         {getMaterialResults(item.query).map(res => (
@@ -678,7 +687,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                 </div>
 
                 {/* RIGHT COLUMN: HISTORY */}
-                <div className="bg-canvas border border-hairline flex flex-col h-fit">
+                <div className="bg-canvas border border-hairline flex flex-col h-fit rounded-2xl overflow-hidden">
                     <div className="p-6 bg-soft-cloud border-b border-hairline">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">RIWAYAT {issuanceType === 'sparepart' ? 'PART KELUAR' : 'BAHAN TERPAKAI'}</h3>
                     </div>

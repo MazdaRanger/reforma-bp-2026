@@ -121,7 +121,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
             <button 
                 onClick={() => runAIScreening('trouble')}
                 disabled={isLoading}
-                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start rounded-2xl overflow-hidden"
             >
                 <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 01</span>
                 <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Catch-Up<br/>Strategy</h3>
@@ -131,7 +131,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
             <button 
                 onClick={() => runAIScreening('promo')}
                 disabled={isLoading}
-                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start rounded-2xl overflow-hidden"
             >
                 <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 02</span>
                 <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Margin<br/>Recovery</h3>
@@ -141,7 +141,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
             <button 
                 onClick={() => runAIScreening('target')}
                 disabled={isLoading}
-                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start"
+                className="bg-canvas p-6 md:p-8 border border-hairline hover:bg-soft-cloud transition-all text-left flex flex-col items-start justify-start rounded-2xl overflow-hidden"
             >
                 <span className="bg-ink text-canvas text-[10px] uppercase tracking-widest font-medium px-2 py-1 mb-4">ANALYSIS 03</span>
                 <h3 className="text-[24px] font-medium text-ink leading-tight mb-2 uppercase">Goal<br/>Accelerator</h3>
@@ -156,7 +156,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
                    <MorphingSquare message="AI SEDANG MEMPROSES..." />
                 </div>
             ) : analysisResult ? (
-                <div className="bg-canvas border border-hairline">
+                <div className="bg-canvas border border-hairline rounded-2xl overflow-hidden">
                     <div className="border-b border-hairline p-6 flex justify-between items-center bg-soft-cloud">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Analysis Report</h3>
                         <button onClick={() => setAnalysisResult(null)} className="text-[12px] font-medium text-mute uppercase tracking-widest hover:text-ink transition-colors">
@@ -185,7 +185,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
                     </div>
                 </div>
             ) : (
-                <div className="bg-canvas border border-hairline p-12 md:p-20 flex flex-col items-center justify-center text-center">
+                <div className="bg-canvas border border-hairline p-12 md:p-20 flex flex-col items-center justify-center text-center rounded-2xl overflow-hidden">
                     <p className="text-mute font-medium text-[16px] uppercase tracking-widest">Select an analysis module above to begin</p>
                 </div>
             )}
@@ -194,7 +194,7 @@ const AIAssistantView: React.FC<AIAssistantProps> = ({ jobs, transactions, setti
         {/* UNDER CONSTRUCTION MODAL */}
         {showUnderConstruction && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/90 backdrop-blur-sm">
-                <div className="bg-canvas border border-hairline p-8 md:p-12 max-w-lg w-full text-center">
+                <div className="bg-canvas border border-hairline p-8 md:p-12 max-w-lg w-full text-center rounded-2xl overflow-hidden">
                     <h2 className="text-[32px] font-display text-ink uppercase mb-4 leading-none">UNDER CONSTRUCTION</h2>
                     <p className="text-[16px] text-mute mb-12 font-normal leading-relaxed">
                         Menu AI Strategic Insight saat ini berstatus dalam pengembangan. Anda tetap dapat melakukan uji coba integrasi API Gemini, namun fungsionalitas dan prompt mungkin belum sepenuhnya optimal.

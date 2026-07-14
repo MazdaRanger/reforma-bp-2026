@@ -229,7 +229,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
             <p className="text-[16px] text-mute font-normal mt-[18px]">Verifikasi Akhir Work Order & Cetak Dokumen Penagihan Resmi</p>
         </div>
 
-        <div className="bg-canvas border border-hairline p-6 md:p-8 mb-[24px]">
+        <div className="bg-canvas border border-hairline p-6 md:p-8 mb-[24px] rounded-2xl overflow-hidden">
             <div className="relative">
                 <input 
                     type="text" 
@@ -284,7 +284,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
 
         {!selectedJob && !searchTerm && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] animate-fade-in">
-                <div className="bg-canvas border border-hairline flex flex-col h-[500px]">
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
                     <div className="p-6 bg-soft-cloud border-b border-hairline flex justify-between items-center">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Monitor Produksi (WIP)</h3>
                         <span className="text-[10px] font-medium uppercase tracking-widest text-mute">{wipUnits.length} Unit Aktif</span>
@@ -348,7 +348,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                     </div>
                 </div>
 
-                <div className="bg-canvas border border-hairline flex flex-col h-[500px]">
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
                     <div className="p-6 bg-soft-cloud border-b border-hairline flex justify-between items-center">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">Riwayat Faktur</h3>
                         <span className="text-[10px] font-medium uppercase tracking-widest text-mute">{invoicesHistory.length} Record</span>
@@ -400,7 +400,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
         {selectedJob && calculations && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
                 <div className="lg:col-span-2 space-y-[24px]">
-                    <div className="bg-canvas border border-hairline">
+                    <div className="bg-canvas border border-hairline rounded-2xl overflow-hidden">
                         <div className="bg-soft-cloud px-6 md:px-8 py-6 border-b border-hairline flex justify-between items-center">
                             <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">DETAIL PEKERJAAN</h3>
                             <div className="flex items-center gap-2">
@@ -470,7 +470,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                 </div>
 
                 <div className="space-y-[24px]">
-                    <div className="bg-canvas border border-hairline p-6 md:p-8">
+                    <div className="bg-canvas border border-hairline p-6 md:p-8 rounded-2xl overflow-hidden">
                         <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-8 border-b border-hairline pb-4">KALKULASI BIAYA</h3>
                         
                         <div className="space-y-4 text-[14px]">
