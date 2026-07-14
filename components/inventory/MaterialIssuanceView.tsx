@@ -501,7 +501,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                                 </div>
                                 
                                 <form onSubmit={handleMaterialIssuance} className="space-y-6">
-                                    <div className="overflow-x-auto">
+                                    <div className="w-full overflow-visible">
                                         <table className="w-full text-left border-collapse min-w-[900px]">
                                             <thead>
                                                 <tr className="text-[10px] font-medium text-mute uppercase tracking-widest border-b border-hairline">
