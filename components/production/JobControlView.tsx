@@ -213,6 +213,14 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           openScheduleModal(job, 'Bongkar');
           return;
       }
+
+      // Validasi Tanggal: Tidak boleh pindah stage jika tanggal kosong
+      if (!job.actualStartDate || !job.tanggalEstimasiSelesai) {
+          showNotification("Tanggal Mulai dan Tanggal Selesai perbaikan harus diisi untuk mengupdate posisi kendaraan.", "error");
+          openScheduleModal(job);
+          return;
+      }
+
       let currentIndex = STAGES.indexOf(job.statusPekerjaan);
       if (currentIndex === -1) currentIndex = 1; 
       let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
