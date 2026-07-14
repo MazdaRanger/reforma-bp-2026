@@ -82,10 +82,38 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
   const selectedJob = useMemo(() => activeJobs.find(j => j.id === selectedJobId), [activeJobs, selectedJobId]);
   
   const usageHistory = useMemo(() => {
-      if (!selectedJob || !selectedJob.usageLog) return [];
-      return [...selectedJob.usageLog]
-        .filter(log => log.category === issuanceType)
-        .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+      if (!selectedJob) return [];
+      
+      let logs: any[] = [];
+      if (selectedJob.usageLog) {
+          logs = [...selectedJob.usageLog].filter(log => log.category === issuanceType);
+      }
+
+      if (issuanceType === 'sparepart' && selectedJob.estimateData?.partItems) {
+          selectedJob.estimateData.partItems.forEach((part, idx) => {
+              if (part.hasArrived) {
+                  const hasLog = logs.some(l => l.refPartIndex === idx);
+                  if (!hasLog) {
+                      logs.push({
+                          itemId: part.inventoryId,
+                          itemName: part.name,
+                          itemCode: part.number || '',
+                          qty: part.qty || 1,
+                          costPerUnit: 0,
+                          totalCost: 0,
+                          category: 'sparepart',
+                          issuedAt: selectedJob.updatedAt || new Date().toISOString(),
+                          issuedBy: 'Legacy System',
+                          notes: 'Issued before logging was added',
+                          refPartIndex: idx,
+                          isLegacy: true
+                      });
+                  }
+              }
+          });
+      }
+
+      return logs.sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
   }, [selectedJob, issuanceType]);
 
   const filteredJobs = useMemo(() => {
@@ -332,21 +360,41 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
               l.category === logItem.category
           );
 
-          if (actualIndex === -1) return;
-          newUsageLog.splice(actualIndex, 1);
+          if (!logItem.isLegacy && actualIndex === -1) {
+              console.warn("Usage log not found");
+              return;
+          }
+
+          if (actualIndex !== -1) {
+              newUsageLog.splice(actualIndex, 1);
+          }
 
           const batch = writeBatch(db);
           const jobRef = doc(db, SERVICE_JOBS_COLLECTION, selectedJob.id);
 
-          const invRef = doc(db, SPAREPART_COLLECTION, logItem.itemId);
-          batch.update(invRef, { stock: increment(logItem.qty) });
+          if (logItem.itemId) {
+              const invRef = doc(db, SPAREPART_COLLECTION, logItem.itemId);
+              batch.update(invRef, { stock: increment(logItem.qty) });
+          }
 
-          const updates: any = { usageLog: newUsageLog };
+          const updates: any = {};
+          if (actualIndex !== -1) {
+              updates.usageLog = newUsageLog;
+          }
+
           if (logItem.category === 'material') {
               updates['costData.hargaModalBahan'] = increment(-logItem.totalCost);
+          } else if (logItem.category === 'sparepart' && logItem.refPartIndex !== undefined) {
+              const currentParts = [...(selectedJob.estimateData?.partItems || [])];
+              if (currentParts[logItem.refPartIndex]) {
+                  currentParts[logItem.refPartIndex].hasArrived = false;
+                  updates['estimateData.partItems'] = currentParts;
+              }
           }
           
-          batch.update(jobRef, updates);
+          if (Object.keys(updates).length > 0) {
+              batch.update(jobRef, updates);
+          }
           await batch.commit();
           
           showNotification("Pemakaian dibatalkan. Stok dikembalikan.", "success");
@@ -460,7 +508,17 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                                                                 className="w-4 h-4 accent-ink cursor-pointer"
                                                             />
                                                         ) : (
-                                                            <span className="text-[10px] font-medium text-ink uppercase tracking-widest border border-ink px-2 py-1">OK</span>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const logMatch = usageHistory.find((l: any) => l.refPartIndex === idx && l.category === 'sparepart');
+                                                                    if (logMatch) handleRemoveUsageLog(-1, logMatch);
+                                                                    else handleRemoveUsageLog(-1, { category: 'sparepart', refPartIndex: idx, qty: part.qty || 1, itemId: part.inventoryId, isLegacy: true });
+                                                                }}
+                                                                className="text-[10px] font-medium text-canvas bg-sale hover:bg-sale-deep uppercase tracking-widest px-2 py-1 transition-colors"
+                                                                title="Batalkan Keluar Part"
+                                                            >
+                                                                BATAL
+                                                            </button>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -700,7 +758,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                                     <div key={idx} className="p-4 hover:bg-soft-cloud transition-colors group">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="font-medium text-[14px] text-ink uppercase">{log.itemName}</div>
-                                            <button onClick={() => handleRemoveUsageLog(idx, log)} className="text-[10px] font-medium text-ink border border-hairline hover:border-ink px-2 py-1 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all bg-canvas">BATALKAN</button>
+                                            <button onClick={() => handleRemoveUsageLog(idx, log)} className="text-[10px] font-medium text-sale border border-sale hover:bg-sale hover:text-canvas px-2 py-1 uppercase tracking-widest transition-all">BATALKAN</button>
                                         </div>
                                         <div className="flex justify-between items-center text-[10px] text-mute uppercase tracking-widest">
                                             <span>{log.qty} {log.inputUnit || 'PCS'}</span>
