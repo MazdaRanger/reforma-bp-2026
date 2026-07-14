@@ -52,11 +52,15 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
   // Converts qty from inputUnit to stockUnit for stock deduction
   const convertToStockUnit = (qty: number, from: string, to: string): number => {
     if (from === to) return qty;
-    if (from === 'Gram' && to === 'Kg') return qty / 1000;
-    if (from === 'Kg' && to === 'Gram') return qty * 1000;
-    if (from === 'Ml' && to === 'Liter') return qty / 1000;
-    if (from === 'Liter' && to === 'Ml') return qty * 1000;
-    return qty; // fallback no conversion
+    
+    // Normalize to smallest unit (Gram/Ml) assuming 1:1 density for workshop liquids
+    let qtyInSmall = qty;
+    if (from === 'Kg' || from === 'Liter') qtyInSmall = qty * 1000;
+    
+    if (to === 'Kg' || to === 'Liter') return qtyInSmall / 1000;
+    if (to === 'Gram' || to === 'Ml') return qtyInSmall;
+    
+    return qty; // fallback no conversion (e.g. Kaleng, Pcs)
   };
 
   // Cost per unit in input-unit terms
@@ -64,12 +68,15 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
     if (!item) return 0;
     const stockUnit = item.unit;
     if (iUnit === stockUnit) return item.buyPrice;
-    // if input is Gram and stock is Kg: price per gram = pricePerKg / 1000
-    if (iUnit === 'Gram' && stockUnit === 'Kg') return item.buyPrice / 1000;
-    if (iUnit === 'Kg' && stockUnit === 'Gram') return item.buyPrice * 1000;
-    if (iUnit === 'Ml' && stockUnit === 'Liter') return item.buyPrice / 1000;
-    if (iUnit === 'Liter' && stockUnit === 'Ml') return item.buyPrice * 1000;
-    return item.buyPrice;
+    
+    if ((stockUnit === 'Kg' || stockUnit === 'Liter') && (iUnit === 'Gram' || iUnit === 'Ml')) {
+        return item.buyPrice / 1000;
+    }
+    if ((stockUnit === 'Gram' || stockUnit === 'Ml') && (iUnit === 'Kg' || iUnit === 'Liter')) {
+        return item.buyPrice * 1000;
+    }
+    
+    return item.buyPrice; // fallback 1:1 for Kg <-> Liter or Pcs
   };
 
   const selectedJob = useMemo(() => activeJobs.find(j => j.id === selectedJobId), [activeJobs, selectedJobId]);
