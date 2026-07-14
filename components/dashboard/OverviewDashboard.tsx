@@ -13,18 +13,12 @@ interface OverviewProps {
 }
 
 const StatCard = ({ title, value, subValue, trend, info, variant = 'default' }: any) => {
+  const isDark = variant === 'ink';
   const getColors = () => {
-    switch (variant) {
-      case 'ink': return 'bg-ink text-canvas border-ink';
-      case 'teal': return 'bg-card-teal text-canvas border-card-teal';
-      case 'emerald': return 'bg-card-emerald text-canvas border-card-emerald';
-      case 'navy': return 'bg-card-navy text-canvas border-card-navy';
-      case 'ruby': return 'bg-card-ruby text-canvas border-card-ruby';
-      default: return 'bg-canvas text-ink border-hairline';
-    }
+    return isDark ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink';
   };
-  const muteColor = variant === 'default' ? 'text-mute' : 'text-canvas opacity-80';
-  const borderColor = variant === 'default' ? 'border-hairline' : 'border-white border-opacity-20';
+  const muteColor = isDark ? 'text-canvas opacity-80' : 'text-mute';
+  const borderColor = isDark ? 'border-white border-opacity-20' : 'border-hairline';
 
   return (
     <div className={`${getColors()} p-4 flex flex-col justify-between border-b md:border-b-0 md:border-r last:border-0 md:last:border-r-0 transition-colors`}>
@@ -326,15 +320,15 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6 rounded-2xl overflow-hidden">
-        <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} variant="teal" />
+        <StatCard title={t('card2')} value={stats.activeJobsCount} subValue={t('card2_sub')} />
         <StatCard title={t('card3')} value={stats.completedWaiting} subValue={t('card3_sub')} variant="ink" />
-        <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" variant="emerald" />
+        <StatCard title={t('card4')} value={formatCurrency(stats.revenue)} subValue={t('card4_sub')} trend="up" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 bg-canvas border border-hairline mb-6 rounded-2xl overflow-hidden">
-          <StatCard title={t('row1')} value={stats.totalInvoicedUnits} variant="navy" />
+          <StatCard title={t('row1')} value={stats.totalInvoicedUnits} variant="ink" />
           <StatCard title={t('row2')} value={stats.totalPanels.toFixed(1)} />
-          <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} variant="emerald" />
+          <StatCard title={t('row3')} value={formatCurrency(stats.grossProfit)} variant="ink" />
       </div>
 
       {/* WEEKLY SIDEBAR SECTION */}
@@ -383,25 +377,25 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
                           <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Total Panel</p>
                           <p className="text-[12px] font-medium text-ink">{stats.weeklyData[activeWeek].panels?.toFixed(1) || '0.0'}</p>
                       </div>
-
-                      <div className="col-span-2 bg-card-navy text-canvas p-4 rounded-2xl overflow-hidden">
+                      <div className="col-span-2 bg-ink text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Jasa Nett</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].jasaNett)}</p>
                       </div>
-                      <div className="col-span-2 bg-card-emerald text-canvas p-4 rounded-2xl overflow-hidden">
-                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Total Part Nett</p>
+                      <div className="col-span-2 bg-canvas border border-ink text-ink p-4 rounded-2xl overflow-hidden">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">Total Part Nett</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partNett)}</p>
                       </div>
 
-                      <div className="col-span-2 bg-card-ruby text-canvas p-4 rounded-2xl overflow-hidden">
-                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Bahan</p>
+                      <div className="col-span-2 bg-canvas border border-hairline text-ink p-4 rounded-2xl overflow-hidden">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">HPP Bahan</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].bahanCost)}</p>
                       </div>
-                      <div className="col-span-2 bg-card-ruby text-canvas p-4 rounded-2xl overflow-hidden">
-                          <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">HPP Part</p>
+                      <div className="col-span-2 bg-canvas border border-hairline text-ink p-4 rounded-2xl overflow-hidden">
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest mb-2">HPP Part</p>
                           <p className="text-[12px] font-medium">{formatCurrency(stats.weeklyData[activeWeek].partCost)}</p>
                       </div>
-                      <div className="col-span-2 md:col-span-4 bg-card-emerald text-canvas p-4 rounded-b-[12px] shadow-sm">
+                      
+                      <div className="col-span-4 bg-ink text-canvas p-4 rounded-2xl overflow-hidden">
                           <p className="text-[12px] font-medium opacity-80 uppercase tracking-widest mb-2">Gross Profit (GP) Periode Ini</p>
                           <p className="text-[18px] font-medium tracking-tight">{formatCurrency(stats.weeklyData[activeWeek].grossProfit)}</p>
                       </div>

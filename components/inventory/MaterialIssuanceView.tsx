@@ -86,7 +86,16 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
       
       let logs: any[] = [];
       if (selectedJob.usageLog) {
-          logs = [...selectedJob.usageLog].filter(log => log.category === issuanceType);
+          logs = selectedJob.usageLog
+              .filter((log: any) => log.category === issuanceType)
+              .map((log: any) => {
+                  if (!log.totalCost) {
+                      const invItem = fetchedInventoryItems.find(i => i.id === log.itemId) || inventoryItems.find(i => i.id === log.itemId);
+                      const costPerUnit = invItem ? (invItem.buyPrice || 0) : (log.costPerUnit || 0);
+                      return { ...log, costPerUnit, totalCost: (log.qty || 1) * costPerUnit };
+                  }
+                  return log;
+              });
       }
 
       if (issuanceType === 'sparepart' && selectedJob.estimateData?.partItems) {
@@ -94,13 +103,18 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
               if (part.hasArrived) {
                   const hasLog = logs.some(l => l.refPartIndex === idx);
                   if (!hasLog) {
+                      // Attempt to find actual cost from inventory
+                      const invItem = fetchedInventoryItems.find(i => i.id === part.inventoryId) || inventoryItems.find(i => i.id === part.inventoryId);
+                      const costPerUnit = invItem ? (invItem.buyPrice || 0) : 0;
+                      const qty = part.qty || 1;
+                      
                       logs.push({
                           itemId: part.inventoryId,
                           itemName: part.name,
                           itemCode: part.number || '',
-                          qty: part.qty || 1,
-                          costPerUnit: 0,
-                          totalCost: 0,
+                          qty: qty,
+                          costPerUnit: costPerUnit,
+                          totalCost: qty * costPerUnit,
                           category: 'sparepart',
                           issuedAt: selectedJob.updatedAt || new Date().toISOString(),
                           issuedBy: 'Legacy System',
@@ -114,7 +128,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
       }
 
       return logs.sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
-  }, [selectedJob, issuanceType]);
+  }, [selectedJob, issuanceType, fetchedInventoryItems, inventoryItems]);
 
   const filteredJobs = useMemo(() => {
     const lowerFilter = filterWo.toLowerCase().trim();
@@ -248,8 +262,8 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                   itemName: invItem.name,
                   itemCode: invItem.code || '',
                   qty: qtyToIssue,
-                  costPerUnit: invItem.buyPrice,
-                  totalCost: qtyToIssue * invItem.buyPrice,
+                  costPerUnit: invItem.buyPrice || 0,
+                  totalCost: qtyToIssue * (invItem.buyPrice || 0),
                   category: 'sparepart',
                   issuedAt: new Date().toISOString(),
                   issuedBy: userPermissions.role,
@@ -307,7 +321,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
 
               // Deduct from stock in STOCK unit
               const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
-              const totalCost = qtyInStockUnit * selectedItem.buyPrice;
+              const totalCost = qtyInStockUnit * (selectedItem.buyPrice || 0);
               totalCostAllMaterials += totalCost;
 
               const invRef = doc(db, SPAREPART_COLLECTION, selectedItem.id);
@@ -323,7 +337,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                   qty: qtyInStockUnit,          // stored in stock unit
                   inputQty: rawQty,             // original input qty
                   inputUnit: effectiveUnit,      // original input unit
-                  costPerUnit: selectedItem.buyPrice,
+                  costPerUnit: selectedItem.buyPrice || 0,
                   totalCost: totalCost,
                   category: 'material',
                   notes: item.notes || 'Pemakaian Bahan',
