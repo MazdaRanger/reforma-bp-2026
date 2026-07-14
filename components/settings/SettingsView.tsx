@@ -42,6 +42,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
   
   const [newCsiInput, setNewCsiInput] = useState('');
 
+  // Data Maintenance State
+  const [maintenanceStats, setMaintenanceStats] = useState({ draftJobs: 0, softDeleted: 0, completedOldJobs: 0 });
+  const [isCalculatingMaintenance, setIsCalculatingMaintenance] = useState(false);
+  const [draftJobsToDelete, setDraftJobsToDelete] = useState<string[]>([]);
+  const [softDeletedToDelete, setSoftDeletedToDelete] = useState<string[]>([]);
+  const [jobsToArchive, setJobsToArchive] = useState<string[]>([]);
+
   useEffect(() => {
     setLocalSettings(currentSettings);
   }, [currentSettings]);
@@ -59,6 +66,116 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
 
       return () => { unsubServices(); unsubUsers(); };
   }, []);
+
+  useEffect(() => {
+      if (activeTab === 'data_maintenance') {
+          calculateMaintenanceStats();
+      }
+  }, [activeTab]);
+
+  const calculateMaintenanceStats = async () => {
+      if (!isManager) return;
+      setIsCalculatingMaintenance(true);
+      try {
+          const jobsSnap = await getDocs(collection(db, SERVICE_JOBS_COLLECTION));
+          const allJobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Job));
+          
+          const now = new Date();
+          const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+          const oneYearAgo = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+
+          const draftIds: string[] = [];
+          const softDeletedIds: string[] = [];
+          const archiveIds: string[] = [];
+
+          allJobs.forEach(job => {
+              const jobDate = job.createdAt?.toDate?.() || new Date(job.tanggalMasuk || Date.now());
+              
+              // Soft deleted
+              if (job.isDeleted) {
+                  softDeletedIds.push(job.id);
+                  return;
+              }
+
+              // Draft Estimates (no woNumber and old)
+              if (!job.woNumber && !job.isClosed && jobDate < sixMonthsAgo) {
+                  draftIds.push(job.id);
+                  return;
+              }
+
+              // Completed old jobs
+              if (job.isClosed && job.closedAt && job.closedAt.toDate?.() < oneYearAgo && !job.isArchived) {
+                  archiveIds.push(job.id);
+              }
+          });
+
+          setDraftJobsToDelete(draftIds);
+          setSoftDeletedToDelete(softDeletedIds);
+          setJobsToArchive(archiveIds);
+          setMaintenanceStats({
+              draftJobs: draftIds.length,
+              softDeleted: softDeletedIds.length,
+              completedOldJobs: archiveIds.length
+          });
+      } catch (error) {
+          console.error("Error calculating maintenance stats:", error);
+      } finally {
+          setIsCalculatingMaintenance(false);
+      }
+  };
+
+  const handleExecuteMaintenance = async (actionType: 'drafts' | 'softDeleted' | 'archive') => {
+      if (!isManager) return;
+      
+      let idsToProcess: string[] = [];
+      let confirmMsg = '';
+      
+      if (actionType === 'drafts') {
+          idsToProcess = draftJobsToDelete;
+          confirmMsg = `Yakin menghapus permanen ${idsToProcess.length} Estimasi Draft yang berumur > 6 bulan?`;
+      } else if (actionType === 'softDeleted') {
+          idsToProcess = softDeletedToDelete;
+          confirmMsg = `Yakin mengosongkan tong sampah (${idsToProcess.length} data terhapus)?`;
+      } else if (actionType === 'archive') {
+          idsToProcess = jobsToArchive;
+          confirmMsg = `Yakin mengarsipkan ${idsToProcess.length} Job Order selesai yang berumur > 1 tahun?`;
+      }
+
+      if (idsToProcess.length === 0) {
+          showNotification("TIDAK ADA DATA UNTUK DIPROSES.", "success");
+          return;
+      }
+
+      if (!window.confirm(confirmMsg)) return;
+
+      setIsLoading(true);
+      try {
+          // Batch process in chunks of 500 (Firestore limit)
+          const chunkSize = 500;
+          for (let i = 0; i < idsToProcess.length; i += chunkSize) {
+              const chunk = idsToProcess.slice(i, i + chunkSize);
+              const batch = writeBatch(db);
+              
+              chunk.forEach(id => {
+                  const ref = doc(db, SERVICE_JOBS_COLLECTION, id);
+                  if (actionType === 'archive') {
+                      batch.update(ref, { isArchived: true, updatedAt: serverTimestamp() });
+                  } else {
+                      batch.delete(ref);
+                  }
+              });
+              
+              await batch.commit();
+          }
+          
+          showNotification("PEMELIHARAAN DATA BERHASIL DIEKSEKUSI.", "success");
+          calculateMaintenanceStats(); // Refresh stats
+      } catch (error: any) {
+          showNotification("GAGAL: " + error.message, "error");
+      } finally {
+          setIsLoading(false);
+      }
+  };
 
   const filteredServices = useMemo(() => {
       if (!serviceSearchQuery) return services;
@@ -264,7 +381,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
             { id: 'insurance', label: 'DATABASE ASURANSI' },
             { id: 'whatsapp', label: 'WHATSAPP & PESAN' },
             { id: 'services', label: 'MASTER JASA & PANEL' },
-            { id: 'menu_access', label: 'HAK AKSES MENU' }
+            { id: 'menu_access', label: 'HAK AKSES MENU' },
+            { id: 'data_maintenance', label: 'PEMELIHARAAN DATA' }
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-4 text-[12px] font-medium uppercase tracking-widest transition-colors flex-shrink-0 ${activeTab === tab.id ? 'bg-ink text-canvas border-t border-l border-r border-ink' : 'text-mute hover:text-ink border-transparent'}`}>
               {tab.label}
@@ -1221,6 +1339,118 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                   
                   <div className="flex items-center gap-4 p-6 bg-canvas border border-ink">
                       <p className="text-[10px] text-ink font-medium uppercase tracking-widest">JANGAN LUPA KLIK "SIMPAN PERUBAHAN" DI BAGIAN ATAS HALAMAN SETELAH SELESAI MENGEDIT HAK AKSES.</p>
+                  </div>
+              </div>
+          )}
+          {activeTab === 'data_maintenance' && (
+              <div className={`space-y-[48px] ${restrictedClass} animate-fade-in`}>
+                  <RestrictedOverlay/>
+                  
+                  <div className="flex items-center gap-4 p-6 bg-soft-cloud border border-hairline">
+                      <p className="text-[10px] text-ink leading-relaxed font-medium uppercase tracking-widest">
+                          Fitur ini membantu menjaga performa database dengan membersihkan data usang. Data yang dihapus permanen tidak dapat dikembalikan.
+                      </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+                      {/* DRAFTS */}
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                          <div>
+                              <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">ESTIMASI DRAFT USANG</h3>
+                              <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">
+                                  Estimasi yang tidak pernah dikonversi menjadi SPK (WO) dan berumur lebih dari 6 bulan. Membebani pencarian data aktif.
+                              </p>
+                              
+                              <div className="flex items-end gap-2 mb-8">
+                                  {isCalculatingMaintenance ? (
+                                      <span className="text-[24px] font-display text-mute">...</span>
+                                  ) : (
+                                      <span className={`text-[48px] font-display leading-none ${maintenanceStats.draftJobs > 0 ? 'text-red-500' : 'text-ink'}`}>
+                                          {maintenanceStats.draftJobs}
+                                      </span>
+                                  )}
+                                  <span className="text-[10px] text-mute font-medium uppercase tracking-widest mb-1">DOKUMEN DITEMUKAN</span>
+                              </div>
+                          </div>
+                          
+                          <button 
+                              onClick={() => handleExecuteMaintenance('drafts')}
+                              disabled={isCalculatingMaintenance || maintenanceStats.draftJobs === 0 || isLoading}
+                              className={`w-full py-4 text-[12px] font-medium uppercase tracking-widest transition-colors ${
+                                  maintenanceStats.draftJobs > 0 
+                                      ? 'bg-red-500 text-white hover:bg-red-600 border border-red-500' 
+                                      : 'bg-soft-cloud text-mute border border-hairline cursor-not-allowed'
+                              }`}
+                          >
+                              {isLoading ? 'MEMPROSES...' : 'HAPUS PERMANEN'}
+                          </button>
+                      </div>
+
+                      {/* SOFT DELETED */}
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                          <div>
+                              <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">TONG SAMPAH (SOFT DELETED)</h3>
+                              <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">
+                                  Data yang Anda hapus sebelumnya hanya disembunyikan dari sistem (soft delete). Bersihkan secara permanen untuk menghemat ruang.
+                              </p>
+                              
+                              <div className="flex items-end gap-2 mb-8">
+                                  {isCalculatingMaintenance ? (
+                                      <span className="text-[24px] font-display text-mute">...</span>
+                                  ) : (
+                                      <span className={`text-[48px] font-display leading-none ${maintenanceStats.softDeleted > 0 ? 'text-red-500' : 'text-ink'}`}>
+                                          {maintenanceStats.softDeleted}
+                                      </span>
+                                  )}
+                                  <span className="text-[10px] text-mute font-medium uppercase tracking-widest mb-1">DOKUMEN TERHAPUS</span>
+                              </div>
+                          </div>
+                          
+                          <button 
+                              onClick={() => handleExecuteMaintenance('softDeleted')}
+                              disabled={isCalculatingMaintenance || maintenanceStats.softDeleted === 0 || isLoading}
+                              className={`w-full py-4 text-[12px] font-medium uppercase tracking-widest transition-colors ${
+                                  maintenanceStats.softDeleted > 0 
+                                      ? 'bg-red-500 text-white hover:bg-red-600 border border-red-500' 
+                                      : 'bg-soft-cloud text-mute border border-hairline cursor-not-allowed'
+                              }`}
+                          >
+                              {isLoading ? 'MEMPROSES...' : 'KOSONGKAN TONG SAMPAH'}
+                          </button>
+                      </div>
+
+                      {/* ARCHIVE COMPLETED JOBS */}
+                      <div className="bg-canvas border border-hairline p-6 flex flex-col justify-between h-full">
+                          <div>
+                              <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-4">ARSIPKAN JOB SELESAI</h3>
+                              <p className="text-[10px] text-mute uppercase tracking-widest mb-6 min-h-[60px]">
+                                  Pindahkan Job Order (SPK) yang sudah berstatus selesai (closed) lebih dari 1 tahun ke status arsip untuk mempercepat loading data aktif.
+                              </p>
+                              
+                              <div className="flex items-end gap-2 mb-8">
+                                  {isCalculatingMaintenance ? (
+                                      <span className="text-[24px] font-display text-mute">...</span>
+                                  ) : (
+                                      <span className={`text-[48px] font-display leading-none ${maintenanceStats.completedOldJobs > 0 ? 'text-blue-500' : 'text-ink'}`}>
+                                          {maintenanceStats.completedOldJobs}
+                                      </span>
+                                  )}
+                                  <span className="text-[10px] text-mute font-medium uppercase tracking-widest mb-1">SPK LAMA</span>
+                              </div>
+                          </div>
+                          
+                          <button 
+                              onClick={() => handleExecuteMaintenance('archive')}
+                              disabled={isCalculatingMaintenance || maintenanceStats.completedOldJobs === 0 || isLoading}
+                              className={`w-full py-4 text-[12px] font-medium uppercase tracking-widest transition-colors ${
+                                  maintenanceStats.completedOldJobs > 0 
+                                      ? 'bg-ink text-canvas hover:bg-mute border border-ink' 
+                                      : 'bg-soft-cloud text-mute border border-hairline cursor-not-allowed'
+                              }`}
+                          >
+                              {isLoading ? 'MEMPROSES...' : 'ARSIPKAN DATA'}
+                          </button>
+                      </div>
                   </div>
               </div>
           )}

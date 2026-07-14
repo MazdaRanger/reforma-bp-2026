@@ -215,6 +215,7 @@ export interface Job {
   createdAt?: any; 
   updatedAt?: any; 
   isDeleted?: boolean;
+  isArchived?: boolean;
 
   crcFollowUpStatus?: 'Pending' | 'Contacted' | 'Unreachable';
   crcFollowUpDate?: any;
