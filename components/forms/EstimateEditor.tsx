@@ -88,14 +88,23 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serviceMasterList, setServiceMasterList] = useState<ServiceMasterItem[]>([]);
 
-    // Search Picker State
+    // Search Picker State — use per-type query maps to avoid cross-row interference
     const [activeSearch, setActiveSearch] = useState<{ type: 'jasa' | 'part', index: number } | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const searchRef = useRef<HTMLDivElement>(null);
+    // jasaQuery and partQuery store the search text per row index
+    const [jasaQuery, setJasaQuery] = useState<Record<number, string>>({});
+    const [partQuery, setPartQuery] = useState<Record<number, string>>({});
+    // Combined searchQuery for backward compat (used by part search effect)
+    const searchQuery = activeSearch?.type === 'jasa'
+        ? (jasaQuery[activeSearch.index] ?? '')
+        : activeSearch?.type === 'part'
+            ? (partQuery[activeSearch.index] ?? '')
+            : '';
 
     // ASYNC SEARCH STATE
     const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    // Track if dropdown was just interacted with (prevents onBlur from closing it)
+    const dropdownMouseDown = useRef(false);
 
     const [currentStatus, setCurrentStatus] = useState(job.statusKendaraan);
     const [currentPosisi, setCurrentPosisi] = useState(job.posisiKendaraan || 'Di Bengkel');
@@ -121,7 +130,6 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Optimized Search for Parts
     useEffect(() => {
         if (activeSearch?.type !== 'part' || !searchQuery || searchQuery.length < 2) {
             setSearchResults([]);
@@ -129,7 +137,6 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
         }
 
         // INTEGRATION OPTIMIZATION: Use Global State if available
-        // This makes searching for existing parts instant without network calls
         if (inventoryItems && inventoryItems.length > 0) {
             const term = searchQuery.toLowerCase();
             const matches = inventoryItems.filter(i =>
@@ -140,7 +147,7 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
             return;
         }
 
-        // Fallback: Fetch from Firestore (only if inventoryItems prop is empty/missing)
+        // Fallback: Fetch from Firestore
         const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
@@ -154,20 +161,12 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
             } finally {
                 setIsSearching(false);
             }
-        }, 500);
+        }, 300);
 
         return () => clearTimeout(timer);
     }, [searchQuery, activeSearch, inventoryItems]);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setActiveSearch(null);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    // REMOVED: global mousedown listener caused freeze — now handled per-input with onBlur+delay
 
     const loadServices = async () => {
         try {
@@ -206,6 +205,7 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
             price: calculateFinalServicePrice(service.basePrice, service.panelValue)
         };
         setJasaItems(newItems);
+        setJasaQuery(prev => ({ ...prev, [index]: service.serviceName }));
         setActiveSearch(null);
     };
 
@@ -221,6 +221,7 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
             isPriceMismatch: false
         };
         setPartItems(newItems);
+        setPartQuery(prev => ({ ...prev, [index]: part.name }));
         setActiveSearch(null);
     };
 
@@ -411,15 +412,32 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                             <input
                                                 type="text"
                                                 value={item.name}
-                                                onFocus={() => { setActiveSearch({ type: 'jasa', index: i }); setSearchQuery(''); }}
-                                                onChange={e => { setSearchQuery(e.target.value); updateItemRaw('jasa', i, 'name', e.target.value); }}
+                                                onFocus={() => setActiveSearch({ type: 'jasa', index: i })}
+                                                onBlur={() => {
+                                                    // Delay close so dropdown click registers before blur fires
+                                                    setTimeout(() => {
+                                                        if (!dropdownMouseDown.current) setActiveSearch(null);
+                                                        dropdownMouseDown.current = false;
+                                                    }, 200);
+                                                }}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setJasaQuery(prev => ({ ...prev, [i]: val }));
+                                                    updateItemRaw('jasa', i, 'name', val);
+                                                    // Ensure dropdown stays open while typing
+                                                    setActiveSearch({ type: 'jasa', index: i });
+                                                }}
                                                 className="w-full p-2 bg-gray-50 border-none rounded-lg font-bold text-gray-700 focus:ring-2 ring-indigo-500 transition-all disabled:opacity-60 placeholder-gray-400"
                                                 placeholder="Ketik nama pekerjaan..."
                                                 disabled={isLocked}
+                                                autoComplete="off"
                                             />
                                             {/* Service Dropdown */}
                                             {activeSearch?.type === 'jasa' && activeSearch.index === i && (
-                                                <div ref={searchRef} className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] max-h-60 overflow-y-auto animate-pop-in">
+                                                <div
+                                                    className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] max-h-60 overflow-y-auto animate-pop-in"
+                                                    onMouseDown={() => { dropdownMouseDown.current = true; }}
+                                                >
                                                     {filteredServices.map(s => (
                                                         <div key={s.id} onClick={() => selectService(i, s)} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0">
                                                             <div className="flex items-start justify-between">
@@ -436,7 +454,20 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    {filteredServices.length === 0 && <div className="p-3 text-center text-xs text-gray-400">Tidak ada jasa ditemukan.</div>}
+                                                    {filteredServices.length === 0 && (jasaQuery[i] || item.name) && (
+                                                        <div className="p-4 flex items-start gap-3 bg-amber-50">
+                                                            <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-xs font-bold text-amber-800">Pekerjaan tidak ditemukan di database</p>
+                                                                <p className="text-[10px] text-amber-600 mt-1">
+                                                                    "<span className="font-bold">{jasaQuery[i] || item.name}</span>" belum terdaftar. Harap hubungi Manager Bengkel untuk mendaftarkan pekerjaan baru.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {filteredServices.length === 0 && !(jasaQuery[i] || item.name) && (
+                                                        <div className="p-3 text-center text-xs text-gray-400">Ketik nama pekerjaan untuk mencari...</div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -481,11 +512,51 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                 <tr key={i} className={`group transition-colors ${item.isPriceMismatch ? 'bg-red-50/70 hover:bg-red-50' : 'hover:bg-gray-50'}`}>
                                     <td className="px-4 py-3 text-center text-gray-400 font-bold bg-gray-50/50 rounded-l-xl border-y border-l border-gray-100">{i + 1}</td>
                                     <td className="px-4 py-3 border-y border-gray-100">
-                                        <input type="text" value={item.number || ''} onFocus={() => { setActiveSearch({ type: 'part', index: i }); setSearchQuery(item.number || ''); }} onChange={e => { setSearchQuery(e.target.value); updateItemRaw('part', i, 'number', e.target.value); }} className="w-full p-2 bg-gray-50 border-none rounded-lg uppercase font-mono text-xs font-bold focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" placeholder="CARI..." disabled={isLocked} />
+                                        <input 
+                                            type="text" 
+                                            value={item.number || ''} 
+                                            onFocus={() => setActiveSearch({ type: 'part', index: i })}
+                                            onBlur={() => {
+                                                setTimeout(() => {
+                                                    if (!dropdownMouseDown.current) setActiveSearch(null);
+                                                    dropdownMouseDown.current = false;
+                                                }, 200);
+                                            }}
+                                            onChange={e => { 
+                                                const val = e.target.value;
+                                                setPartQuery(prev => ({ ...prev, [i]: val }));
+                                                updateItemRaw('part', i, 'number', val);
+                                                setActiveSearch({ type: 'part', index: i });
+                                            }} 
+                                            className="w-full p-2 bg-gray-50 border-none rounded-lg uppercase font-mono text-xs font-bold focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" 
+                                            placeholder="CARI..." 
+                                            disabled={isLocked}
+                                            autoComplete="off"
+                                        />
                                     </td>
                                     <td className="px-4 py-3 border-y border-gray-100 relative">
                                         <div className="relative">
-                                            <input type="text" value={item.name} onFocus={() => { setActiveSearch({ type: 'part', index: i }); setSearchQuery(item.name); }} onChange={e => { setSearchQuery(e.target.value); updateItemRaw('part', i, 'name', e.target.value); }} className="w-full p-2 bg-gray-50 border-none rounded-lg font-bold text-gray-700 focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" placeholder="SEARCH (DB)..." disabled={isLocked} />
+                                            <input 
+                                                type="text" 
+                                                value={item.name} 
+                                                onFocus={() => setActiveSearch({ type: 'part', index: i })}
+                                                onBlur={() => {
+                                                    setTimeout(() => {
+                                                        if (!dropdownMouseDown.current) setActiveSearch(null);
+                                                        dropdownMouseDown.current = false;
+                                                    }, 200);
+                                                }}
+                                                onChange={e => { 
+                                                    const val = e.target.value;
+                                                    setPartQuery(prev => ({ ...prev, [i]: val }));
+                                                    updateItemRaw('part', i, 'name', val);
+                                                    setActiveSearch({ type: 'part', index: i });
+                                                }} 
+                                                className="w-full p-2 bg-gray-50 border-none rounded-lg font-bold text-gray-700 focus:ring-2 ring-orange-500 transition-all disabled:opacity-60" 
+                                                placeholder="SEARCH (DB)..." 
+                                                disabled={isLocked}
+                                                autoComplete="off"
+                                            />
 
                                             {item.isPriceMismatch && (
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-red-600 animate-pulse bg-red-100 px-2 py-0.5 rounded text-[9px] font-black uppercase">
@@ -494,10 +565,13 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                             )}
 
                                             {activeSearch?.type === 'part' && activeSearch.index === i && (
-                                                <div ref={searchRef} className={`absolute left-0 top-full mt-2 w-[500px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-orange-100 z-[100] max-h-[400px] overflow-y-auto animate-pop-in scrollbar-thin backdrop-blur-md bg-white/98`}>
+                                                <div 
+                                                    className={`absolute left-0 top-full mt-2 w-[500px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-orange-100 z-[100] max-h-[400px] overflow-y-auto animate-pop-in scrollbar-thin backdrop-blur-md bg-white/98`}
+                                                    onMouseDown={() => { dropdownMouseDown.current = true; }}
+                                                >
                                                     <div className="p-3 bg-orange-50/50 border-b border-orange-100 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
                                                         <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">{lang === 'id' ? 'Cari di Master' : 'Search Master'}</span>
-                                                        <button onClick={() => setActiveSearch(null)} className="p-1 hover:bg-white rounded-full"><X size={14} className="text-orange-400" /></button>
+                                                        <button onMouseDown={e => e.preventDefault()} onClick={() => setActiveSearch(null)} className="p-1 hover:bg-white rounded-full"><X size={14} className="text-orange-400" /></button>
                                                     </div>
                                                     {isSearching && <div className="p-4 text-center text-xs text-gray-400"><Loader2 className="animate-spin inline mr-1" size={14} /> Mencari...</div>}
 
@@ -513,8 +587,19 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                                         </div>
                                                     ))}
 
-                                                    {!isSearching && searchResults.length === 0 && searchQuery && (
-                                                        <div className="p-4 text-center text-xs text-gray-400">Tidak ditemukan. Input manual diperbolehkan.</div>
+                                                    {!isSearching && searchResults.length === 0 && (partQuery[i] || item.name) && searchQuery.length >= 2 && (
+                                                        <div className="p-4 flex items-start gap-3 bg-orange-50/30">
+                                                            <AlertCircle size={16} className="text-orange-400 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-xs font-bold text-orange-700">Part tidak ditemukan di inventaris</p>
+                                                                <p className="text-[10px] text-orange-600 mt-1">
+                                                                    "<span className="font-bold">{partQuery[i] || item.name}</span>" tidak ada di database. Input manual tetap diperbolehkan.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {!isSearching && !searchQuery && (
+                                                        <div className="p-3 text-center text-xs text-gray-400">Ketik nama part atau nomor part untuk mencari...</div>
                                                     )}
                                                 </div>
                                             )}

@@ -26,11 +26,45 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
 
   const [materialSearchTerm, setMaterialSearchTerm] = useState(''); 
   const [inputQty, setInputQty] = useState<number | ''>(''); 
+  const [inputUnit, setInputUnit] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [selectedMaterialItem, setSelectedMaterialItem] = useState<InventoryItem | null>(null);
 
   const [fetchedInventoryItems, setFetchedInventoryItems] = useState<InventoryItem[]>([]);
   const [isFetchingItems, setIsFetchingItems] = useState(false);
+
+  // --- UNIT CONVERSION HELPERS ---
+  // Returns list of selectable input units based on the item's stock unit
+  const getInputUnitOptions = (stockUnit: string): string[] => {
+    if (stockUnit === 'Kg') return ['Gram', 'Kg'];
+    if (stockUnit === 'Gram') return ['Gram', 'Kg'];
+    if (stockUnit === 'Liter') return ['Ml', 'Liter'];
+    if (stockUnit === 'Ml') return ['Ml', 'Liter'];
+    return [stockUnit]; // same unit, no conversion
+  };
+
+  // Converts qty from inputUnit to stockUnit for stock deduction
+  const convertToStockUnit = (qty: number, from: string, to: string): number => {
+    if (from === to) return qty;
+    if (from === 'Gram' && to === 'Kg') return qty / 1000;
+    if (from === 'Kg' && to === 'Gram') return qty * 1000;
+    if (from === 'Ml' && to === 'Liter') return qty / 1000;
+    if (from === 'Liter' && to === 'Ml') return qty * 1000;
+    return qty; // fallback no conversion
+  };
+
+  // Cost per unit in input-unit terms
+  const getCostPerInputUnit = (item: InventoryItem, iUnit: string): number => {
+    if (!item) return 0;
+    const stockUnit = item.unit;
+    if (iUnit === stockUnit) return item.buyPrice;
+    // if input is Gram and stock is Kg: price per gram = pricePerKg / 1000
+    if (iUnit === 'Gram' && stockUnit === 'Kg') return item.buyPrice / 1000;
+    if (iUnit === 'Kg' && stockUnit === 'Gram') return item.buyPrice * 1000;
+    if (iUnit === 'Ml' && stockUnit === 'Liter') return item.buyPrice / 1000;
+    if (iUnit === 'Liter' && stockUnit === 'Ml') return item.buyPrice * 1000;
+    return item.buyPrice;
+  };
 
   const selectedJob = useMemo(() => activeJobs.find(j => j.id === selectedJobId), [activeJobs, selectedJobId]);
   
@@ -110,6 +144,8 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
   const handleSelectMaterial = (item: InventoryItem) => {
       setSelectedMaterialItem(item);
       setMaterialSearchTerm(item.name);
+      // Default input unit to stock unit
+      setInputUnit(item.unit);
   };
 
   const handleSparepartIssuance = async () => {
@@ -194,14 +230,20 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
 
       setIsSubmitting(true);
       try {
-          const qty = Number(inputQty);
-          const totalCost = qty * selectedMaterialItem.buyPrice;
+          const rawQty = Number(inputQty);
+          const stockUnit = selectedMaterialItem.unit;
+          const effectiveUnit = inputUnit || stockUnit;
+
+          // Deduct from stock in STOCK unit
+          const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
+          // Calculate cost based on stock-unit price
+          const totalCost = qtyInStockUnit * selectedMaterialItem.buyPrice;
 
           const batch = writeBatch(db);
           
           const invRef = doc(db, SPAREPART_COLLECTION, selectedMaterialItem.id);
           batch.update(invRef, {
-              stock: increment(-qty),
+              stock: increment(-qtyInStockUnit),
               updatedAt: serverTimestamp()
           });
 
@@ -209,8 +251,9 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
               itemId: selectedMaterialItem.id,
               itemName: selectedMaterialItem.name,
               itemCode: selectedMaterialItem.code,
-              qty: qty,
-              inputUnit: selectedMaterialItem.unit,
+              qty: qtyInStockUnit,          // stored in stock unit
+              inputQty: rawQty,             // original input qty
+              inputUnit: effectiveUnit,      // original input unit
               costPerUnit: selectedMaterialItem.buyPrice,
               totalCost: totalCost,
               category: 'material',
@@ -232,6 +275,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
           setSelectedMaterialItem(null);
           setMaterialSearchTerm('');
           setInputQty('');
+          setInputUnit('');
           setNotes('');
       } catch (e: any) {
           showNotification("Gagal input bahan: " + e.message, "error");
@@ -454,27 +498,61 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                                     <div className="p-4 bg-soft-cloud border border-hairline flex justify-between items-center animate-fade-in">
                                         <div>
                                             <div className="font-medium text-ink uppercase text-[16px]">{selectedMaterialItem.name}</div>
-                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-1">STOK TERSISA: {selectedMaterialItem.stock} {selectedMaterialItem.unit}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-1">STOK TERSISA: {selectedMaterialItem.stock} {selectedMaterialItem.unit} &nbsp;|&nbsp; HARGA: {formatCurrency(selectedMaterialItem.buyPrice)}/{selectedMaterialItem.unit}</div>
                                         </div>
-                                        <button type="button" onClick={() => { setSelectedMaterialItem(null); setMaterialSearchTerm(''); }} className="text-[10px] font-medium text-ink border border-ink hover:bg-canvas px-3 py-1 uppercase tracking-widest transition-colors">BATAL</button>
+                                        <button type="button" onClick={() => { setSelectedMaterialItem(null); setMaterialSearchTerm(''); setInputQty(''); setInputUnit(''); }} className="text-[10px] font-medium text-ink border border-ink hover:bg-canvas px-3 py-1 uppercase tracking-widest transition-colors">BATAL</button>
                                     </div>
                                 )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
                                     <div>
                                         <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">JUMLAH PAKAI</label>
-                                        <div className="flex items-center">
+                                        <div className="flex items-stretch">
                                             <input 
-                                                type="number" step="0.1" required
+                                                type="number" step="0.001" required
                                                 value={inputQty}
-                                                onChange={e => setInputQty(Number(e.target.value))}
+                                                onChange={e => setInputQty(e.target.value === '' ? '' : Number(e.target.value))}
                                                 className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase border-r-0"
                                                 placeholder="0.0"
                                             />
-                                            <span className="text-[14px] font-medium text-mute bg-soft-cloud px-4 py-4 border border-hairline uppercase">
-                                                {selectedMaterialItem?.unit || 'UNIT'}
-                                            </span>
+                                            {selectedMaterialItem && getInputUnitOptions(selectedMaterialItem.unit).length > 1 ? (
+                                                <select
+                                                    value={inputUnit || selectedMaterialItem.unit}
+                                                    onChange={e => setInputUnit(e.target.value)}
+                                                    className="text-[12px] font-medium text-ink bg-soft-cloud px-3 py-4 border border-hairline uppercase focus:outline-none focus:border-ink min-w-[80px]"
+                                                >
+                                                    {getInputUnitOptions(selectedMaterialItem.unit).map(u => (
+                                                        <option key={u} value={u}>{u.toUpperCase()}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <span className="text-[14px] font-medium text-mute bg-soft-cloud px-4 py-4 border border-hairline uppercase">
+                                                    {selectedMaterialItem?.unit || 'UNIT'}
+                                                </span>
+                                            )}
                                         </div>
+                                        {/* LIVE NOMINAL BIAYA */}
+                                        {selectedMaterialItem && inputQty !== '' && Number(inputQty) > 0 && (() => {
+                                            const rawQty = Number(inputQty);
+                                            const stockUnit = selectedMaterialItem.unit;
+                                            const effectiveUnit = inputUnit || stockUnit;
+                                            const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
+                                            const totalCost = qtyInStockUnit * selectedMaterialItem.buyPrice;
+                                            const needsConversion = effectiveUnit !== stockUnit;
+                                            return (
+                                                <div className="mt-3 p-3 bg-canvas border border-ink space-y-1 animate-fade-in">
+                                                    <div className="flex justify-between items-center text-[11px] font-medium text-ink uppercase tracking-widest">
+                                                        <span>NOMINAL BIAYA</span>
+                                                        <span className="text-[14px] font-medium">{formatCurrency(totalCost)}</span>
+                                                    </div>
+                                                    {needsConversion && (
+                                                        <div className="text-[10px] text-mute uppercase tracking-widest border-t border-hairline pt-1 mt-1">
+                                                            PENGURANGAN STOK: {qtyInStockUnit.toFixed(3)} {stockUnit}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     <div>
                                         <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">CATATAN</label>

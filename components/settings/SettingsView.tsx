@@ -160,8 +160,35 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
   };
 
   const handleCleanupDuplicates = async () => { if (!isManager) return; setIsLoading(true); try { const seen = new Set<string>(); const toDelete: string[] = []; for (const s of services) { const key = `${s.serviceName.trim().toLowerCase()}_${s.workType}`; if (seen.has(key)) toDelete.push(s.id); else seen.add(key); } if (toDelete.length === 0) { showNotification("TIDAK ADA DUPLIKAT.", "success"); return; } if (window.confirm(`HAPUS ${toDelete.length} DUPLIKAT?`)) { for (const id of toDelete) await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("PEMBERSIHAN SELESAI.", "success"); } } catch (e: any) { showNotification("GAGAL: " + e.message, "error"); } finally { setIsLoading(false); } };
-  const handleSaveService = async (e: React.FormEvent) => { e.preventDefault(); if (!isManager) return; setIsLoading(true); try { const payload = { ...serviceForm, serviceCode: serviceForm.serviceCode?.toUpperCase() || '' }; if (serviceForm.id) await updateDoc(doc(db, SERVICES_MASTER_COLLECTION, serviceForm.id), payload); else await addDoc(collection(db, SERVICES_MASTER_COLLECTION), { ...payload, createdAt: serverTimestamp() }); showNotification("DATA DIPERBARUI", "success"); setServiceForm({ serviceCode: '', workType: 'KC', panelValue: 1.0 }); setIsEditingService(false); } catch (e: any) { showNotification("GAGAL: " + e.message, "error"); } finally { setIsLoading(false); } };
-  const handleDeleteService = async (id: string) => { if (!isManager || !window.confirm("HAPUS?")) return; try { await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification("TERHAPUS", "success"); } catch(e) { showNotification("GAGAL", "error"); } };
+  const handleSaveService = async (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    if (!isManager) return; 
+    
+    const newCode = serviceForm.serviceCode?.toUpperCase().trim() || '';
+    
+    // DUPLICATE CHECK: serviceCode must be unique (exclude current item if editing)
+    if (newCode) {
+      const isDuplicate = services.some(s => 
+        s.serviceCode?.toUpperCase().trim() === newCode && 
+        s.id !== serviceForm.id // allow same code for the item being edited
+      );
+      if (isDuplicate) {
+        showNotification(`GAGAL: KODE PANEL "${newCode}" SUDAH DIGUNAKAN OLEH ITEM LAIN. GUNAKAN KODE YANG BERBEDA.`, 'error');
+        return;
+      }
+    }
+    
+    setIsLoading(true); 
+    try { 
+      const payload = { ...serviceForm, serviceCode: newCode }; 
+      if (serviceForm.id) await updateDoc(doc(db, SERVICES_MASTER_COLLECTION, serviceForm.id), payload); 
+      else await addDoc(collection(db, SERVICES_MASTER_COLLECTION), { ...payload, createdAt: serverTimestamp() }); 
+      showNotification('DATA DIPERBARUI', 'success'); 
+      setServiceForm({ serviceCode: '', workType: 'KC', panelValue: 1.0 }); 
+      setIsEditingService(false); 
+    } catch (e: any) { showNotification('GAGAL: ' + e.message, 'error'); } finally { setIsLoading(false); } 
+  };
+  const handleDeleteService = async (id: string) => { if (!isManager || !window.confirm('HAPUS?')) return; try { await deleteDoc(doc(db, SERVICES_MASTER_COLLECTION, id)); showNotification('TERHAPUS', 'success'); } catch(e) { showNotification('GAGAL', 'error'); } };
   
   const handleDownloadServiceTemplate = () => { const headers = [['Kode Jasa', 'Nama Jasa', 'Jenis Pekerjaan (KC/GTC/BP)', 'Nilai Panel', 'Harga Dasar']]; const sampleData = services.map(s => [s.serviceCode || '', s.serviceName, s.workType, s.panelValue, s.basePrice]); const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Jasa"); XLSX.writeFile(wb, "Master_Jasa_Panel.xlsx"); };
 
@@ -638,14 +665,83 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                       </div>
                     </div>
                     <div className="bg-canvas p-6 border border-hairline h-fit flex flex-col sticky top-4">
-                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-6">{isEditingService ? 'EDIT JASA' : 'INPUT JASA BARU'}</h3>
+                      <h3 className="text-[14px] font-medium text-ink uppercase tracking-widest mb-2">{isEditingService ? 'EDIT JASA' : 'INPUT JASA BARU'}</h3>
+                      
+                      {/* KODE PANEL TERAKHIR DIGUNAKAN */}
+                      {(() => {
+                        const sorted = [...services]
+                          .filter(s => s.serviceCode)
+                          .sort((a, b) => {
+                            const tA = a.createdAt?.seconds || 0;
+                            const tB = b.createdAt?.seconds || 0;
+                            return tB - tA;
+                          });
+                        const lastUsed = sorted[0];
+                        return lastUsed ? (
+                          <div className="mb-4 p-3 bg-soft-cloud border border-hairline">
+                            <div className="text-[9px] font-medium text-mute uppercase tracking-widest mb-1">KODE PANEL TERAKHIR DIGUNAKAN</div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-display text-[20px] text-ink">{lastUsed.serviceCode}</span>
+                              <span className="text-[10px] text-mute uppercase tracking-widest flex-1 truncate">{lastUsed.serviceName}</span>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
                       <form onSubmit={handleSaveService} className="space-y-[16px]">
-                        <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA PEKERJAAN *</label><input disabled={!isManager} required type="text" value={serviceForm.serviceName || ''} onChange={e => setServiceForm({...serviceForm, serviceName: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" /></div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NAMA PEKERJAAN *</label>
+                          <input disabled={!isManager} required type="text" value={serviceForm.serviceName || ''} onChange={e => setServiceForm({...serviceForm, serviceName: e.target.value})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase" placeholder="CONTOH: CAT FULL PANEL PINTU" />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">KODE PANEL</label>
+                            {(() => {
+                              const currentCode = serviceForm.serviceCode?.toUpperCase().trim() || '';
+                              const isDup = currentCode ? services.some(s => s.serviceCode?.toUpperCase().trim() === currentCode && s.id !== serviceForm.id) : false;
+                              return (
+                                <>
+                                  <input 
+                                    disabled={!isManager} 
+                                    type="text" 
+                                    value={serviceForm.serviceCode || ''} 
+                                    onChange={e => setServiceForm({...serviceForm, serviceCode: e.target.value.toUpperCase()})} 
+                                    className={`w-full p-4 border bg-canvas focus:outline-none font-medium text-[12px] text-ink uppercase ${isDup ? 'border-red-400 focus:border-red-500' : 'border-hairline focus:border-ink'}`} 
+                                    placeholder="BP001" 
+                                  />
+                                  {isDup && <p className="text-[9px] text-red-600 uppercase tracking-widest mt-1">KODE SUDAH TERPAKAI</p>}
+                                </>
+                              );
+                            })()}
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">JENIS PEKERJAAN</label>
+                            <select 
+                              disabled={!isManager} 
+                              value={serviceForm.workType || 'KC'} 
+                              onChange={e => setServiceForm({...serviceForm, workType: e.target.value as any})} 
+                              className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
+                            >
+                              <option value="KC">KC</option>
+                              <option value="GTC">GTC</option>
+                              <option value="BP">BP</option>
+                              <option value="Lainnya">LAINNYA</option>
+                            </select>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">NILAI PANEL</label><input disabled={!isManager} type="number" step="0.1" value={serviceForm.panelValue || 0} onChange={e => setServiceForm({...serviceForm, panelValue: Number(e.target.value)})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"/></div>
                           <div><label className="block text-[10px] font-medium text-mute uppercase tracking-widest mb-2">HARGA DASAR</label><input disabled={!isManager} type="number" value={serviceForm.basePrice || 0} onChange={e => setServiceForm({...serviceForm, basePrice: Number(e.target.value)})} className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"/></div>
                         </div>
-                        <button disabled={isLoading || !isManager} type="submit" className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors mt-4">{isLoading ? 'PROSES...' : 'SIMPAN DATA'}</button>
+
+                        <div className="flex gap-3 pt-2">
+                          {isEditingService && (
+                            <button type="button" onClick={() => { setServiceForm({ serviceCode: '', workType: 'KC', panelValue: 1.0 }); setIsEditingService(false); }} className="flex-1 border border-hairline hover:border-ink text-ink py-4 text-[12px] font-medium uppercase tracking-widest transition-colors">BATAL EDIT</button>
+                          )}
+                          <button disabled={isLoading || !isManager} type="submit" className="flex-1 bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors">{isLoading ? 'PROSES...' : (isEditingService ? 'UPDATE DATA' : 'SIMPAN DATA')}</button>
+                        </div>
                       </form>
 
                       <div className="mt-[48px] pt-[24px] border-t border-hairline">

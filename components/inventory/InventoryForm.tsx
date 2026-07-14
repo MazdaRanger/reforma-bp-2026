@@ -175,6 +175,8 @@ const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, activeCatego
                                 <option value="Liter">LITER</option>
                                 <option value="Kaleng">KALENG</option>
                                 <option value="Kg">KG</option>
+                                <option value="Gram">GRAM</option>
+                                <option value="Ml">ML (MILILITER)</option>
                                 <option value="Pcs">PCS (LEMBAR/ROLL)</option>
                             </>
                         )}
