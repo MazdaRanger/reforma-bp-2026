@@ -1,5 +1,16 @@
-
 import { Settings, Job } from '../types';
+
+export const PRODUCTION_STAGES = [
+    "Persiapan Kendaraan",
+    "Bongkar",
+    "Las Ketok",
+    "Dempul",
+    "Cat",
+    "Pemasangan",
+    "Poles",
+    "Finishing",
+    "Quality Control",
+];
 
 export const carBrands = ["Mazda", "Toyota", "Honda", "Mitsubishi", "Suzuki", "Daihatsu", "Nissan", "Hyundai", "Wuling", "BMW", "Mercedes-Benz", "Lainnya"];
 export const mazdaModels = ["Mazda 2", "Mazda 2 HB", "Mazda 3", "Mazda 3 HB", "Mazda 6", "Mazda CX-3", "Mazda CX-30", "Mazda CX-5", "Mazda CX-60", "Mazda CX-8", "Mazda CX-9", "Mazda MX-5", "Mazda CX-80 (PHEV)", "Mazda MX-30 EV", "Mazda Biante", "Lainnya"];
@@ -17,6 +28,7 @@ export const initialSettingsState: Settings = {
     monthlyTarget: 600000000,
     weeklyTarget: 150000000,
     mechanicPanelRate: 40000, // Default Wage Rate
+    stagePanelRates: {},
     afterServiceFollowUpDays: 3,
     nationalHolidays: [],
     mechanicNames: ["Mekanik A", "Mekanik B", "Mekanik C", "Mekanik D"].sort(),

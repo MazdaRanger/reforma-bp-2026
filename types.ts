@@ -25,6 +25,7 @@ export interface Settings {
   monthlyTarget: number;
   weeklyTarget: number;
   mechanicPanelRate: number; // Added wage rate per panel
+  stagePanelRates?: Record<string, number>;
   afterServiceFollowUpDays: number;
   nationalHolidays: string[];
   internalHolidays?: string[];

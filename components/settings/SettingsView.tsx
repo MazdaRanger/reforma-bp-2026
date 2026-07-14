@@ -5,6 +5,7 @@ import { getAuth, createUserWithEmailAndPassword, signOut as firebaseSignOut, up
 import { db, auth, firebaseConfig, SETTINGS_COLLECTION, SERVICES_MASTER_COLLECTION, USERS_COLLECTION, SERVICE_JOBS_COLLECTION, PURCHASE_ORDERS_COLLECTION } from '../../services/firebase';
 import { Settings, UserPermissions, UserProfile, Supplier, ServiceMasterItem, Job, PurchaseOrder } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
+import { PRODUCTION_STAGES } from '../../utils/constants';
 import * as XLSX from 'xlsx';
 import Modal from '../ui/Modal';
 
@@ -723,19 +724,43 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
               <div className={`space-y-[48px] animate-fade-in ${restrictedClass}`}>
                   <RestrictedOverlay />
                   
-                  <div className="bg-canvas p-6 border border-ink flex items-center justify-between">
-                      <div>
-                          <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">STANDAR GAJI MEKANIK (PER PANEL)</h4>
-                          <p className="text-[10px] text-mute mt-2 uppercase tracking-widest">NILAI INI DIGUNAKAN UNTUK MENGHITUNG ESTIMASI GAJI TEKNISI DI LAPORAN PRODUKSI.</p>
+                  <div className="bg-canvas p-6 border border-ink flex flex-col gap-6">
+                      <div className="flex flex-col gap-2 border-b border-hairline pb-4">
+                          <h4 className="font-medium text-ink uppercase tracking-widest text-[14px]">STANDAR GAJI MEKANIK (PER KATEGORI / STALL)</h4>
+                          <p className="text-[10px] text-mute uppercase tracking-widest leading-relaxed">TENTUKAN TARIF GAJI PER PANEL BERDASARKAN KATEGORI STALL. KOSONGKAN/NOL JIKA INGIN MENGGUNAKAN TARIF DASAR SEBAGAI PENGGANTI.</p>
                       </div>
-                      <div className="relative">
-                          <span className="absolute left-4 top-[1.15rem] font-medium text-ink text-[14px]">RP</span>
-                          <input 
-                              type="number" 
-                              className="w-48 pl-12 p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-display text-[16px] text-ink uppercase"
-                              value={localSettings.mechanicPanelRate || 0}
-                              onChange={e => handleChange('mechanicPanelRate', Number(e.target.value))}
-                          />
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                          <div className="flex flex-col gap-2 bg-soft-cloud p-4 border border-ink">
+                              <label className="text-[10px] font-bold text-ink uppercase tracking-widest">TARIF DASAR (FALLBACK)</label>
+                              <div className="relative">
+                                  <span className="absolute left-3 top-2.5 font-medium text-ink text-[12px]">RP</span>
+                                  <input 
+                                      type="number" 
+                                      className="w-full pl-10 p-2 border border-ink bg-canvas focus:outline-none font-display text-[14px] text-ink"
+                                      value={localSettings.mechanicPanelRate || 0}
+                                      onChange={e => handleChange('mechanicPanelRate', Number(e.target.value))}
+                                  />
+                              </div>
+                          </div>
+                          {PRODUCTION_STAGES.map(stage => (
+                              <div key={stage} className="flex flex-col gap-2">
+                                  <label className="text-[10px] font-medium text-mute uppercase tracking-widest">{stage}</label>
+                                  <div className="relative">
+                                      <span className="absolute left-3 top-2.5 font-medium text-ink text-[12px]">RP</span>
+                                      <input 
+                                          type="number" 
+                                          className="w-full pl-10 p-2 border border-hairline hover:border-ink bg-canvas focus:outline-none font-display text-[14px] text-ink transition-colors"
+                                          value={localSettings.stagePanelRates?.[stage] || 0}
+                                          onChange={e => {
+                                              const updatedRates = { ...(localSettings.stagePanelRates || {}) };
+                                              updatedRates[stage] = Number(e.target.value);
+                                              handleChange('stagePanelRates', updatedRates);
+                                          }}
+                                      />
+                                  </div>
+                              </div>
+                          ))}
                       </div>
                   </div>
 

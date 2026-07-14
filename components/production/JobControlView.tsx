@@ -3,6 +3,7 @@ import { Job, Settings, UserPermissions, MechanicAssignment, InventoryItem } fro
 import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { formatPoliceNumber, formatDateIndo, formatCurrency } from '../../utils/helpers';
+import { PRODUCTION_STAGES } from '../../utils/constants';
 import Modal from '../ui/Modal';
 
 interface JobControlViewProps {
@@ -12,19 +13,6 @@ interface JobControlViewProps {
   userPermissions: UserPermissions;
   inventoryItems: InventoryItem[];
 }
-
-const STAGES = [
-    "Persiapan Kendaraan",
-    "Bongkar",
-    "Las Ketok",
-    "Dempul",
-    "Cat",
-    "Pemasangan",
-    "Poles",
-    "Finishing",
-    "Quality Control",
-    "Selesai (Tunggu Pengambilan)" 
-];
 
 const ADMIN_HURDLE_STATUSES = [
     "Banding Harga SPK",
@@ -107,9 +95,9 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
 
   const boardData = useMemo(() => {
       const columns: Record<string, Job[]> = {};
-      STAGES.forEach(s => columns[s] = []);
+      PRODUCTION_STAGES.forEach(s => columns[s] = []);
       activeProductionJobs.forEach(job => {
-          let status = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
+          let status = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (PRODUCTION_STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
           if (job.statusKendaraan === 'Selesai (Tunggu Pengambilan)') status = "Selesai (Tunggu Pengambilan)";
           if (columns[status]) columns[status].push(job);
       });
@@ -221,13 +209,13 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           return;
       }
 
-      let currentIndex = STAGES.indexOf(job.statusPekerjaan);
+      let currentIndex = PRODUCTION_STAGES.indexOf(job.statusPekerjaan);
       if (currentIndex === -1) currentIndex = 1; 
       let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
       
       if (direction === 'next') {
-          if (newIndex >= STAGES.length) { showNotification("Unit sudah di tahap akhir produksi.", "info"); return; }
-          const newStage = STAGES[newIndex];
+          if (newIndex >= PRODUCTION_STAGES.length) { showNotification("Unit sudah di tahap akhir produksi.", "info"); return; }
+          const newStage = PRODUCTION_STAGES[newIndex];
           const isFinalStage = newStage === "Selesai (Tunggu Pengambilan)";
           const confirmMsg = isFinalStage ? "Tandai perbaikan SELESAI? Unit akan diteruskan ke Tim CRC untuk memanggil pemilik." : `Pindahkan unit ke stall ${newStage}?`;
           if(!window.confirm(confirmMsg)) return;
@@ -241,9 +229,9 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, job.id), updatePayload);
           showNotification(isFinalStage ? "Unit Selesai & CRC Notified." : `Update: ${newStage}`, "success");
       } else if (direction === 'prev' && newIndex >= 0) {
-          const reason = window.prompt(`Alasan re-work ke ${STAGES[newIndex]}:`);
+          const reason = window.prompt(`Alasan re-work ke ${PRODUCTION_STAGES[newIndex]}:`);
           if (!reason) return;
-          const newStage = STAGES[newIndex];
+          const newStage = PRODUCTION_STAGES[newIndex];
           const isFromFinal = job.statusKendaraan === "Selesai (Tunggu Pengambilan)";
           await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, job.id), { 
               statusPekerjaan: newStage, 
@@ -267,7 +255,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
   };
 
   const handleAssignMechanic = async (job: Job, mechanicName: string) => {
-      let currentStage = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
+      let currentStage = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (PRODUCTION_STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
       
       const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
       let currentAssignments = [...(job.assignedMechanics || [])];
@@ -308,7 +296,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
   };
 
   const aggregatedReport = useMemo(() => {
-      const report: Record<string, { totalUnit: number, totalPanel: number, details: any[] }> = {};
+      const report: Record<string, { totalUnit: number, totalPanel: number, totalWage: number, details: any[] }> = {};
       const start = new Date(reportStartDate);
       const end = new Date(reportEndDate);
       end.setHours(23, 59, 59);
@@ -319,24 +307,28 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           job.assignedMechanics.forEach(asg => {
               const assignDate = new Date(asg.assignedAt);
               if (assignDate >= start && assignDate <= end) {
-                  if (!report[asg.name]) report[asg.name] = { totalUnit: 0, totalPanel: 0, details: [] };
+                  if (!report[asg.name]) report[asg.name] = { totalUnit: 0, totalPanel: 0, totalWage: 0, details: [] };
                   
                   const panels = asg.panelCount || 0; 
+                  const rate = settings.stagePanelRates?.[asg.stage] || settings.mechanicPanelRate || 0;
+                  const wage = panels * rate;
                   
                   report[asg.name].totalUnit++;
                   report[asg.name].totalPanel += panels;
+                  report[asg.name].totalWage += wage;
                   report[asg.name].details.push({
                       date: asg.assignedAt,
                       nopol: job.policeNumber,
                       car: job.carModel,
                       stage: asg.stage,
-                      panels: panels
+                      panels: panels,
+                      wage: wage
                   });
               }
           });
       });
       return report;
-  }, [jobs, reportStartDate, reportEndDate]);
+  }, [jobs, reportStartDate, reportEndDate, settings]);
 
   return (
     <div className="animate-fade-in pb-[48px] h-full flex flex-col">
@@ -383,7 +375,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
         {/* KANBAN BOARD */}
         <div className="flex-grow overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
             <div className="flex gap-6 h-full min-w-max">
-                {STAGES.map((stage) => {
+                {PRODUCTION_STAGES.map((stage) => {
                     const jobsInStage = boardData[stage] || [];
                     const isPersiapan = stage === "Persiapan Kendaraan";
                     const isFinal = stage === "Selesai (Tunggu Pengambilan)";
@@ -571,7 +563,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                     <div className="md:text-right">
                         <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-2">Total Estimasi Gaji Periode Ini</p>
                         <p className="text-[32px] font-display text-ink leading-none">
-                            {formatCurrency(Object.values(aggregatedReport).reduce((acc: number, curr: any) => acc + (curr.totalPanel * (settings.mechanicPanelRate || 0)), 0) as number)}
+                            {formatCurrency(Object.values(aggregatedReport).reduce((acc: number, curr: any) => acc + (curr.totalWage || 0), 0) as number)}
                         </p>
                     </div>
                 </div>
@@ -588,7 +580,7 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-hairline">
-                            {Object.entries(aggregatedReport).map(([name, data]: [string, { totalUnit: number, totalPanel: number, details: any[] }]) => (
+                            {Object.entries(aggregatedReport).map(([name, data]: [string, any]) => (
                                 <tr key={name} className="hover:bg-soft-cloud transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="text-[14px] font-medium text-ink uppercase tracking-widest">{name}</div>
@@ -602,9 +594,9 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                             {data.totalPanel.toFixed(1)} PNL
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-mute text-[14px]">{formatCurrency(settings.mechanicPanelRate || 0)}</td>
+                                    <td className="px-6 py-4 text-right text-mute text-[12px]">VARIAN STALL</td>
                                     <td className="px-6 py-4 text-right font-medium text-ink text-[14px]">
-                                        {formatCurrency(data.totalPanel * (settings.mechanicPanelRate || 0))}
+                                        {formatCurrency(data.totalWage)}
                                     </td>
                                 </tr>
                             ))}
