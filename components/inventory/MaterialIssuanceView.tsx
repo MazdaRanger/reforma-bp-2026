@@ -368,7 +368,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
         </div>
 
         {/* WORK ORDER SELECTOR */}
-        <div className="bg-canvas border border-hairline mb-[48px] relative rounded-2xl overflow-hidden">
+        <div className="bg-canvas border border-hairline mb-[48px] relative rounded-2xl">
             <div className="relative">
                 <input 
                     type="text" 

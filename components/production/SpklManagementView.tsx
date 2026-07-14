@@ -148,7 +148,7 @@ const SpklManagementView: React.FC<SpklManagementViewProps> = ({ jobs, suppliers
         </div>
 
         {/* SEARCH WORK ORDER */}
-        <div className="mb-[48px] bg-canvas border border-hairline relative rounded-2xl overflow-hidden">
+        <div className="mb-[48px] bg-canvas border border-hairline relative rounded-2xl">
             <div className="relative">
                 <input 
                     type="text" 

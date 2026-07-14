@@ -687,14 +687,22 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
+      const baseStyle = "px-3 py-1 uppercase tracking-widest text-[10px] font-bold rounded-full border";
       switch (status) {
-          case 'Draft': return <span className="px-2 py-1 bg-soft-cloud text-mute border border-hairline uppercase tracking-widest text-[10px]">DRAFT</span>;
-          case 'Pending Approval': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px] animate-pulse">PENDING APPROVAL</span>;
-          case 'Ordered': return <span className="px-2 py-1 bg-ink text-canvas border border-ink uppercase tracking-widest text-[10px]">ORDERED</span>;
-          case 'Partial': return <span className="px-2 py-1 bg-canvas text-ink border border-ink uppercase tracking-widest text-[10px]">PARTIAL</span>;
-          case 'Received': return <span className="px-2 py-1 bg-canvas text-ink border border-hairline uppercase tracking-widest text-[10px] opacity-70 rounded-2xl overflow-hidden">RECEIVED</span>;
-          case 'Rejected': return <span className="px-2 py-1 bg-soft-cloud text-ink border border-ink uppercase tracking-widest text-[10px]">REJECTED</span>;
-          case 'Cancelled': return <span className="px-2 py-1 bg-soft-cloud text-mute border border-hairline uppercase tracking-widest text-[10px]">CANCELLED</span>;
+          case 'Draft': 
+              return <span className={`${baseStyle} bg-soft-cloud text-mute border-hairline`}>DRAFT</span>;
+          case 'Pending Approval': 
+              return <span className={`${baseStyle} bg-canvas text-ink border-ink animate-pulse`}>PENDING APPROVAL</span>;
+          case 'Ordered': 
+              return <span className={`${baseStyle} bg-ink text-canvas border-ink`} style={{ color: 'var(--canvas)' }}>ORDERED</span>;
+          case 'Partial': 
+              return <span className={`${baseStyle} bg-canvas text-ink border-ink`}>PARTIAL</span>;
+          case 'Received': 
+              return <span className={`${baseStyle} bg-canvas text-ink border-hairline opacity-70`}>RECEIVED</span>;
+          case 'Rejected': 
+              return <span className={`${baseStyle} bg-sale text-canvas border-sale`} style={{ color: 'var(--canvas)' }}>REJECTED</span>;
+          case 'Cancelled': 
+              return <span className={`${baseStyle} bg-soft-cloud text-mute border-hairline opacity-70`}>CANCELLED</span>;
           default: return null;
       }
   };
