@@ -454,17 +454,23 @@ const EstimateEditor: React.FC<EstimateEditorProps> = ({
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    {filteredServices.length === 0 && (jasaQuery[i] || item.name) && (
-                                                        <div className="p-4 flex items-start gap-3 bg-amber-50">
-                                                            <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                                                            <div>
-                                                                <p className="text-xs font-bold text-amber-800">Pekerjaan tidak ditemukan di database</p>
-                                                                <p className="text-[10px] text-amber-600 mt-1">
-                                                                    "<span className="font-bold">{jasaQuery[i] || item.name}</span>" belum terdaftar. Harap hubungi Manager Bengkel untuk mendaftarkan pekerjaan baru.
-                                                                </p>
+                                                    {(() => {
+                                                        const typedName = (jasaQuery[i] !== undefined ? jasaQuery[i] : item.name) || '';
+                                                        const hasExactMatch = filteredServices.some(s => s.serviceName.toLowerCase() === typedName.trim().toLowerCase());
+                                                        const showWarning = typedName.trim().length > 0 && !hasExactMatch;
+
+                                                        return showWarning ? (
+                                                            <div className="p-4 flex items-start gap-3 bg-amber-50 border-t border-amber-100">
+                                                                <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-amber-800">Pekerjaan belum terdaftar</p>
+                                                                    <p className="text-[10px] text-amber-600 mt-1">
+                                                                        "<span className="font-bold">{typedName}</span>" tidak memiliki kecocokan persis di database. Anda tetap bisa menggunakan nama ini, tapi disarankan hubungi Manager untuk mendaftarkan pekerjaan baru.
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        ) : null;
+                                                    })()}
                                                     {filteredServices.length === 0 && !(jasaQuery[i] || item.name) && (
                                                         <div className="p-3 text-center text-xs text-gray-400">Ketik nama pekerjaan untuk mencari...</div>
                                                     )}

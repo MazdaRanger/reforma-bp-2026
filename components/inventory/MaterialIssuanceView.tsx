@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Job, InventoryItem, UserPermissions, Supplier, Settings } from '../../types';
 import { doc, updateDoc, increment, arrayUnion, serverTimestamp, writeBatch, collection, query, getDocs, where, documentId } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION, SPAREPART_COLLECTION } from '../../services/firebase';
 import { formatCurrency, formatDateIndo } from '../../utils/helpers';
+import { Plus, Trash2, Search, X, Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface MaterialIssuanceViewProps {
   activeJobs: Job[];
@@ -24,11 +25,19 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
   
   const [selectedPartIndices, setSelectedPartIndices] = useState<number[]>([]);
 
-  const [materialSearchTerm, setMaterialSearchTerm] = useState(''); 
-  const [inputQty, setInputQty] = useState<number | ''>(''); 
-  const [inputUnit, setInputUnit] = useState<string>('');
-  const [notes, setNotes] = useState('');
-  const [selectedMaterialItem, setSelectedMaterialItem] = useState<InventoryItem | null>(null);
+  interface MaterialRowItem {
+      inventoryItem: InventoryItem | null;
+      query: string;
+      qty: number | '';
+      inputUnit: string;
+      notes: string;
+  }
+
+  const [materialItems, setMaterialItems] = useState<MaterialRowItem[]>([
+      { inventoryItem: null, query: '', qty: '', inputUnit: '', notes: '' }
+  ]);
+  const [activeMaterialSearch, setActiveMaterialSearch] = useState<number | null>(null);
+  const materialDropdownMouseDown = useRef(false);
 
   const [fetchedInventoryItems, setFetchedInventoryItems] = useState<InventoryItem[]>([]);
   const [isFetchingItems, setIsFetchingItems] = useState(false);
@@ -131,21 +140,37 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
       resolveJobParts();
   }, [selectedJob, issuanceType, inventoryItems]);
 
-  const materialSearchResults = useMemo(() => {
-      if (issuanceType !== 'material' || materialSearchTerm.length < 2) return [];
-      
-      const term = materialSearchTerm.toLowerCase();
+  const getMaterialResults = (query: string) => {
+      if (issuanceType !== 'material' || !query || query.length < 2) return [];
+      const term = query.toLowerCase();
       return inventoryItems.filter(i => 
           i.category === 'material' && 
           (i.name.toLowerCase().includes(term) || (i.code && i.code.toLowerCase().includes(term)))
       ).slice(0, 50);
-  }, [inventoryItems, materialSearchTerm, issuanceType]);
+  };
 
-  const handleSelectMaterial = (item: InventoryItem) => {
-      setSelectedMaterialItem(item);
-      setMaterialSearchTerm(item.name);
-      // Default input unit to stock unit
-      setInputUnit(item.unit);
+  const handleSelectMaterial = (index: number, item: InventoryItem) => {
+      const newItems = [...materialItems];
+      newItems[index] = {
+          ...newItems[index],
+          inventoryItem: item,
+          query: item.name,
+          inputUnit: item.unit // Default input unit to stock unit
+      };
+      setMaterialItems(newItems);
+      setActiveMaterialSearch(null);
+  };
+
+  const addMaterialRow = () => {
+      setMaterialItems([...materialItems, { inventoryItem: null, query: '', qty: '', inputUnit: '', notes: '' }]);
+  };
+
+  const removeMaterialRow = (index: number) => {
+      if (materialItems.length === 1) {
+          setMaterialItems([{ inventoryItem: null, query: '', qty: '', inputUnit: '', notes: '' }]);
+      } else {
+          setMaterialItems(materialItems.filter((_, i) => i !== index));
+      }
   };
 
   const handleSparepartIssuance = async () => {
@@ -226,57 +251,65 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
 
   const handleMaterialIssuance = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!selectedJob || !selectedMaterialItem || !inputQty) return;
+      if (!selectedJob) return;
+
+      const validItems = materialItems.filter(i => i.inventoryItem && i.qty !== '' && Number(i.qty) > 0);
+      if (validItems.length === 0) {
+          showNotification("Tidak ada bahan valid untuk dicatat. Pastikan nama bahan dan jumlah terisi.", "error");
+          return;
+      }
 
       setIsSubmitting(true);
       try {
-          const rawQty = Number(inputQty);
-          const stockUnit = selectedMaterialItem.unit;
-          const effectiveUnit = inputUnit || stockUnit;
-
-          // Deduct from stock in STOCK unit
-          const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
-          // Calculate cost based on stock-unit price
-          const totalCost = qtyInStockUnit * selectedMaterialItem.buyPrice;
-
           const batch = writeBatch(db);
+          const jobRef = doc(db, SERVICE_JOBS_COLLECTION, selectedJob.id);
           
-          const invRef = doc(db, SPAREPART_COLLECTION, selectedMaterialItem.id);
-          batch.update(invRef, {
-              stock: increment(-qtyInStockUnit),
-              updatedAt: serverTimestamp()
+          let totalCostAllMaterials = 0;
+          const newLogs: any[] = [];
+
+          validItems.forEach(item => {
+              const selectedItem = item.inventoryItem!;
+              const rawQty = Number(item.qty);
+              const stockUnit = selectedItem.unit;
+              const effectiveUnit = item.inputUnit || stockUnit;
+
+              // Deduct from stock in STOCK unit
+              const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
+              const totalCost = qtyInStockUnit * selectedItem.buyPrice;
+              totalCostAllMaterials += totalCost;
+
+              const invRef = doc(db, SPAREPART_COLLECTION, selectedItem.id);
+              batch.update(invRef, {
+                  stock: increment(-qtyInStockUnit),
+                  updatedAt: serverTimestamp()
+              });
+
+              newLogs.push({
+                  itemId: selectedItem.id,
+                  itemName: selectedItem.name,
+                  itemCode: selectedItem.code,
+                  qty: qtyInStockUnit,          // stored in stock unit
+                  inputQty: rawQty,             // original input qty
+                  inputUnit: effectiveUnit,      // original input unit
+                  costPerUnit: selectedItem.buyPrice,
+                  totalCost: totalCost,
+                  category: 'material',
+                  notes: item.notes || 'Pemakaian Bahan',
+                  issuedAt: new Date().toISOString(),
+                  issuedBy: userPermissions.role
+              });
           });
 
-          const logEntry = {
-              itemId: selectedMaterialItem.id,
-              itemName: selectedMaterialItem.name,
-              itemCode: selectedMaterialItem.code,
-              qty: qtyInStockUnit,          // stored in stock unit
-              inputQty: rawQty,             // original input qty
-              inputUnit: effectiveUnit,      // original input unit
-              costPerUnit: selectedMaterialItem.buyPrice,
-              totalCost: totalCost,
-              category: 'material',
-              notes: notes || 'Pemakaian Bahan',
-              issuedAt: new Date().toISOString(),
-              issuedBy: userPermissions.role
-          };
-
-          const jobRef = doc(db, SERVICE_JOBS_COLLECTION, selectedJob.id);
           batch.update(jobRef, {
-              usageLog: arrayUnion(logEntry),
-              'costData.hargaModalBahan': increment(totalCost), 
+              usageLog: arrayUnion(...newLogs),
+              'costData.hargaModalBahan': increment(totalCostAllMaterials), 
               updatedAt: serverTimestamp()
           });
 
           await batch.commit();
-          showNotification(`Bahan ${selectedMaterialItem.name} berhasil dicatat.`, "success");
+          showNotification(`Berhasil mencatat pemakaian ${validItems.length} bahan.`, "success");
           
-          setSelectedMaterialItem(null);
-          setMaterialSearchTerm('');
-          setInputQty('');
-          setInputUnit('');
-          setNotes('');
+          setMaterialItems([{ inventoryItem: null, query: '', qty: '', inputUnit: '', notes: '' }]);
       } catch (e: any) {
           showNotification("Gagal input bahan: " + e.message, "error");
       } finally {
@@ -458,122 +491,184 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
 
                     {issuanceType === 'material' && (
                         <div className="bg-canvas border border-hairline p-6">
-                            <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-6 border-b border-hairline pb-4">INPUT PEMAKAIAN BAHAN</h3>
-                            
-                            <form onSubmit={handleMaterialIssuance} className="space-y-6">
-                                <div className="relative">
-                                    <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">CARI BAHAN / MATERIAL</label>
-                                    <div className="relative">
-                                        <input 
-                                            type="text" 
-                                            placeholder="KETIK NAMA BAHAN (CAT, THINNER, CLEAR)..."
-                                            value={materialSearchTerm}
-                                            onChange={e => setMaterialSearchTerm(e.target.value)}
-                                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase"
-                                        />
-                                    </div>
-                                    {materialSearchTerm && !selectedMaterialItem && materialSearchResults.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 bg-canvas border border-hairline mt-2 z-50 max-h-48 overflow-y-auto divide-y divide-hairline">
-                                            {materialSearchResults.map(item => (
-                                                <div 
-                                                    key={item.id} 
-                                                    onClick={() => handleSelectMaterial(item)}
-                                                    className="p-4 hover:bg-soft-cloud cursor-pointer flex justify-between items-center transition-colors"
-                                                >
-                                                    <div>
-                                                        <div className="font-medium text-ink uppercase text-[14px]">{item.name}</div>
-                                                        <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{item.code}</div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-[12px] font-medium text-ink uppercase tracking-widest border border-hairline px-2 py-1 mb-1">STOK: {item.stock} {item.unit}</div>
-                                                        <div className="text-[10px] text-mute uppercase tracking-widest">{formatCurrency(item.buyPrice)}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                <div className="flex justify-between items-center mb-6 border-b border-hairline pb-4">
+                                    <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">INPUT PEMAKAIAN BAHAN</h3>
+                                    <button 
+                                        type="button" 
+                                        onClick={addMaterialRow} 
+                                        disabled={isSubmitting} 
+                                        className="flex items-center gap-2 text-[12px] bg-soft-cloud text-ink px-4 py-2 font-medium hover:bg-canvas border border-hairline disabled:opacity-50 transition-all uppercase tracking-widest"
+                                    >
+                                        <Plus size={14} /> TAMBAH BAHAN
+                                    </button>
                                 </div>
-
-                                {selectedMaterialItem && (
-                                    <div className="p-4 bg-soft-cloud border border-hairline flex justify-between items-center animate-fade-in">
-                                        <div>
-                                            <div className="font-medium text-ink uppercase text-[16px]">{selectedMaterialItem.name}</div>
-                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-1">STOK TERSISA: {selectedMaterialItem.stock} {selectedMaterialItem.unit} &nbsp;|&nbsp; HARGA: {formatCurrency(selectedMaterialItem.buyPrice)}/{selectedMaterialItem.unit}</div>
-                                        </div>
-                                        <button type="button" onClick={() => { setSelectedMaterialItem(null); setMaterialSearchTerm(''); setInputQty(''); setInputUnit(''); }} className="text-[10px] font-medium text-ink border border-ink hover:bg-canvas px-3 py-1 uppercase tracking-widest transition-colors">BATAL</button>
+                                
+                                <form onSubmit={handleMaterialIssuance} className="space-y-6">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse min-w-[900px]">
+                                            <thead>
+                                                <tr className="text-[10px] font-medium text-mute uppercase tracking-widest border-b border-hairline">
+                                                    <th className="py-3 px-2 w-10 text-center">NO</th>
+                                                    <th className="py-3 px-2 w-64">BAHAN / MATERIAL</th>
+                                                    <th className="py-3 px-2 w-32">STOK</th>
+                                                    <th className="py-3 px-2 w-48">JUMLAH PAKAI</th>
+                                                    <th className="py-3 px-2 w-48 text-right">NOMINAL BIAYA</th>
+                                                    <th className="py-3 px-2">CATATAN</th>
+                                                    <th className="py-3 px-2 w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {materialItems.map((item, i) => (
+                                                    <tr key={i} className="border-b border-hairline hover:bg-soft-cloud/50 transition-colors">
+                                                        <td className="py-3 px-2 text-center text-[12px] font-medium text-mute">{i + 1}</td>
+                                                        <td className="py-3 px-2 relative">
+                                                            <div className="relative">
+                                                                <input 
+                                                                    type="text" 
+                                                                    placeholder="KETIK NAMA BAHAN..."
+                                                                    value={item.query}
+                                                                    onFocus={() => setActiveMaterialSearch(i)}
+                                                                    onBlur={() => {
+                                                                        setTimeout(() => {
+                                                                            if (!materialDropdownMouseDown.current) setActiveMaterialSearch(null);
+                                                                            materialDropdownMouseDown.current = false;
+                                                                        }, 200);
+                                                                    }}
+                                                                    onChange={e => {
+                                                                        const val = e.target.value;
+                                                                        const newItems = [...materialItems];
+                                                                        newItems[i].query = val;
+                                                                        if (newItems[i].inventoryItem && newItems[i].inventoryItem?.name !== val) {
+                                                                            newItems[i].inventoryItem = null;
+                                                                        }
+                                                                        setMaterialItems(newItems);
+                                                                        setActiveMaterialSearch(i);
+                                                                    }}
+                                                                    className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
+                                                                    autoComplete="off"
+                                                                />
+                                                                {activeMaterialSearch === i && item.query.length >= 2 && (
+                                                                    <div 
+                                                                        className="absolute top-full left-0 w-[400px] bg-canvas border border-hairline mt-1 z-50 max-h-60 overflow-y-auto divide-y divide-hairline shadow-lg"
+                                                                        onMouseDown={() => { materialDropdownMouseDown.current = true; }}
+                                                                    >
+                                                                        {getMaterialResults(item.query).map(res => (
+                                                                            <div 
+                                                                                key={res.id} 
+                                                                                onClick={() => handleSelectMaterial(i, res)}
+                                                                                className="p-3 hover:bg-soft-cloud cursor-pointer flex justify-between items-center transition-colors"
+                                                                            >
+                                                                                <div>
+                                                                                    <div className="font-medium text-ink uppercase text-[12px]">{res.name}</div>
+                                                                                    <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{res.code}</div>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <div className="text-[10px] font-medium text-ink uppercase tracking-widest">STOK: {res.stock} {res.unit}</div>
+                                                                                    <div className="text-[10px] text-mute uppercase tracking-widest mt-1">{formatCurrency(res.buyPrice)}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                        {getMaterialResults(item.query).length === 0 && (
+                                                                            <div className="p-3 text-center text-[10px] text-mute uppercase tracking-widest">Tidak ada bahan ditemukan</div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3 px-2 text-[10px] font-medium text-ink uppercase tracking-widest">
+                                                            {item.inventoryItem ? `${item.inventoryItem.stock} ${item.inventoryItem.unit}` : '-'}
+                                                        </td>
+                                                        <td className="py-3 px-2">
+                                                            <div className="flex items-stretch border border-hairline bg-canvas">
+                                                                <input 
+                                                                    type="number" step="0.001"
+                                                                    value={item.qty}
+                                                                    onChange={e => {
+                                                                        const newItems = [...materialItems];
+                                                                        newItems[i].qty = e.target.value === '' ? '' : Number(e.target.value);
+                                                                        setMaterialItems(newItems);
+                                                                    }}
+                                                                    className="w-full p-2 bg-transparent focus:outline-none focus:bg-soft-cloud font-medium text-[12px] text-ink uppercase text-center border-r border-hairline"
+                                                                    placeholder="0.0"
+                                                                    disabled={!item.inventoryItem}
+                                                                />
+                                                                {item.inventoryItem && getInputUnitOptions(item.inventoryItem.unit).length > 1 ? (
+                                                                    <select
+                                                                        value={item.inputUnit}
+                                                                        onChange={e => {
+                                                                            const newItems = [...materialItems];
+                                                                            newItems[i].inputUnit = e.target.value;
+                                                                            setMaterialItems(newItems);
+                                                                        }}
+                                                                        className="text-[10px] font-medium text-ink bg-soft-cloud px-2 py-2 uppercase focus:outline-none focus:bg-canvas min-w-[70px] text-center"
+                                                                    >
+                                                                        {getInputUnitOptions(item.inventoryItem.unit).map(u => (
+                                                                            <option key={u} value={u}>{u.toUpperCase()}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-medium text-mute bg-soft-cloud px-3 py-2 uppercase flex items-center justify-center min-w-[70px]">
+                                                                        {item.inventoryItem?.unit || 'UNIT'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3 px-2 text-right">
+                                                            {(() => {
+                                                                if (!item.inventoryItem || item.qty === '' || Number(item.qty) <= 0) return <span className="text-[12px] text-mute">-</span>;
+                                                                
+                                                                const rawQty = Number(item.qty);
+                                                                const stockUnit = item.inventoryItem.unit;
+                                                                const effectiveUnit = item.inputUnit || stockUnit;
+                                                                const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
+                                                                const totalCost = qtyInStockUnit * item.inventoryItem.buyPrice;
+                                                                
+                                                                return (
+                                                                    <div>
+                                                                        <div className="text-[12px] font-medium text-ink uppercase tracking-widest">{formatCurrency(totalCost)}</div>
+                                                                        {effectiveUnit !== stockUnit && (
+                                                                            <div className="text-[9px] text-mute uppercase tracking-widest mt-1">(-{qtyInStockUnit.toFixed(3)} {stockUnit})</div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </td>
+                                                        <td className="py-3 px-2">
+                                                            <input 
+                                                                type="text" 
+                                                                value={item.notes}
+                                                                onChange={e => {
+                                                                    const newItems = [...materialItems];
+                                                                    newItems[i].notes = e.target.value;
+                                                                    setMaterialItems(newItems);
+                                                                }}
+                                                                className="w-full p-2 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[12px] text-ink uppercase"
+                                                                placeholder="CATATAN..."
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 px-2 text-center">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => removeMaterialRow(i)} 
+                                                                className="text-mute hover:text-red-500 transition-colors"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-                                    <div>
-                                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">JUMLAH PAKAI</label>
-                                        <div className="flex items-stretch">
-                                            <input 
-                                                type="number" step="0.001" required
-                                                value={inputQty}
-                                                onChange={e => setInputQty(e.target.value === '' ? '' : Number(e.target.value))}
-                                                className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase border-r-0"
-                                                placeholder="0.0"
-                                            />
-                                            {selectedMaterialItem && getInputUnitOptions(selectedMaterialItem.unit).length > 1 ? (
-                                                <select
-                                                    value={inputUnit || selectedMaterialItem.unit}
-                                                    onChange={e => setInputUnit(e.target.value)}
-                                                    className="text-[12px] font-medium text-ink bg-soft-cloud px-3 py-4 border border-hairline uppercase focus:outline-none focus:border-ink min-w-[80px]"
-                                                >
-                                                    {getInputUnitOptions(selectedMaterialItem.unit).map(u => (
-                                                        <option key={u} value={u}>{u.toUpperCase()}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <span className="text-[14px] font-medium text-mute bg-soft-cloud px-4 py-4 border border-hairline uppercase">
-                                                    {selectedMaterialItem?.unit || 'UNIT'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {/* LIVE NOMINAL BIAYA */}
-                                        {selectedMaterialItem && inputQty !== '' && Number(inputQty) > 0 && (() => {
-                                            const rawQty = Number(inputQty);
-                                            const stockUnit = selectedMaterialItem.unit;
-                                            const effectiveUnit = inputUnit || stockUnit;
-                                            const qtyInStockUnit = convertToStockUnit(rawQty, effectiveUnit, stockUnit);
-                                            const totalCost = qtyInStockUnit * selectedMaterialItem.buyPrice;
-                                            const needsConversion = effectiveUnit !== stockUnit;
-                                            return (
-                                                <div className="mt-3 p-3 bg-canvas border border-ink space-y-1 animate-fade-in">
-                                                    <div className="flex justify-between items-center text-[11px] font-medium text-ink uppercase tracking-widest">
-                                                        <span>NOMINAL BIAYA</span>
-                                                        <span className="text-[14px] font-medium">{formatCurrency(totalCost)}</span>
-                                                    </div>
-                                                    {needsConversion && (
-                                                        <div className="text-[10px] text-mute uppercase tracking-widest border-t border-hairline pt-1 mt-1">
-                                                            PENGURANGAN STOK: {qtyInStockUnit.toFixed(3)} {stockUnit}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                    <div>
-                                        <label className="block text-[12px] font-medium text-mute uppercase tracking-widest mb-2">CATATAN</label>
-                                        <input 
-                                            type="text" 
-                                            value={notes}
-                                            onChange={e => setNotes(e.target.value)}
-                                            className="w-full p-4 border border-hairline bg-canvas focus:outline-none focus:border-ink font-medium text-[14px] text-ink uppercase"
-                                            placeholder="UNTUK PANEL PINTU..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <button 
-                                    type="submit" 
-                                    disabled={!selectedMaterialItem || isSubmitting}
-                                    className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'PROCESSING...' : 'CATAT PEMAKAIAN'}
-                                </button>
-                            </form>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isSubmitting || materialItems.every(i => !i.inventoryItem || i.qty === '' || Number(i.qty) <= 0)}
+                                        className="w-full bg-ink text-canvas py-4 text-[12px] font-medium uppercase tracking-widest hover:bg-mute transition-colors disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? 'PROCESSING...' : 'CATAT PEMAKAIAN BAHAN'}
+                                    </button>
+                                </form>
                         </div>
                     )}
                 </div>
