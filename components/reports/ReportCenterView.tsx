@@ -277,9 +277,10 @@ const ReportCenterView: React.FC<ReportCenterViewProps> = ({ jobs: _j, transacti
                           if (!mStats[mName]) mStats[mName] = { 'Nama Mekanik': mName, 'Unit Selesai': 0, 'Panel Selesai': 0 };
                           mStats[mName]['Unit Selesai']++;
                           
-                          const mechAssignment = j.assignedMechanics?.find(a => a.name === mName);
-                          const panels = mechAssignment?.panelCount || 0; 
-                          const finalPanels = panels > 0 ? panels : (j.estimateData?.jasaItems?.reduce((acc, i) => acc + (i.panelCount || 0), 0) || 0);
+                          const specificAssignments = j.assignedMechanics?.filter(a => a.name === mName) || [];
+                          const hasExplicitPanels = specificAssignments.some(a => a.panelCount !== undefined);
+                          const assignedPanels = specificAssignments.reduce((acc, a) => acc + (a.panelCount || 0), 0);
+                          const finalPanels = hasExplicitPanels ? assignedPanels : (j.estimateData?.jasaItems?.reduce((acc, i) => acc + (i.panelCount || 0), 0) || 0);
 
                           mStats[mName]['Panel Selesai'] += finalPanels;
                       });

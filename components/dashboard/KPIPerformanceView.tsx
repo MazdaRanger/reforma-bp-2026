@@ -146,10 +146,11 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
              involvedMechs.forEach((m: any) => {
                 if (!mechMap[m]) mechMap[m] = { panels: 0, reworks: 0, units: 0 };
                 
-                const specificAssignment = j.assignedMechanics?.find(a => a.name === m);
-                const assignedPanels = specificAssignment?.panelCount;
+                const specificAssignments = j.assignedMechanics?.filter(a => a.name === m) || [];
+                const hasExplicitPanels = specificAssignments.some(a => a.panelCount !== undefined);
+                const assignedPanels = specificAssignments.reduce((acc, a) => acc + (a.panelCount || 0), 0);
 
-                if (assignedPanels !== undefined) {
+                if (hasExplicitPanels) {
                     mechMap[m].panels += assignedPanels;
                 } else {
                     mechMap[m].panels += totalJobPanels;
@@ -160,11 +161,11 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
 
         j.productionLogs?.forEach(log => {
             if (log.type === 'rework') {
-                const picAtStage = j.assignedMechanics?.find(a => a.stage === log.stage)?.name;
-                if (picAtStage) {
-                    if (!mechMap[picAtStage]) mechMap[picAtStage] = { panels: 0, reworks: 0, units: 0 };
-                    mechMap[picAtStage].reworks++;
-                }
+                const picsAtStage = j.assignedMechanics?.filter(a => a.stage === log.stage) || [];
+                picsAtStage.forEach(pic => {
+                    if (!mechMap[pic.name]) mechMap[pic.name] = { panels: 0, reworks: 0, units: 0 };
+                    mechMap[pic.name].reworks++;
+                });
             }
         });
     });

@@ -270,27 +270,41 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
       let currentStage = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
       
       const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
+      let currentAssignments = [...(job.assignedMechanics || [])];
       
-      const inputPanel = prompt(`Masukkan jumlah panel yang dikerjakan oleh ${mechanicName} untuk tahap ${currentStage}?`, totalPanelValue.toString());
-      if (inputPanel === null) return; 
-      const assignedPanels = parseFloat(inputPanel) || 0;
+      const existingIdx = currentAssignments.findIndex(a => a.stage === currentStage && a.name === mechanicName);
+      
+      if (existingIdx >= 0) {
+          currentAssignments.splice(existingIdx, 1);
+      } else {
+          currentAssignments.push({ 
+              name: mechanicName, 
+              stage: currentStage, 
+              assignedAt: new Date().toISOString(),
+              panelCount: 0 
+          });
+      }
 
-      const currentAssignments = [...(job.assignedMechanics || [])];
-      const existingIdx = currentAssignments.findIndex(a => a.stage === currentStage);
+      const mechanicsInThisStage = currentAssignments.filter(a => a.stage === currentStage);
+      const mechanicCount = mechanicsInThisStage.length;
       
-      const assignment: MechanicAssignment = { 
-          name: mechanicName, 
-          stage: currentStage, 
-          assignedAt: new Date().toISOString(),
-          panelCount: assignedPanels 
-      };
-
-      if (existingIdx >= 0) currentAssignments[existingIdx] = assignment;
-      else currentAssignments.push(assignment);
+      if (mechanicCount > 0) {
+          const splitPanels = parseFloat((totalPanelValue / mechanicCount).toFixed(2));
+          currentAssignments = currentAssignments.map(a => {
+              if (a.stage === currentStage) {
+                  return { ...a, panelCount: splitPanels };
+              }
+              return a;
+          });
+      }
       
-      await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, job.id), { assignedMechanics: currentAssignments, mechanicName });
-      setAssigningJobId(null);
-      showNotification(`Assigned ${mechanicName} (${assignedPanels} Panels).`, "success");
+      await updateDoc(doc(db, SERVICE_JOBS_COLLECTION, job.id), { assignedMechanics: currentAssignments, mechanicName: mechanicsInThisStage.map(m => m.name).join(', ') || '' });
+      
+      if (existingIdx >= 0) {
+          showNotification(`${mechanicName} dihapus. Beban panel dihitung ulang.`, "info");
+      } else {
+          showNotification(`${mechanicName} ditugaskan. Panel otomatis dibagi rata.`, "success");
+      }
   };
 
   const aggregatedReport = useMemo(() => {
@@ -383,9 +397,8 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                             <div className="p-4 flex-grow overflow-y-auto space-y-4 scrollbar-hide">
                                 {jobsInStage.map(job => {
                                     const isAdminPending = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan);
-                                    const stageAssignment = job.assignedMechanics?.find(a => a.stage === (isAdminPending ? 'Persiapan Kendaraan' : job.statusPekerjaan || 'Bongkar'));
-                                    const currentPIC = stageAssignment?.name;
-                                    const picPanels = stageAssignment?.panelCount;
+                                    const stageAssignments = job.assignedMechanics?.filter(a => a.stage === (isAdminPending ? 'Persiapan Kendaraan' : job.statusPekerjaan || 'Bongkar')) || [];
+                                    const hasAssignments = stageAssignments.length > 0;
                                     const { daysRunning, daysRemaining } = getJobProgress(job);
                                     const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
                                     const partStatus = getPartStatus(job);
@@ -438,21 +451,30 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                             
                                             <div className="mb-4 bg-soft-cloud p-3 border border-hairline">
                                                 <label className="text-[10px] font-medium text-mute uppercase tracking-widest block mb-2">PIC STALL</label>
-                                                {currentPIC ? (
-                                                    <div className="flex items-center justify-between cursor-pointer border border-ink bg-canvas px-3 py-2" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
-                                                        <span className="text-[12px] font-medium text-ink uppercase tracking-widest truncate">{currentPIC}</span>
-                                                        {picPanels && <span className="text-[10px] font-medium text-ink uppercase tracking-widest">{picPanels} PNL</span>}
+                                                {hasAssignments ? (
+                                                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
+                                                        {stageAssignments.map((asg, idx) => (
+                                                            <div key={idx} className="flex items-center justify-between border border-ink bg-canvas px-3 py-2">
+                                                                <span className="text-[12px] font-medium text-ink uppercase tracking-widest truncate">{asg.name}</span>
+                                                                {asg.panelCount !== undefined && <span className="text-[10px] font-medium text-ink uppercase tracking-widest">{asg.panelCount} PNL</span>}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 ) : (
                                                     <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full py-2 border border-hairline hover:border-ink text-[10px] font-medium text-ink uppercase tracking-widest transition-colors bg-canvas">ASSIGN MECHANIC</button>
                                                 )}
                                                 {assigningJobId === job.id && (
                                                     <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in rounded-2xl overflow-hidden">
-                                                        {(settings.mechanicNames || []).map(m => (
-                                                            <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${currentPIC === m ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
-                                                                {m}
-                                                            </button>
-                                                        ))}
+                                                        {(settings.mechanicNames || []).map(m => {
+                                                            const isAssigned = stageAssignments.some(a => a.name === m);
+                                                            const asgPanels = stageAssignments.find(a => a.name === m)?.panelCount;
+                                                            return (
+                                                                <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${isAssigned ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
+                                                                    <div className="truncate">{m}</div>
+                                                                    {isAssigned && asgPanels !== undefined && <div className="text-[8px] opacity-70 mt-1">{asgPanels} PNL</div>}
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                             </div>
