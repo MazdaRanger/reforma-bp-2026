@@ -1,12 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Job, CashierTransaction, Settings } from '../../types';
 import { formatCurrency, formatDateIndo } from '../../utils/helpers';
-import { Doughnut, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement, Filler
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, Filler);
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 interface KPIProps {
   jobs: Job[];
@@ -203,51 +198,10 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
   const weeklyProgress = Math.min((stats.currentAchievedWeeklyGP / stats.adjustedWeeklyTarget) * 100, 100);
   const isTargetInflated = stats.adjustedWeeklyTarget > (settings.monthlyTarget / 4);
 
-  const lineChartData = {
-    labels: Object.keys(stats.statusCounts),
-    datasets: [{
-      label: 'Units',
-      data: Object.values(stats.statusCounts),
-      fill: true,
-      backgroundColor: (context: any) => {
-        const chart = context.chart;
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return null;
-        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        gradient.addColorStop(0, 'rgba(10, 114, 129, 0.4)'); // Accent Teal
-        gradient.addColorStop(1, 'rgba(10, 114, 129, 0.0)');
-        return gradient;
-      },
-      borderColor: '#0a7281',
-      borderWidth: 2,
-      tension: 0.4,
-      pointBackgroundColor: '#ffffff',
-      pointBorderColor: '#0a7281',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-    }]
-  };
-
-  const lineChartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-          legend: { display: false },
-          tooltip: {
-              backgroundColor: 'rgba(17, 17, 17, 0.95)',
-              titleFont: { family: 'Inter', size: 13 },
-              bodyFont: { family: 'Inter', size: 15, weight: 'bold' as const },
-              padding: 12,
-              cornerRadius: 8,
-              displayColors: false,
-          }
-      },
-      scales: {
-          y: { beginAtZero: true, grid: { color: '#e5e5e5' }, border: { display: false } },
-          x: { grid: { display: false }, border: { display: false } }
-      }
-  };
+  const rechartsLineData = Object.keys(stats.statusCounts).map(key => ({
+      name: key,
+      value: stats.statusCounts[key]
+  }));
 
   return (
     <div className="animate-fade-in pb-6">
@@ -338,8 +292,24 @@ const KPIPerformanceView: React.FC<KPIProps> = ({ jobs, transactions, settings }
             <div className="flex justify-between items-center mb-8">
                 <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest">Distribusi Produksi Aktif</h3>
             </div>
-            <div className="h-72">
-                <Line data={lineChartData} options={lineChartOptions as any} />
+            <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={rechartsLineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorUnits" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0a7281" stopOpacity={0.4}/>
+                                <stop offset="95%" stopColor="#0a7281" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                        <RechartsTooltip 
+                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                        />
+                        <Area type="monotone" dataKey="value" stroke="#0a7281" fillOpacity={1} fill="url(#colorUnits)" strokeWidth={2} />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </div>
 

@@ -1,13 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
-import { Bar, Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement
-} from 'chart.js';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency } from '../../utils/helpers';
 import EfferdDashboard2 from './EfferdDashboard2';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 interface BIProps {
   jobs: Job[];
@@ -99,36 +94,15 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
     };
   }, [jobs, selectedMonth, selectedYear]);
 
-  const marketShareData = {
-    labels: ['Asuransi', 'Pribadi / Umum'],
-    datasets: [{
-      data: [data.insCount, data.priCount],
-      backgroundColor: ['#0a7281', '#111111'],
-      hoverBackgroundColor: ['#0c8b9d', '#39393b'],
-      borderWidth: 4,
-      borderColor: '#ffffff',
-      hoverOffset: 15
-    }]
-  };
+  const rechartsMarketShare = [
+    { name: 'Asuransi', value: data.insCount, fill: '#0a7281' },
+    { name: 'Pribadi / Umum', value: data.priCount, fill: '#111111' }
+  ];
 
-  const regionChartData = {
-    labels: data.topRegions.map(r => r[0]),
-    datasets: [{
-      label: 'Jumlah Unit',
-      data: data.topRegions.map(r => r[1]),
-      backgroundColor: (context: any) => {
-        const chart = context.chart;
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return null;
-        const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
-        gradient.addColorStop(0, '#111111');
-        gradient.addColorStop(1, '#0a7281');
-        return gradient;
-      },
-      borderRadius: { topRight: 20, bottomRight: 20 },
-      borderSkipped: false,
-    }]
-  };
+  const rechartsRegionData = data.topRegions.map(r => ({
+      name: r[0],
+      value: r[1]
+  }));
 
   return (
     <div className="animate-fade-in pb-6">
@@ -191,7 +165,25 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                     </h3>
                 </div>
                 <div className="relative h-64 w-64">
-                    <Doughnut data={marketShareData} options={{ cutout: '75%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(17, 17, 17, 0.95)', cornerRadius: 8 } } }} />
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={rechartsMarketShare}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={75}
+                                outerRadius={100}
+                                paddingAngle={5}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                {rechartsMarketShare.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span className="text-[20px] font-bold font-medium text-ink leading-none">{data.totalOrder}</span>
                         <span className="text-[12px] font-medium text-mute uppercase tracking-widest mt-2">Unit Masuk</span>
@@ -249,29 +241,17 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                 </div>
                 <div className="h-64 mb-8">
                     {data.topRegions.length > 0 ? (
-                        <Bar 
-                            data={regionChartData} 
-                            options={{ 
-                                indexAxis: 'y',
-                                responsive: true, 
-                                maintainAspectRatio: false,
-                                plugins: { 
-                                    legend: { display: false },
-                                    tooltip: {
-                                        backgroundColor: 'rgba(17, 17, 17, 0.95)',
-                                        titleFont: { family: 'Inter', size: 13 },
-                                        bodyFont: { family: 'Inter', size: 15, weight: 'bold' as const },
-                                        padding: 12,
-                                        cornerRadius: 8,
-                                        displayColors: false,
-                                    }
-                                },
-                                scales: { 
-                                    x: { grid: { display: false }, border: { display: false }, ticks: { display: false } },
-                                    y: { grid: { display: false }, border: { display: false } } 
-                                }
-                            }} 
-                        />
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={rechartsRegionData} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" hide />
+                                <RechartsTooltip 
+                                    cursor={{fill: 'transparent'}}
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                                />
+                                <Bar dataKey="value" fill="#0a7281" radius={[0, 20, 20, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex items-center justify-center text-mute italic text-[12px]">Data alamat tidak tersedia.</div>
                     )}

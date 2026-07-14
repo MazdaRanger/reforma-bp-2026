@@ -2,13 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
-import { Doughnut, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement
-} from 'chart.js';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import EfferdDashboard2 from './EfferdDashboard2';
-
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 interface OverviewProps {
   allJobs: Job[];
@@ -280,17 +275,24 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
     };
   }, [allJobs, selectedMonth, selectedYear, settings.internalHolidays]);
 
-  const doughnutData = {
-      labels: ['Invoiced', 'Active'],
-      datasets: [{
-          data: [stats.totalInvoicedUnits, stats.activeJobsCount],
-          backgroundColor: ['#d4af37', '#f5f5f5'],
-          hoverBackgroundColor: ['#c5a059', '#e5e5e5'],
-          borderWidth: 0,
-          borderRadius: 20,
-          cutout: '85%'
-      }]
-  };
+  const rechartsWeeklyData = useMemo(() => {
+      return stats.validWeeks.map(w => ({
+          name: `Minggu ${w}`,
+          entry: stats.weeklyData[w].entry,
+          out: stats.weeklyData[w].out,
+          panels: stats.weeklyData[w].panels,
+          jasaNett: stats.weeklyData[w].jasaNett,
+          partNett: stats.weeklyData[w].partNett,
+          bahanCost: stats.weeklyData[w].bahanCost,
+          partCost: stats.weeklyData[w].partCost,
+          grossProfit: stats.weeklyData[w].grossProfit
+      }));
+  }, [stats]);
+
+  const pieData = [
+      { name: 'Invoiced', value: stats.totalInvoicedUnits },
+      { name: 'Active', value: stats.activeJobsCount }
+  ];
 
   return (
     <div className="animate-fade-in pb-6">
@@ -409,115 +411,48 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               <div className="w-full flex flex-col border-t border-hairline pt-6">
                   <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest mb-4">Grafik Performa Mingguan</h3>
                   <div className="w-full h-[350px] relative mt-2">
-                      <Bar 
-                          data={{
-                              labels: stats.validWeeks.map(w => `Minggu ${w}`),
-                              datasets: [
-                                  {
-                                      label: 'Unit Masuk',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].entry),
-                                      backgroundColor: '#0a9396',
-                                      yAxisID: 'y1'
-                                  },
-                                  {
-                                      label: 'Unit Keluar',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].out),
-                                      backgroundColor: '#005f73',
-                                      yAxisID: 'y1'
-                                  },
-                                  {
-                                      label: 'Total Panel',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].panels),
-                                      backgroundColor: '#ca6702',
-                                      yAxisID: 'y1'
-                                  },
-                                  {
-                                      label: 'Total Jasa Nett',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].jasaNett),
-                                      backgroundColor: '#1b263b',
-                                      yAxisID: 'y'
-                                  },
-                                  {
-                                      label: 'Total Part Nett',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].partNett),
-                                      backgroundColor: '#415a77',
-                                      yAxisID: 'y'
-                                  },
-                                  {
-                                      label: 'HPP Bahan',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].bahanCost),
-                                      backgroundColor: '#9b2226',
-                                      yAxisID: 'y'
-                                  },
-                                  {
-                                      label: 'HPP Part',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].partCost),
-                                      backgroundColor: '#ae2012',
-                                      yAxisID: 'y'
-                                  },
-                                  {
-                                      label: 'Gross Profit',
-                                      data: stats.validWeeks.map(w => stats.weeklyData[w].grossProfit),
-                                      backgroundColor: '#10b981',
-                                      yAxisID: 'y'
-                                  }
-                              ]
-                          }} 
-                          options={{ 
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: { 
-                                  legend: { 
-                                      display: true,
-                                      position: 'bottom',
-                                      labels: { font: { size: 10 }, boxWidth: 12, padding: 16 }
-                                  }, 
-                                  tooltip: { 
-                                      backgroundColor: 'rgba(17, 17, 17, 0.95)',
-                                      cornerRadius: 8,
-                                      callbacks: {
-                                          label: (context: any) => {
-                                              let label = context.dataset.label || '';
-                                              if (label) label += ': ';
-                                              if (context.dataset.yAxisID === 'y') {
-                                                  label += formatCurrency(context.raw as number);
-                                              } else {
-                                                  label += context.raw;
-                                              }
-                                              return label;
-                                          }
-                                      }
-                                  } 
-                              },
-                              scales: {
-                                  y: {
-                                      type: 'linear' as const,
-                                      display: true,
-                                      position: 'left' as const,
-                                      beginAtZero: true,
-                                      ticks: {
-                                          font: { size: 10 },
-                                          callback: (value) => {
-                                              if (Number(value) >= 1000000) return `${(Number(value) / 1000000).toFixed(0)}Jt`;
-                                              if (Number(value) >= 1000) return `${(Number(value) / 1000).toFixed(0)}k`;
-                                              return value;
-                                          }
-                                      }
-                                  },
-                                  y1: {
-                                      type: 'linear' as const,
-                                      display: true,
-                                      position: 'right' as const,
-                                      beginAtZero: true,
-                                      grid: { drawOnChartArea: false },
-                                      ticks: { font: { size: 10 } }
-                                  },
-                                  x: {
-                                      ticks: { font: { size: 10 } }
-                                  }
-                              }
-                          }} 
-                      />
+                      <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={rechartsWeeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                              <YAxis 
+                                  yAxisId="left" 
+                                  orientation="left" 
+                                  tick={{ fontSize: 10, fill: '#6b7280' }} 
+                                  axisLine={false} 
+                                  tickLine={false} 
+                                  tickFormatter={(value) => {
+                                      if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                                      if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                      return value;
+                                  }}
+                              />
+                              <YAxis 
+                                  yAxisId="right" 
+                                  orientation="right" 
+                                  tick={{ fontSize: 10, fill: '#6b7280' }} 
+                                  axisLine={false} 
+                                  tickLine={false}
+                              />
+                              <RechartsTooltip 
+                                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                                  formatter={(value: number, name: string) => {
+                                      if (name === 'Unit Masuk' || name === 'Unit Keluar' || name === 'Total Panel') return value;
+                                      return formatCurrency(value);
+                                  }}
+                              />
+                              <Legend wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase' }} />
+                              <Bar yAxisId="right" dataKey="entry" name="Unit Masuk" fill="#0a9396" />
+                              <Bar yAxisId="right" dataKey="out" name="Unit Keluar" fill="#005f73" />
+                              <Bar yAxisId="right" dataKey="panels" name="Total Panel" fill="#ca6702" />
+                              
+                              <Bar yAxisId="left" dataKey="jasaNett" name="Total Jasa Nett" fill="#1b263b" />
+                              <Bar yAxisId="left" dataKey="partNett" name="Total Part Nett" fill="#415a77" />
+                              <Bar yAxisId="left" dataKey="bahanCost" name="HPP Bahan" fill="#9b2226" />
+                              <Bar yAxisId="left" dataKey="partCost" name="HPP Part" fill="#ae2012" />
+                              <Bar yAxisId="left" dataKey="grossProfit" name="Gross Profit" fill="#10b981" />
+                          </BarChart>
+                      </ResponsiveContainer>
                   </div>
               </div>
           </div>
@@ -527,12 +462,31 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
           <div className="bg-canvas p-4 border border-hairline flex flex-col">
               <h3 className="text-[12px] font-medium text-ink uppercase tracking-widest mb-8">{t('chart2')}</h3>
               <div className="flex-grow flex items-center justify-center relative">
-                  <div className="h-48 w-48">
-                      <Doughnut data={doughnutData} options={{ plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(17, 17, 17, 0.95)', cornerRadius: 8 } } }} />
-                  </div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <p className="text-[18px] font-medium tracking-tight text-ink">{stats.totalInvoicedUnits}</p>
-                      <p className="text-[12px] font-medium text-mute uppercase tracking-widest">Closing</p>
+                  <div className="h-48 w-48 relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                              <Pie
+                                  data={pieData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={65}
+                                  outerRadius={85}
+                                  paddingAngle={2}
+                                  dataKey="value"
+                                  stroke="none"
+                              >
+                                  <Cell fill="#d4af37" />
+                                  <Cell fill="#f5f5f5" />
+                              </Pie>
+                              <RechartsTooltip 
+                                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                              />
+                          </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                          <p className="text-[18px] font-medium tracking-tight text-ink">{stats.totalInvoicedUnits}</p>
+                          <p className="text-[12px] font-medium text-mute uppercase tracking-widest">Closing</p>
+                      </div>
                   </div>
               </div>
           </div>

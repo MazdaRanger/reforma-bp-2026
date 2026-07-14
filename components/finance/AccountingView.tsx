@@ -1,10 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Job, PurchaseOrder, CashierTransaction, Asset } from '../../types';
 import { formatCurrency, formatDateIndo } from '../../utils/helpers';
-import { Line, Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
+import { ComposedChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface AccountingViewProps {
   jobs: Job[]; 
@@ -93,10 +90,8 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
     };
   }, [transactions, assets, selectedMonth, selectedYear]);
 
-  const chartData = useMemo(() => {
-      const labels = [];
-      const cashInData = [];
-      const netCashData = [];
+  const rechartsData = useMemo(() => {
+      const trendData = [];
       
       for (let i = 5; i >= 0; i--) {
           const d = new Date();
@@ -105,7 +100,7 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
           const m = d.getMonth();
           const y = d.getFullYear();
           
-          labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
+          const label = d.toLocaleDateString('id-ID', { month: 'short' });
 
           const mTransactions = transactions.filter(t => {
               const td = parseDate(t.date);
@@ -115,32 +110,24 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
           const mIn = mTransactions.filter(t => t.type === 'IN').reduce((acc, t) => acc + t.amount, 0);
           const mOut = mTransactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0);
 
-          cashInData.push(mIn);
-          netCashData.push(mIn - mOut);
+          trendData.push({
+              name: label,
+              cashIn: mIn,
+              netCash: mIn - mOut
+          });
       }
 
+      const expenseBreakdown = [
+          { name: 'HPP Vendor', value: financialData.cogsVendor, fill: '#111111' },
+          { name: 'Gaji Staff', value: financialData.payrollExpense, fill: '#444444' },
+          { name: 'Operasional', value: financialData.operationalExpense, fill: '#888888' },
+          { name: 'Pajak', value: financialData.taxExpense, fill: '#cacacb' },
+          { name: 'Beli Aset', value: financialData.assetPurchase, fill: '#f4f4f5' }
+      ].filter(item => item.value > 0);
+
       return {
-          trend: {
-              labels,
-              datasets: [
-                  { label: 'Uang Masuk (Cash In)', data: cashInData, borderColor: '#111111', backgroundColor: 'transparent', tension: 0 },
-                  { label: 'Surplus Kas Bersih', data: netCashData, borderColor: '#cacacb', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0 }
-              ]
-          },
-          expenseBreakdown: {
-              labels: ['HPP Vendor', 'Gaji Staff', 'Operasional', 'Pajak', 'Beli Aset'],
-              datasets: [{
-                  data: [
-                      financialData.cogsVendor,
-                      financialData.payrollExpense,
-                      financialData.operationalExpense,
-                      financialData.taxExpense,
-                      financialData.assetPurchase
-                  ],
-                  backgroundColor: ['#111111', '#444444', '#888888', '#cacacb', '#f4f4f5'],
-                  borderWidth: 0
-              }]
-          }
+          trendData,
+          expenseBreakdown
       };
   }, [transactions, selectedMonth, selectedYear, financialData]);
 
@@ -253,20 +240,62 @@ const AccountingView: React.FC<AccountingViewProps> = ({ jobs, purchaseOrders, t
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">
                 <div className="lg:col-span-2 bg-canvas p-6 md:p-8 border border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-8 border-b border-hairline pb-4">Analisa Arus Kas (6 Bulan)</h3>
-                    <div className="h-72">
-                        <Line data={chartData.trend} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10 } } } }, scales: { y: { border: { dash: [5, 5] } }, x: { grid: { display: false } } } }} />
+                    <div className="h-72 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={rechartsData.trendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} 
+                                    tickFormatter={(value) => {
+                                        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                                        if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                        return value;
+                                    }}
+                                />
+                                <RechartsTooltip 
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                                    formatter={(value: number, name: string) => {
+                                        return [formatCurrency(value), name];
+                                    }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase' }} />
+                                <Line type="monotone" dataKey="cashIn" name="Uang Masuk (Cash In)" stroke="#111111" strokeWidth={2} dot={{ r: 4 }} />
+                                <Line type="monotone" dataKey="netCash" name="Surplus Kas Bersih" stroke="#cacacb" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4 }} />
+                            </ComposedChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
                 <div className="bg-canvas p-6 md:p-8 border border-hairline">
                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px] mb-8 border-b border-hairline pb-4">Proporsi Pengeluaran</h3>
-                    <div className="h-64 flex justify-center">
-                        <Doughnut data={chartData.expenseBreakdown} options={{ cutout: '75%', plugins: { legend: { display: false } } }} />
+                    <div className="h-64 flex justify-center relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={rechartsData.expenseBreakdown}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={70}
+                                    outerRadius={90}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                    stroke="none"
+                                >
+                                    {rechartsData.expenseBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip 
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}
+                                    formatter={(value: number) => formatCurrency(value)}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                     <div className="mt-8 pt-4 border-t border-hairline flex flex-col gap-2">
-                        {chartData.expenseBreakdown.labels.map((label, i) => (
+                        {rechartsData.expenseBreakdown.map((item, i) => (
                             <div key={i} className="flex justify-between items-center">
-                                <span className="text-[12px] font-medium text-ink uppercase tracking-widest">{label}</span>
-                                <span className="text-[14px] font-medium text-ink">{formatCurrency(chartData.expenseBreakdown.datasets[0].data[i])}</span>
+                                <span className="text-[12px] font-medium text-ink uppercase tracking-widest">{item.name}</span>
+                                <span className="text-[14px] font-medium text-ink">{formatCurrency(item.value)}</span>
                             </div>
                         ))}
                     </div>
