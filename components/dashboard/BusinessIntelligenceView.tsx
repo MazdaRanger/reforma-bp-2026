@@ -5,6 +5,7 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement
 } from 'chart.js';
 import { formatCurrency } from '../../utils/helpers';
+import EfferdDashboard2 from './EfferdDashboard2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -337,6 +338,9 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
                 </div>
             </div>
         </div>
+
+        {/* EFFERD DASHBOARD RECHARTS */}
+        <EfferdDashboard2 jobs={jobs} title="BUSINESS INTELLIGENCE LIVE ANALYTICS" subtitle="Demographic & Trend Visualization" />
     </div>
   );
 };

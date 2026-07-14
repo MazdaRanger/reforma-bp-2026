@@ -6,6 +6,7 @@ import { Doughnut, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement
 } from 'chart.js';
+import EfferdDashboard2 from './EfferdDashboard2';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -536,6 +537,9 @@ const OverviewDashboard: React.FC<OverviewProps> = ({ allJobs, totalUnits, setti
               </div>
           </div>
       </div>
+
+      {/* NEW EFFERD DASHBOARD 2 - RECHARTS INTEGRATION */}
+      <EfferdDashboard2 jobs={allJobs} />
     </div>
   );
 };
