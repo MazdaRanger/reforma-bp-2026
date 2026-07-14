@@ -42,14 +42,11 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
   const [fetchedInventoryItems, setFetchedInventoryItems] = useState<InventoryItem[]>([]);
   const [isFetchingItems, setIsFetchingItems] = useState(false);
 
-  // --- UNIT CONVERSION HELPERS ---
-  // Returns list of selectable input units based on the item's stock unit
+  // Returns list of selectable input units
   const getInputUnitOptions = (stockUnit: string): string[] => {
-    if (stockUnit === 'Kg') return ['Gram', 'Kg'];
-    if (stockUnit === 'Gram') return ['Gram', 'Kg'];
-    if (stockUnit === 'Liter') return ['Ml', 'Liter'];
-    if (stockUnit === 'Ml') return ['Ml', 'Liter'];
-    return [stockUnit]; // same unit, no conversion
+    // Return all possible material units as requested by user, 
+    // so they are not restricted to just Ml/Liter for a Liter item.
+    return ['Liter', 'Ml', 'Kg', 'Gram', 'Kaleng', 'Pcs'];
   };
 
   // Converts qty from inputUnit to stockUnit for stock deduction
