@@ -109,6 +109,9 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchMessage, setSearchMessage] = useState<{type: 'success'|'error'|'info', text: string} | null>(null);
 
+  const [customBrand, setCustomBrand] = useState('');
+  const [customColor, setCustomColor] = useState('');
+
   useEffect(() => {
     if (initialData) {
       setFormData({ ...initialData });
@@ -195,8 +198,23 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
         return;
     }
 
+    if (formData.carBrand === 'Lainnya' && !customBrand.trim()) {
+        alert("Kolom Merek Kendaraan Manual WAJIB diisi!");
+        return;
+    }
+    if (formData.warnaMobil === 'Lainnya' && !customColor.trim()) {
+        alert("Kolom Warna Kendaraan Manual WAJIB diisi!");
+        return;
+    }
+
+    const payloadToSave = {
+        ...formData,
+        carBrand: formData.carBrand === 'Lainnya' ? customBrand.toUpperCase() : formData.carBrand,
+        warnaMobil: formData.warnaMobil === 'Lainnya' ? customColor.toUpperCase() : formData.warnaMobil
+    };
+
     setIsSubmitting(true);
-    try { await onSave(formData); } catch (error) { console.error(error); } finally { setIsSubmitting(false); }
+    try { await onSave(payloadToSave); } catch (error) { console.error(error); } finally { setIsSubmitting(false); }
   };
 
   const isInsurance = isInsuranceJob(formData.namaAsuransi);
@@ -252,7 +270,18 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
                 <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_brand')}</label>
                 <select name="carBrand" value={formData.carBrand} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary">
                     {(settings.carBrands || []).map(b => <option key={b} value={b}>{b}</option>)}
+                    <option value="Lainnya">Lainnya (Ketik Manual)</option>
                 </select>
+                {formData.carBrand === 'Lainnya' && (
+                    <input 
+                        type="text" 
+                        value={customBrand} 
+                        onChange={(e) => setCustomBrand(e.target.value)} 
+                        placeholder="Ketik Merek Kendaraan" 
+                        required
+                        className="w-full mt-2 p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary uppercase"
+                    />
+                )}
             </div>
             <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_model')}</label>
@@ -265,7 +294,18 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
                 <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_color')}</label>
                 <select name="warnaMobil" value={formData.warnaMobil} onChange={handleChange} className="w-full p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary">
                     {(settings.carColors || []).map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="Lainnya">Lainnya (Ketik Manual)</option>
                 </select>
+                {formData.warnaMobil === 'Lainnya' && (
+                    <input 
+                        type="text" 
+                        value={customColor} 
+                        onChange={(e) => setCustomColor(e.target.value)} 
+                        placeholder="Ketik Warna Kendaraan" 
+                        required
+                        className="w-full mt-2 p-3 bg-card border border-border rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all font-semibold text-textPrimary uppercase"
+                    />
+                )}
             </div>
             <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_vin')}</label>
