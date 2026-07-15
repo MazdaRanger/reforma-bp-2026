@@ -202,9 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           { id: 'general_affairs',  label: t('ga')          },
         ],
       },
-    ];
-    if (userPermissions.hasFinanceAccess) {
-      groups.push({
+      {
         id: 'finance_root', label: t('finance_root'),
         items: [
           { id: 'finance_invoice',   label: t('invoice')       },
@@ -214,10 +212,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           { id: 'finance_dashboard', label: t('reports')       },
           { id: 'report_center',     label: t('report_center') },
         ],
-      });
-    }
+      }
+    ];
     return groups;
-  }, [userPermissions, lang]);
+  }, [lang]);
 
   // Auto-detect active group from currentView
   useEffect(() => {
