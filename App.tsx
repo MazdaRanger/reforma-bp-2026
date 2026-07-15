@@ -35,6 +35,7 @@ import AssetManagementView from './components/general/AssetManagementView';
 import CrcDashboardView from './components/crc/CrcDashboardView'; 
 import JobControlView from './components/production/JobControlView';
 import ClaimsControlView from './components/admin/ClaimsControlView'; 
+import SuratPentingView from './components/admin/SuratPentingView';
 import ReportCenterView from './components/reports/ReportCenterView';
 import { MorphingSquare } from './components/ui/morphing-square';
 
@@ -445,6 +446,10 @@ const AppContent: React.FC = () => {
 
         {currentView === 'claims_control' && (
             <ClaimsControlView jobs={jobs} inventoryItems={inventoryItems} vehicles={vehicles} settings={appSettings} showNotification={showNotification} openModal={openModal} onNavigate={setCurrentView} />
+        )}
+
+        {currentView === 'surat_penting' && (
+            <SuratPentingView jobs={jobs} settings={appSettings} showNotification={showNotification} />
         )}
 
         {currentView === 'entry_data' && (

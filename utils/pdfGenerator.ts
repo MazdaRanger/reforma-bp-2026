@@ -647,3 +647,159 @@ export const generateReceiptPDF = (trx: CashierTransaction, settings: Settings) 
 
     doc.save(`${trx.transactionNumber || 'RECEIPT'}.pdf`);
 };
+
+// --- SURAT PERNYATAAN PUAS ---
+export const generateSuratPuasPDF = (job: Job, settings: Settings) => {
+    const doc: any = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    addHeader(doc, settings);
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("SURAT PERNYATAAN PUAS", pageWidth / 2, 45, { align: 'center' });
+    doc.setLineWidth(0.5);
+    doc.line(pageWidth / 2 - 35, 46, pageWidth / 2 + 35, 46);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    
+    let currentY = 60;
+    const margin = 20;
+    const textWidth = pageWidth - 40;
+
+    const opening = "Yang bertanda tangan di bawah ini, selaku Pemilik Kendaraan / Pihak yang diberi kuasa atas kendaraan:";
+    doc.text(opening, margin, currentY);
+    currentY += 10;
+
+    const col1 = margin + 10;
+    const col2 = col1 + 35;
+    const lh = 7;
+
+    doc.text("Nama Pemilik", col1, currentY); doc.text(`: ${job.customerName}`, col2, currentY); currentY += lh;
+    doc.text("No. Kendaraan", col1, currentY); doc.text(`: ${job.policeNumber}`, col2, currentY); currentY += lh;
+    doc.text("Merk / Tipe", col1, currentY); doc.text(`: ${job.carBrand} ${job.carModel}`, col2, currentY); currentY += lh;
+    doc.text("No. Rangka", col1, currentY); doc.text(`: ${job.nomorRangka || '-'}`, col2, currentY); currentY += lh;
+    doc.text("No. Mesin", col1, currentY); doc.text(`: ${job.nomorMesin || '-'}`, col2, currentY); currentY += lh;
+    doc.text("No. WO / Estimasi", col1, currentY); doc.text(`: ${job.woNumber || job.estimateData?.estimationNumber || '-'}`, col2, currentY); currentY += lh;
+
+    currentY += 5;
+    const workshopName = settings.workshopName || "REFORMA BODY & PAINT";
+    
+    const bodyText = `Dengan ini menyatakan bahwa perbaikan atas kendaraan tersebut di atas telah selesai dikerjakan oleh bengkel ${workshopName}. Kami telah melakukan pemeriksaan secara seksama dan menyeluruh terhadap hasil perbaikan, baik dari segi kualitas, kelengkapan suku cadang, dan kebersihan kendaraan.`;
+    
+    const splitBody = doc.splitTextToSize(bodyText, textWidth);
+    doc.text(splitBody, margin, currentY);
+    currentY += splitBody.length * lh + 2;
+
+    const bodyText2 = `Melalui surat ini, kami menyatakan SANGAT PUAS atas hasil perbaikan yang telah dilakukan. Kami juga menyatakan bahwa setelah proses serah terima kendaraan ini selesai dilaksanakan, tidak akan ada tuntutan dalam bentuk apapun kepada pihak ${workshopName} maupun pihak asuransi (jika ada) di kemudian hari terkait dengan klaim perbaikan ini.`;
+
+    const splitBody2 = doc.splitTextToSize(bodyText2, textWidth);
+    doc.text(splitBody2, margin, currentY);
+    currentY += splitBody2.length * lh + 10;
+
+    const todayStr = formatDateIndo(new Date());
+    doc.text(`Jakarta, ${todayStr}`, pageWidth - margin - 10, currentY, { align: 'right' });
+    currentY += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Pihak Bengkel,", margin + 10, currentY, { align: 'center' });
+    doc.text("Pemilik / Penerima Kuasa,", pageWidth - margin - 30, currentY, { align: 'center' });
+
+    currentY += 30;
+    doc.setFont("helvetica", "normal");
+    doc.text(`( ${workshopName} )`, margin + 10, currentY, { align: 'center' });
+    doc.text("( .......................................... )", pageWidth - margin - 30, currentY, { align: 'center' });
+
+    doc.save(`Surat_Pernyataan_Puas_${job.policeNumber}.pdf`);
+};
+
+// --- SURAT KUASA PENGAMBILAN KENDARAAN ---
+export const generateSuratKuasaPDF = (job: Job, formData: any, settings: Settings) => {
+    const doc: any = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    addHeader(doc, settings);
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("SURAT KUASA PENGAMBILAN KENDARAAN", pageWidth / 2, 45, { align: 'center' });
+    doc.setLineWidth(0.5);
+    doc.line(pageWidth / 2 - 45, 46, pageWidth / 2 + 45, 46);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    
+    let currentY = 60;
+    const margin = 20;
+    
+    doc.text("Yang bertanda tangan di bawah ini (Pemberi Kuasa):", margin, currentY);
+    currentY += 10;
+
+    const col1 = margin + 5;
+    const col2 = col1 + 35;
+    const lh = 7;
+
+    doc.text("Nama", col1, currentY); doc.text(`: ${job.customerName}`, col2, currentY); currentY += lh;
+    doc.text("No. Telepon", col1, currentY); doc.text(`: ${job.customerPhone || '-'}`, col2, currentY); currentY += lh;
+    
+    const address = job.customerAddress || '-';
+    const splitAddress = doc.splitTextToSize(`: ${address}`, pageWidth - margin - col2);
+    doc.text(splitAddress, col2, currentY);
+    doc.text("Alamat", col1, currentY);
+    currentY += splitAddress.length * lh;
+
+    doc.text("Dengan ini memberikan kuasa penuh kepada (Penerima Kuasa):", margin, currentY);
+    currentY += 10;
+
+    doc.text("Nama", col1, currentY); doc.text(`: ${formData.namaPenerimaKuasa}`, col2, currentY); currentY += lh;
+    doc.text("No. Identitas (KTP)", col1, currentY); doc.text(`: ${formData.nikPenerimaKuasa}`, col2, currentY); currentY += lh;
+    
+    const addressPenerima = formData.alamatPenerimaKuasa || '-';
+    const splitAddressPenerima = doc.splitTextToSize(`: ${addressPenerima}`, pageWidth - margin - col2);
+    doc.text(splitAddressPenerima, col2, currentY);
+    doc.text("Alamat", col1, currentY);
+    currentY += splitAddressPenerima.length * lh;
+
+    doc.text("Untuk melakukan pengambilan 1 (satu) unit kendaraan dengan detail berikut:", margin, currentY);
+    currentY += 10;
+
+    doc.text("No. Kendaraan", col1, currentY); doc.text(`: ${job.policeNumber}`, col2, currentY); currentY += lh;
+    doc.text("Merk / Tipe", col1, currentY); doc.text(`: ${job.carBrand} ${job.carModel}`, col2, currentY); currentY += lh;
+    doc.text("Warna", col1, currentY); doc.text(`: ${job.warnaMobil || '-'}`, col2, currentY); currentY += lh;
+    doc.text("No. Rangka", col1, currentY); doc.text(`: ${job.nomorRangka || '-'}`, col2, currentY); currentY += lh;
+    doc.text("No. Mesin", col1, currentY); doc.text(`: ${job.nomorMesin || '-'}`, col2, currentY); currentY += lh;
+
+    currentY += 5;
+    const workshopName = settings.workshopName || "REFORMA BODY & PAINT";
+    
+    const bodyText = `Demikian Surat Kuasa ini dibuat dengan sebenarnya dan tanpa adanya paksaan dari pihak manapun, untuk digunakan sebagaimana mestinya. Segala risiko yang timbul setelah kendaraan diserahterimakan kepada Penerima Kuasa menjadi tanggung jawab sepenuhnya dari Pemberi Kuasa, dan membebaskan pihak ${workshopName} dari segala tuntutan di kemudian hari.`;
+    
+    const splitBody = doc.splitTextToSize(bodyText, pageWidth - 40);
+    doc.text(splitBody, margin, currentY);
+    currentY += splitBody.length * lh + 10;
+
+    const todayStr = formatDateIndo(new Date());
+    doc.text(`Jakarta, ${todayStr}`, pageWidth - margin - 30, currentY, { align: 'center' });
+    currentY += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Penerima Kuasa,", margin + 30, currentY, { align: 'center' });
+    doc.text("Pemberi Kuasa,", pageWidth - margin - 30, currentY, { align: 'center' });
+
+    currentY += 5;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Materai Rp 10.000", pageWidth - margin - 30, currentY + 10, { align: 'center' });
+    doc.setFontSize(11);
+    currentY += 25;
+
+    doc.setFont("helvetica", "normal");
+    doc.text(`( ${formData.namaPenerimaKuasa} )`, margin + 30, currentY, { align: 'center' });
+    doc.text(`( ${job.customerName} )`, pageWidth - margin - 30, currentY, { align: 'center' });
+
+    doc.save(`Surat_Kuasa_${job.policeNumber}.pdf`);
+};
+

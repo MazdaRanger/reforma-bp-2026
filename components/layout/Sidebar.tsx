@@ -38,6 +38,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
     job_list: 'Daftar Pekerjaan',
     spkl: 'SPKL (Jasa Luar)',
     claims: 'Admin Claim Control',
+    surat_penting: 'Surat Penting',
     crc: 'CRC / Customer Care',
     production_root: 'PRODUKSI & BENGKEL',
     kanban: 'Job Control (Kanban)',
@@ -70,6 +71,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
     job_list: 'Work List',
     spkl: 'Sublet (External)',
     claims: 'Admin Claim Control',
+    surat_penting: 'Important Documents',
     crc: 'CRC / Customer Care',
     production_root: 'WORKSHOP PRODUCTION',
     kanban: 'Job Control (Kanban)',
@@ -114,6 +116,7 @@ const ITEM_ICONS: Record<string, React.ReactNode> = {
   entry_data:         <ClipboardList   size={13} strokeWidth={1.5} />,
   production_spkl:    <Wrench          size={13} strokeWidth={1.5} />,
   claims_control:     <ShieldCheck     size={13} strokeWidth={1.5} />,
+  surat_penting:      <FileText        size={13} strokeWidth={1.5} />,
   crc_dashboard:      <Headphones      size={13} strokeWidth={1.5} />,
   job_control:        <Kanban          size={13} strokeWidth={1.5} />,
   part_monitoring:    <ScanSearch      size={13} strokeWidth={1.5} />,
@@ -173,6 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         id: 'claims_control_root', label: t('claims'),
         items: [
           { id: 'claims_control',    label: t('claims')      },
+          { id: 'surat_penting',     label: t('surat_penting') },
         ],
       },
       {
