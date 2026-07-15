@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Job, Settings, UserPermissions, InventoryItem, Vehicle } from '../../types';
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
-import { formatDateIndo, formatCurrency, cleanObject } from '../../utils/helpers';
+import { formatDateIndo, formatCurrency, cleanObject, isInsuranceJob } from '../../utils/helpers';
 import { ShieldCheck, Clock, AlertTriangle, ChevronRight, User, MessageSquare, Search, Phone, Package, Calendar, ArrowRight, ClipboardList, CheckCircle2, Zap, Plus, Car, X, Info, ShoppingCart, Loader2, Gavel, Timer } from 'lucide-react';
 import Modal from '../ui/Modal';
 
@@ -74,7 +74,7 @@ const ClaimsControlView: React.FC<ClaimsControlViewProps> = ({ jobs, inventoryIt
 
   const activeClaimJobs = useMemo(() => {
       const term = searchTerm.toUpperCase();
-      const filtered = jobs.filter(j => !j.isClosed && !j.isDeleted && j.namaAsuransi !== 'Umum / Pribadi' && CLAIM_STAGES.includes(j.statusKendaraan) && (j.policeNumber.includes(term) || j.customerName.toUpperCase().includes(term)));
+      const filtered = jobs.filter(j => !j.isClosed && !j.isDeleted && isInsuranceJob(j.namaAsuransi) && CLAIM_STAGES.includes(j.statusKendaraan) && (j.policeNumber.includes(term) || j.customerName.toUpperCase().includes(term)));
       
       const stockMap: Record<string, number> = {};
       inventoryItems.forEach(i => { stockMap[i.id] = i.stock; });

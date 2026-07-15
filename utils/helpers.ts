@@ -1,6 +1,18 @@
 
 import { Timestamp } from "firebase/firestore";
 
+/**
+ * Menentukan apakah suatu job adalah klaim asuransi.
+ * Helper sentral ini menggantikan semua perbandingan string hardcoded
+ * seperti `namaAsuransi !== 'Umum / Pribadi'` di seluruh codebase,
+ * sehingga kebal terhadap variasi kapitalisasi atau typo ringan.
+ */
+export const isInsuranceJob = (namaAsuransi: string | undefined | null): boolean => {
+    if (!namaAsuransi) return false;
+    const normalized = namaAsuransi.toLowerCase().trim();
+    return normalized !== 'umum / pribadi' && normalized !== 'pribadi' && normalized !== 'umum';
+};
+
 export const formatCurrency = (number: number | undefined) => 
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number || 0);
 

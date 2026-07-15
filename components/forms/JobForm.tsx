@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Vehicle, Settings } from '../../types';
-import { formatPoliceNumber, cleanObject } from '../../utils/helpers';
+import { formatPoliceNumber, cleanObject, isInsuranceJob } from '../../utils/helpers';
 import { Save, Loader2, User, Car, Shield, Search, Info, MapPin, Tag, Calendar, Database, RefreshCw } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, UNITS_MASTER_COLLECTION } from '../../services/firebase';
@@ -173,11 +172,34 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.policeNumber || !formData.customerName) return;
+
+    // Strict Address Validation
+    const address = (formData.customerAddress || '').trim();
+    const kota = (formData.customerKota || '').trim();
+    const kecamatan = (formData.customerKecamatan || '').trim();
+    const kelurahan = (formData.customerKelurahan || '').trim();
+
+    if (!address || !kota || !kecamatan || !kelurahan) {
+        alert("Seluruh kolom alamat (Alamat Lengkap, Kelurahan, Kecamatan, Kota/Kabupaten) WAJIB diisi dengan lengkap!");
+        return;
+    }
+
+    // Prevent copy-pasting the same word in all boxes
+    const lowerAddress = address.toLowerCase();
+    const lowerKota = kota.toLowerCase();
+    const lowerKec = kecamatan.toLowerCase();
+    const lowerKel = kelurahan.toLowerCase();
+
+    if (lowerAddress === lowerKota || lowerKec === lowerKota || lowerKel === lowerKota || lowerKel === lowerKec) {
+        alert("Data alamat tidak valid! Tidak diperkenankan mengisi data yang sama persis di setiap kolom alamat (misalnya mengisi nama kota di semua kolom).");
+        return;
+    }
+
     setIsSubmitting(true);
     try { await onSave(formData); } catch (error) { console.error(error); } finally { setIsSubmitting(false); }
   };
 
-  const isInsurance = !['umum / pribadi', 'pribadi'].includes((formData.namaAsuransi || '').toLowerCase());
+  const isInsurance = isInsuranceJob(formData.namaAsuransi);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in max-w-5xl mx-auto py-2">

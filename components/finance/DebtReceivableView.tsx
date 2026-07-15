@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Job, PurchaseOrder, CashierTransaction, UserPermissions, Settings } from '../../types';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, CASHIER_COLLECTION, SETTINGS_COLLECTION } from '../../services/firebase';
-import { formatCurrency, formatDateIndo, cleanObject, generateTransactionId } from '../../utils/helpers';
+import { formatCurrency, formatDateIndo, cleanObject, generateTransactionId, isInsuranceJob } from '../../utils/helpers';
 import { generateReceiptPDF } from '../../utils/pdfGenerator';
 import Modal from '../ui/Modal';
 
@@ -260,9 +260,11 @@ const DebtReceivableView: React.FC<DebtReceivableViewProps> = ({ jobs, purchaseO
                         <tbody className="divide-y divide-hairline">
                             {receivables
                                 .filter(r => {
-                                    if (filterIns === 'ALL') return true;
-                                    if (filterIns === 'Asuransi') return r.namaAsuransi !== 'Umum / Pribadi';
-                                    return r.namaAsuransi === 'Umum / Pribadi';
+                                    if (filterIns !== 'ALL') {
+                                        if (filterIns === 'Asuransi') return isInsuranceJob(r.namaAsuransi);
+                                        if (filterIns === 'Umum') return !isInsuranceJob(r.namaAsuransi);
+                                    }
+                                    return true;
                                 })
                                 .map(job => (
                                 <tr key={job.id} className="hover:bg-soft-cloud transition-colors">

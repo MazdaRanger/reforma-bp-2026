@@ -6,7 +6,7 @@ import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, onSnapsho
 import { db, UNITS_MASTER_COLLECTION, SERVICE_JOBS_COLLECTION, SETTINGS_COLLECTION, SPAREPART_COLLECTION, SUPPLIERS_COLLECTION, CASHIER_COLLECTION, PURCHASE_ORDERS_COLLECTION, ASSETS_COLLECTION, SERVICES_MASTER_COLLECTION, USERS_COLLECTION } from './services/firebase';
 import { Job, EstimateData, Settings, InventoryItem, Supplier, Vehicle, CashierTransaction, PurchaseOrder, Asset, ServiceMasterItem, UserProfile } from './types';
 import { initialSettingsState } from './utils/constants';
-import { cleanObject } from './utils/helpers';
+import { cleanObject, isInsuranceJob } from './utils/helpers';
 
 // Components
 import OverviewDashboard from './components/dashboard/OverviewDashboard';
@@ -210,7 +210,28 @@ const AppContent: React.FC = () => {
 
           if (formData.id) {
               await updateDoc(doc(db, UNITS_MASTER_COLLECTION, formData.id), cleanObject(vehiclePayload));
-              showNotification("Database Unit diperbarui.", "success");
+              
+              // SYNC: Update all active (non-closed) jobs linked to this vehicle
+              const linkedJobs = jobs.filter(j => !j.isClosed && !j.isDeleted && j.unitId === formData.id);
+              if (linkedJobs.length > 0) {
+                  const identityUpdatePayload = {
+                      customerName: formData.customerName,
+                      customerPhone: formData.customerPhone,
+                      customerAddress: formData.customerAddress,
+                      customerKelurahan: formData.customerKelurahan,
+                      customerKecamatan: formData.customerKecamatan,
+                      customerKota: formData.customerKota,
+                      customerProvinsi: formData.customerProvinsi,
+                      updatedAt: serverTimestamp()
+                  };
+                  const syncPromises = linkedJobs.map(j =>
+                      updateDoc(doc(db, SERVICE_JOBS_COLLECTION, j.id), cleanObject(identityUpdatePayload))
+                  );
+                  await Promise.all(syncPromises);
+                  showNotification(`Database Unit & ${linkedJobs.length} WO aktif diperbarui.`, "success");
+              } else {
+                  showNotification("Database Unit diperbarui.", "success");
+              }
           } else {
               const newPayload = {
                   ...vehiclePayload,
@@ -249,7 +270,7 @@ const AppContent: React.FC = () => {
           isClosed: false,
           hargaJasa: 0,
           hargaPart: 0,
-          namaSA: vehicle.namaAsuransi === 'Umum / Pribadi' ? userData.displayName || '' : '', 
+          namaSA: !isInsuranceJob(vehicle.namaAsuransi) ? userData.displayName || '' : '', 
           costData: { hargaModalBahan: 0, hargaBeliPart: 0, jasaExternal: 0 },
           estimateData: { grandTotal: 0, jasaItems: [], partItems: [], discountJasa: 0, discountPart: 0, discountJasaAmount: 0, discountPartAmount: 0, ppnAmount: 0, subtotalJasa: 0, subtotalPart: 0 }
       };
@@ -315,7 +336,7 @@ const AppContent: React.FC = () => {
 
           if (saveType === 'estimate') {
               if (!woNumber) {
-                  if (basePayload.namaAsuransi !== 'Umum / Pribadi') {
+                  if (isInsuranceJob(basePayload.namaAsuransi)) {
                       basePayload.statusKendaraan = 'Tunggu SPK Asuransi';
                   } else {
                       basePayload.statusKendaraan = 'Tunggu Estimasi';

@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Job, EstimateData, Settings, PurchaseOrder, PurchaseOrderItem, CashierTransaction } from '../types';
-import { formatCurrency, formatDateIndo } from './helpers';
+import { formatCurrency, formatDateIndo, isInsuranceJob } from './helpers';
 
 // Helper for standard B&W Header
 const addHeader = (doc: any, settings: Settings) => {
@@ -131,7 +131,7 @@ export const generateEstimationPDF = (job: Job, estimateData: EstimateData, sett
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("GRAND TOTAL:", labelX, currentY);
-  doc.text(formatCurrency(estimateData.grandTotal), valX, currentY, { align: 'right' });
+  doc.text(formatCurrency(estimateData?.grandTotal || 0), valX, currentY, { align: 'right' });
 
   const signY = currentY + 30;
   doc.setFontSize(9);
@@ -185,7 +185,7 @@ export const generateInvoicePDF = (job: Job, settings: Settings) => {
   doc.text(job.customerName, 20, 52);
   doc.text(job.customerAddress || 'Alamat tidak tersedia', 20, 57);
   doc.text(`Telp: ${job.customerPhone || '-'}`, 20, 62);
-  doc.text(job.namaAsuransi !== 'Umum / Pribadi' ? `Asuransi: ${job.namaAsuransi}` : 'Pelanggan Umum', 20, 67);
+  doc.text(isInsuranceJob(job.namaAsuransi) ? `Asuransi: ${job.namaAsuransi}` : 'Pelanggan Umum', 20, 67);
 
   // Right: Vehicle Info
   const col2 = pageWidth / 2 + 10;
@@ -308,7 +308,7 @@ export const generateInvoicePDF = (job: Job, settings: Settings) => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("GRAND TOTAL", labelX, currentY + 9);
-  doc.text(formatCurrency(estimate.grandTotal), valX, currentY + 9, { align: 'right' });
+  doc.text(formatCurrency(estimate?.grandTotal || 0), valX, currentY + 9, { align: 'right' });
 
   // -- FOOTER PAYMENT INFO --
   currentY += 20;

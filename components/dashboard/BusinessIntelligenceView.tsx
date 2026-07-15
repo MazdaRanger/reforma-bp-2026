@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Job, Settings } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, isInsuranceJob } from '../../utils/helpers';
 import EfferdDashboard2 from './EfferdDashboard2';
 
 interface BIProps {
@@ -20,12 +20,12 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
         return dateObj.getMonth() === selectedMonth && dateObj.getFullYear() === selectedYear;
     });
 
-    const insCount = periodJobs.filter(j => j.namaAsuransi !== 'Umum / Pribadi').length;
-    const priCount = periodJobs.filter(j => j.namaAsuransi === 'Umum / Pribadi').length;
+    const insCount = periodJobs.filter(j => isInsuranceJob(j.namaAsuransi)).length;
+    const priCount = periodJobs.filter(j => !isInsuranceJob(j.namaAsuransi)).length;
 
     const insMap: Record<string, number> = {};
     periodJobs.forEach(j => {
-        if (j.namaAsuransi !== 'Umum / Pribadi') {
+        if (isInsuranceJob(j.namaAsuransi)) {
             insMap[j.namaAsuransi] = (insMap[j.namaAsuransi] || 0) + 1;
         }
     });
@@ -35,8 +35,11 @@ const BusinessIntelligenceView: React.FC<BIProps> = ({ jobs, settings }) => {
 
     const regionMap: Record<string, number> = {};
     periodJobs.forEach(j => {
-        const kota = (j.customerKota || 'TIDAK TERDATA').toUpperCase().trim();
-        regionMap[kota] = (regionMap[kota] || 0) + 1;
+        // Skip blank/empty kota to prevent 'TIDAK TERDATA' polluting the chart
+        const kota = (j.customerKota || '').toUpperCase().trim();
+        if (kota) {
+            regionMap[kota] = (regionMap[kota] || 0) + 1;
+        }
     });
     const topRegions = Object.entries(regionMap)
         .sort((a, b) => b[1] - a[1])
