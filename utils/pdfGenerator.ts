@@ -653,19 +653,18 @@ export const generateSuratPuasPDF = (job: Job, settings: Settings) => {
     const doc: any = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.width;
     
-    // Header
-    addHeader(doc, settings);
+    // No Header (Kop Surat removed as requested)
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("SURAT PERNYATAAN PUAS", pageWidth / 2, 45, { align: 'center' });
+    doc.text("SURAT PERNYATAAN PUAS", pageWidth / 2, 30, { align: 'center' });
     doc.setLineWidth(0.5);
-    doc.line(pageWidth / 2 - 35, 46, pageWidth / 2 + 35, 46);
+    doc.line(pageWidth / 2 - 35, 31, pageWidth / 2 + 35, 31);
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     
-    let currentY = 60;
+    let currentY = 45;
     const margin = 20;
     const textWidth = pageWidth - 40;
 
@@ -720,39 +719,26 @@ export const generateSuratKuasaPDF = (job: Job, formData: any, settings: Setting
     const doc: any = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.width;
     
-    // Header
-    addHeader(doc, settings);
+    // No Header (Kop Surat removed as requested)
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("SURAT KUASA PENGAMBILAN KENDARAAN", pageWidth / 2, 45, { align: 'center' });
+    doc.text("SURAT KUASA PENGAMBILAN KENDARAAN", pageWidth / 2, 30, { align: 'center' });
     doc.setLineWidth(0.5);
-    doc.line(pageWidth / 2 - 45, 46, pageWidth / 2 + 45, 46);
+    doc.line(pageWidth / 2 - 45, 31, pageWidth / 2 + 45, 31);
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     
-    let currentY = 60;
+    let currentY = 45;
     const margin = 20;
     
-    doc.text("Yang bertanda tangan di bawah ini (Pemberi Kuasa):", margin, currentY);
+    doc.text("Yang bertanda tangan dibawah ini ( Penerima Kuasa ):", margin, currentY);
     currentY += 10;
 
     const col1 = margin + 5;
     const col2 = col1 + 35;
     const lh = 7;
-
-    doc.text("Nama", col1, currentY); doc.text(`: ${job.customerName}`, col2, currentY); currentY += lh;
-    doc.text("No. Telepon", col1, currentY); doc.text(`: ${job.customerPhone || '-'}`, col2, currentY); currentY += lh;
-    
-    const address = job.customerAddress || '-';
-    const splitAddress = doc.splitTextToSize(`: ${address}`, pageWidth - margin - col2);
-    doc.text(splitAddress, col2, currentY);
-    doc.text("Alamat", col1, currentY);
-    currentY += splitAddress.length * lh;
-
-    doc.text("Dengan ini memberikan kuasa penuh kepada (Penerima Kuasa):", margin, currentY);
-    currentY += 10;
 
     doc.text("Nama", col1, currentY); doc.text(`: ${formData.namaPenerimaKuasa}`, col2, currentY); currentY += lh;
     doc.text("No. Identitas (KTP)", col1, currentY); doc.text(`: ${formData.nikPenerimaKuasa}`, col2, currentY); currentY += lh;
@@ -763,7 +749,19 @@ export const generateSuratKuasaPDF = (job: Job, formData: any, settings: Setting
     doc.text("Alamat", col1, currentY);
     currentY += splitAddressPenerima.length * lh;
 
-    doc.text("Untuk melakukan pengambilan 1 (satu) unit kendaraan dengan detail berikut:", margin, currentY);
+    doc.text("dengan ini mewakili dan di beri kuasa penuh oleh ( PEMBERI KUASA ):", margin, currentY);
+    currentY += 10;
+
+    doc.text("Nama", col1, currentY); doc.text(`: ${job.customerName}`, col2, currentY); currentY += lh;
+    doc.text("No. Telepon", col1, currentY); doc.text(`: ${job.customerPhone || '-'}`, col2, currentY); currentY += lh;
+    
+    const address = job.customerAddress || '-';
+    const splitAddress = doc.splitTextToSize(`: ${address}`, pageWidth - margin - col2);
+    doc.text(splitAddress, col2, currentY);
+    doc.text("Alamat", col1, currentY);
+    currentY += splitAddress.length * lh;
+
+    doc.text("untuk mengambil 1 unit kendaraan dengan detail berikut:", margin, currentY);
     currentY += 10;
 
     doc.text("No. Kendaraan", col1, currentY); doc.text(`: ${job.policeNumber}`, col2, currentY); currentY += lh;
@@ -785,20 +783,13 @@ export const generateSuratKuasaPDF = (job: Job, formData: any, settings: Setting
     doc.text(`Jakarta, ${todayStr}`, pageWidth - margin - 30, currentY, { align: 'center' });
     currentY += 10;
 
+    // Only Penerima Kuasa signs
     doc.setFont("helvetica", "bold");
-    doc.text("Penerima Kuasa,", margin + 30, currentY, { align: 'center' });
-    doc.text("Pemberi Kuasa,", pageWidth - margin - 30, currentY, { align: 'center' });
+    doc.text("Penerima Kuasa,", pageWidth - margin - 30, currentY, { align: 'center' });
 
-    currentY += 5;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("Materai Rp 10.000", pageWidth - margin - 30, currentY + 10, { align: 'center' });
-    doc.setFontSize(11);
     currentY += 25;
-
     doc.setFont("helvetica", "normal");
-    doc.text(`( ${formData.namaPenerimaKuasa} )`, margin + 30, currentY, { align: 'center' });
-    doc.text(`( ${job.customerName} )`, pageWidth - margin - 30, currentY, { align: 'center' });
+    doc.text(`( ${formData.namaPenerimaKuasa} )`, pageWidth - margin - 30, currentY, { align: 'center' });
 
     doc.save(`Surat_Kuasa_${job.policeNumber}.pdf`);
 };
