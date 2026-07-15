@@ -177,7 +177,7 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
     try { await onSave(formData); } catch (error) { console.error(error); } finally { setIsSubmitting(false); }
   };
 
-  const isInsurance = formData.namaAsuransi !== 'Umum / Pribadi';
+  const isInsurance = !['umum / pribadi', 'pribadi'].includes((formData.namaAsuransi || '').toLowerCase());
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in max-w-5xl mx-auto py-2">
@@ -268,7 +268,7 @@ const JobForm: React.FC<JobFormProps> = ({ initialData, settings, onSave, onCanc
             <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-textSecondary uppercase tracking-wider">{t('label_insurance')}</label>
                 <select name="namaAsuransi" value={formData.namaAsuransi} onChange={handleChange} className={`w-full p-3 border rounded-md font-semibold transition-all ${isInsurance ? 'border-primary/50 bg-primary/5 text-primary shadow-sm' : 'border-border bg-card text-textPrimary'}`}>
-                    {(settings.insuranceOptions || []).map(ins => <option key={ins.name} value={ins.name}>{ins.name}</option>)}
+                    {(settings.insuranceOptions || []).map(ins => <option key={ins.name} value={ins.name}>{ins.name.toUpperCase()}</option>)}
                 </select>
             </div>
             {isInsurance ? (
