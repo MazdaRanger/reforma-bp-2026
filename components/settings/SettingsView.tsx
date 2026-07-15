@@ -1296,6 +1296,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                     { id: 'entry_data', label: 'Daftar Pekerjaan (WO)' },
                                     { id: 'production_spkl', label: 'SPKL (Jasa Luar)' },
                                     { id: 'claims_control', label: 'Admin Claim Control' },
+                                    { id: 'surat_penting', label: 'Surat Penting' },
                                     { id: 'crc_dashboard', label: 'CRC / Customer Care' },
                                     { id: 'job_control', label: 'Job Control (Kanban)' },
                                     { id: 'part_monitoring', label: 'Monitoring Part WO' },
@@ -1332,7 +1333,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ currentSettings, refreshSet
                                                               const checked = e.target.checked;
                                                               let newPerms = hasBeenSetup ? [...permissions] : [
                                                                 'overview_main', 'overview_business', 'overview_kpi', 'overview_ai',
-                                                                'input_data', 'estimation_create', 'entry_data', 'production_spkl', 'claims_control', 'crc_dashboard',
+                                                                'input_data', 'estimation_create', 'entry_data', 'production_spkl', 'claims_control', 'surat_penting', 'crc_dashboard',
                                                                 'job_control', 'part_monitoring', 'inventory', 'purchase_order', 'part_issuance', 'material_issuance', 'general_affairs',
                                                                 'finance_invoice', 'finance_cashier', 'finance_tax', 'finance_debt', 'finance_dashboard', 'report_center'
                                                               ];
