@@ -5,7 +5,7 @@ import { db, SERVICE_JOBS_COLLECTION } from '../../services/firebase';
 import { formatPoliceNumber, formatDateIndo, formatCurrency } from '../../utils/helpers';
 import { PRODUCTION_STAGES } from '../../utils/constants';
 import Modal from '../ui/Modal';
-
+import { AlertTriangle } from 'lucide-react';
 interface JobControlViewProps {
   jobs: Job[];
   settings: Settings;
@@ -363,19 +363,25 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
         </div>
 
         {/* MECHANIC LOAD BAR */}
-        <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 scrollbar-hide border-b border-hairline mb-[24px]">
-            {(settings.mechanicNames || []).map(mech => (
-                <div key={mech} className="bg-canvas border border-hairline px-4 py-3 flex items-center gap-4 min-w-[180px] shrink-0 rounded-2xl overflow-hidden">
-                    <div>
-                        <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">LOAD STALL</p>
-                        <p className="text-[14px] font-medium text-ink uppercase tracking-widest">{mech}</p>
+        <details className="mb-[24px] group" open>
+            <summary className="flex items-center gap-2 cursor-pointer list-none border-b border-hairline pb-4 mb-4 text-[12px] font-medium text-mute uppercase tracking-widest outline-none">
+                <span className="group-open:hidden">+ TAMPILKAN LOAD MEKANIK</span>
+                <span className="hidden group-open:inline">- SEMBUNYIKAN LOAD MEKANIK</span>
+            </summary>
+            <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 scrollbar-hide">
+                {(settings.mechanicNames || []).map(mech => (
+                    <div key={mech} className="bg-canvas border border-hairline px-4 py-3 flex items-center gap-4 min-w-[180px] shrink-0 rounded-2xl overflow-hidden">
+                        <div>
+                            <p className="text-[10px] font-medium text-mute uppercase tracking-widest mb-1">LOAD STALL</p>
+                            <p className="text-[14px] font-medium text-ink uppercase tracking-widest">{mech}</p>
+                        </div>
+                        <div className={`ml-auto px-3 py-1 border text-[12px] font-medium ${mechanicWorkload[mech] > 2 ? 'border-ink text-ink bg-soft-cloud' : 'border-hairline text-ink'}`}>
+                            {mechanicWorkload[mech] || 0}
+                        </div>
                     </div>
-                    <div className={`ml-auto px-3 py-1 border text-[12px] font-medium ${mechanicWorkload[mech] > 2 ? 'border-ink text-ink bg-soft-cloud' : 'border-hairline text-ink'}`}>
-                        {mechanicWorkload[mech] || 0}
-                    </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+        </details>
 
         {/* KANBAN BOARD */}
         <div className="flex-grow overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
@@ -400,13 +406,25 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                     const totalPanelValue = job.estimateData?.jasaItems?.reduce((acc, item) => acc + (item.panelCount || 0), 0) || 0;
                                     const partStatus = getPartStatus(job);
                                     
+                                    let deadlineAlert = null;
+                                    if (daysRemaining !== null) {
+                                        if (daysRemaining < 0) {
+                                            deadlineAlert = <span title="Melewati Tanggal Janji"><AlertTriangle size={18} style={{ color: '#dc2626' }} className="animate-pulse" /></span>;
+                                        } else if (daysRemaining <= 2) {
+                                            deadlineAlert = <span title={`H-${daysRemaining} Janji Selesai`}><AlertTriangle size={18} style={{ color: '#f97316' }} /></span>;
+                                        }
+                                    }
+                                    
                                     return (
                                         <div key={job.id} className={`bg-canvas border p-4 transition-colors relative ${job.isVVIP ? 'border-ink shadow-[4px_4px_0_0_#111111]' : isAdminPending ? 'border-mute/50' : isFinal ? 'border-hairline opacity-75' : 'border-hairline hover:border-ink'}`}>
                                             {job.isVVIP && <div className="absolute top-0 right-0 bg-ink text-canvas text-[8px] font-medium uppercase tracking-widest px-2 py-1">VVIP</div>}
                                             
                                             <div className="flex justify-between items-start mb-4 border-b border-hairline pb-4">
                                                 <div>
-                                                    <span className="font-display text-[24px] text-ink leading-none">{job.policeNumber}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-display text-[24px] text-ink leading-none">{job.policeNumber}</span>
+                                                        {!isFinal && !isAdminPending && deadlineAlert}
+                                                    </div>
                                                     <p className="text-[10px] font-medium text-mute uppercase tracking-widest mt-2 truncate max-w-[200px]">{job.carModel} | {job.customerName}</p>
                                                 </div>
                                                 <div className="flex flex-col gap-2">
