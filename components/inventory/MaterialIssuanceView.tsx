@@ -140,6 +140,91 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
     ).slice(0, 10);
   }, [activeJobs, filterWo]);
 
+  const pendingPartOrders = useMemo(() => {
+      if (issuanceType !== 'sparepart') return [];
+      return activeJobs.filter(job => {
+          const parts = job.estimateData?.partItems || [];
+          if (parts.length === 0) return false;
+          
+          const hasOrdered = parts.some(p => p.isOrdered);
+          const hasUnissued = parts.some(p => p.isOrdered && !p.hasArrived);
+          return hasOrdered && hasUnissued;
+      }).map(job => {
+          const parts = job.estimateData?.partItems || [];
+          let readyCount = 0;
+          let indentCount = 0;
+          parts.forEach(p => {
+              if (p.hasArrived) readyCount++;
+              else if (p.isOrdered && p.isIndent) indentCount++;
+          });
+          
+          let statusLabel = 'ON ORDER';
+          if (readyCount > 0 && indentCount > 0) statusLabel = 'PARTIAL (INDENT)';
+          else if (readyCount > 0) statusLabel = 'PARTIAL';
+          else if (indentCount > 0) statusLabel = 'ON ORDER (INDENT)';
+          
+          const orderDate = job.updatedAt ? new Date(job.updatedAt).toISOString() : new Date().toISOString(); 
+          
+          return { job, statusLabel, orderDate };
+      });
+  }, [activeJobs, issuanceType]);
+
+  const issuedPartJobs = useMemo(() => {
+      if (issuanceType !== 'sparepart') return [];
+      
+      const results: { job: Job, lastIssued: string, totalHPP: number }[] = [];
+      
+      activeJobs.forEach(job => {
+          const logs = job.usageLog?.filter(l => l.category === 'sparepart') || [];
+          const legacyParts = (job.estimateData?.partItems || []).filter(p => p.hasArrived);
+          
+          if (logs.length > 0 || legacyParts.length > 0) {
+              let totalHPP = 0;
+              let lastIssued = job.updatedAt || new Date().toISOString();
+              
+              if (logs.length > 0) {
+                  totalHPP = logs.reduce((sum, l) => sum + (l.totalCost || 0), 0);
+                  const sortedLogs = [...logs].sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+                  lastIssued = sortedLogs[0].issuedAt;
+              } else {
+                  legacyParts.forEach(p => {
+                      const item = inventoryItems.find(i => i.id === p.inventoryId);
+                      if (item) totalHPP += (p.qty || 1) * (item.buyPrice || 0);
+                  });
+              }
+              
+              results.push({ job, lastIssued, totalHPP });
+          }
+      });
+      
+      return results.sort((a, b) => new Date(b.lastIssued).getTime() - new Date(a.lastIssued).getTime());
+  }, [activeJobs, issuanceType, inventoryItems]);
+
+  const pendingMaterialJobs = useMemo(() => {
+      if (issuanceType !== 'material') return [];
+      return activeJobs.filter(job => {
+          const logs = job.usageLog?.filter(l => l.category === 'material') || [];
+          return logs.length === 0;
+      }).map(job => {
+          return { job, startDate: job.createdAt || job.updatedAt || new Date().toISOString() };
+      });
+  }, [activeJobs, issuanceType]);
+
+  const issuedMaterialJobs = useMemo(() => {
+      if (issuanceType !== 'material') return [];
+      const results: { job: Job, lastIssued: string, totalHPP: number }[] = [];
+      
+      activeJobs.forEach(job => {
+          const logs = job.usageLog?.filter(l => l.category === 'material') || [];
+          if (logs.length > 0) {
+              const totalHPP = logs.reduce((sum, l) => sum + (l.totalCost || 0), 0);
+              const sortedLogs = [...logs].sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+              results.push({ job, lastIssued: sortedLogs[0].issuedAt, totalHPP });
+          }
+      });
+      return results.sort((a, b) => new Date(b.lastIssued).getTime() - new Date(a.lastIssued).getTime());
+  }, [activeJobs, issuanceType]);
+
   useEffect(() => {
       const resolveJobParts = async () => {
           if (selectedJob && issuanceType === 'sparepart') {
@@ -430,7 +515,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
         </div>
 
         {/* WORK ORDER SELECTOR */}
-        <div className="bg-canvas border border-hairline mb-[48px] relative rounded-2xl">
+        <div className="bg-canvas border border-hairline mb-[24px] relative rounded-2xl">
             <div className="relative">
                 <input 
                     type="text" 
@@ -458,6 +543,208 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                 )}
             </div>
         </div>
+
+        {!selectedJob && issuanceType === 'sparepart' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] animate-fade-in mb-[48px]">
+                {/* TABLE 1: Antrean Order Part */}
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
+                    <div className="p-4 bg-soft-cloud border-b border-hairline flex justify-between items-center">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[14px]">I. ANTREAN PEMBEBANAN PART</h3>
+                        <span className="text-[10px] font-medium px-2 py-1 border border-ink text-ink">{pendingPartOrders.length} UNIT</span>
+                    </div>
+                    <div className="overflow-x-auto flex-grow">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-4 py-3 w-10 text-center font-normal">NO</th>
+                                    <th className="px-4 py-3 font-normal">TGL ORDER</th>
+                                    <th className="px-4 py-3 font-normal">KENDARAAN</th>
+                                    <th className="px-4 py-3 text-center font-normal">STATUS</th>
+                                    <th className="px-4 py-3 text-right font-normal">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {pendingPartOrders.map((item, idx) => (
+                                    <tr key={item.job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-4 py-3 text-center text-[12px] text-mute">{idx + 1}</td>
+                                        <td className="px-4 py-3 text-[12px] text-ink">{formatDateIndo(item.orderDate)}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-[14px] text-ink">{item.job.policeNumber}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-0.5">{item.job.woNumber}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="text-[10px] font-medium uppercase tracking-widest px-2 py-1 border border-ink text-ink">
+                                                {item.statusLabel}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <button 
+                                                onClick={() => { setSelectedJobId(item.job.id); setFilterWo(''); }}
+                                                className="bg-ink text-canvas hover:bg-mute px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            >
+                                                BEBANKAN
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {pendingPartOrders.length === 0 && (
+                                    <tr><td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">TIDAK ADA ANTREAN</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* TABLE 2: Sudah Dibebankan */}
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
+                    <div className="p-4 bg-soft-cloud border-b border-hairline flex justify-between items-center">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[14px]">II. SUDAH DIBEBANKAN PART</h3>
+                        <span className="text-[10px] font-medium px-2 py-1 border border-ink text-ink">{issuedPartJobs.length} UNIT</span>
+                    </div>
+                    <div className="overflow-x-auto flex-grow">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-4 py-3 w-10 text-center font-normal">NO</th>
+                                    <th className="px-4 py-3 font-normal">TGL BEBAN TERAKHIR</th>
+                                    <th className="px-4 py-3 font-normal">KENDARAAN</th>
+                                    <th className="px-4 py-3 text-right font-normal">HPP PART</th>
+                                    <th className="px-4 py-3 text-right font-normal">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {issuedPartJobs.map((item, idx) => (
+                                    <tr key={item.job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-4 py-3 text-center text-[12px] text-mute">{idx + 1}</td>
+                                        <td className="px-4 py-3 text-[12px] text-ink">{formatDateIndo(item.lastIssued)}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-[14px] text-ink">{item.job.policeNumber}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-0.5">{item.job.woNumber}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <span className="text-[12px] font-medium text-ink">{formatCurrency(item.totalHPP)}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <button 
+                                                onClick={() => { setSelectedJobId(item.job.id); setFilterWo(''); }}
+                                                className="bg-sale text-canvas hover:bg-sale-deep px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            >
+                                                BATALKAN
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {issuedPartJobs.length === 0 && (
+                                    <tr><td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">BELUM ADA PEMBEBANAN</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {!selectedJob && issuanceType === 'material' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-[24px] animate-fade-in mb-[48px]">
+                {/* TABLE 1: Belum Dibebankan Bahan */}
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
+                    <div className="p-4 bg-soft-cloud border-b border-hairline flex justify-between items-center">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[14px]">I. BELUM DIBEBANKAN BAHAN</h3>
+                        <span className="text-[10px] font-medium px-2 py-1 border border-ink text-ink">{pendingMaterialJobs.length} UNIT</span>
+                    </div>
+                    <div className="overflow-x-auto flex-grow">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-4 py-3 w-10 text-center font-normal">NO</th>
+                                    <th className="px-4 py-3 font-normal">TGL MASUK</th>
+                                    <th className="px-4 py-3 font-normal">KENDARAAN</th>
+                                    <th className="px-4 py-3 text-right font-normal">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {pendingMaterialJobs.map((item, idx) => (
+                                    <tr key={item.job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-4 py-3 text-center text-[12px] text-mute">{idx + 1}</td>
+                                        <td className="px-4 py-3 text-[12px] text-ink">{formatDateIndo(item.startDate)}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-[14px] text-ink">{item.job.policeNumber}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-0.5">{item.job.woNumber}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <button 
+                                                onClick={() => { setSelectedJobId(item.job.id); setFilterWo(''); }}
+                                                className="bg-ink text-canvas hover:bg-mute px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            >
+                                                BEBANKAN
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {pendingMaterialJobs.length === 0 && (
+                                    <tr><td colSpan={4} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">TIDAK ADA ANTREAN</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* TABLE 2: Sudah Dibebankan Bahan */}
+                <div className="bg-canvas border border-hairline flex flex-col h-[500px] rounded-2xl overflow-hidden">
+                    <div className="p-4 bg-soft-cloud border-b border-hairline flex justify-between items-center">
+                        <h3 className="font-medium text-ink uppercase tracking-widest text-[14px]">II. SUDAH DIBEBANKAN BAHAN</h3>
+                        <span className="text-[10px] font-medium px-2 py-1 border border-ink text-ink">{issuedMaterialJobs.length} UNIT</span>
+                    </div>
+                    <div className="overflow-x-auto flex-grow">
+                        <table className="w-full text-left">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-4 py-3 w-10 text-center font-normal">NO</th>
+                                    <th className="px-4 py-3 font-normal">TGL BEBAN TERAKHIR</th>
+                                    <th className="px-4 py-3 font-normal">KENDARAAN</th>
+                                    <th className="px-4 py-3 text-right font-normal">HPP BAHAN</th>
+                                    <th className="px-4 py-3 text-right font-normal">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-hairline">
+                                {issuedMaterialJobs.map((item, idx) => (
+                                    <tr key={item.job.id} className="hover:bg-soft-cloud transition-colors">
+                                        <td className="px-4 py-3 text-center text-[12px] text-mute">{idx + 1}</td>
+                                        <td className="px-4 py-3 text-[12px] text-ink">{formatDateIndo(item.lastIssued)}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-[14px] text-ink">{item.job.policeNumber}</div>
+                                            <div className="text-[10px] text-mute uppercase tracking-widest mt-0.5">{item.job.woNumber}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <span className="text-[12px] font-medium text-ink">{formatCurrency(item.totalHPP)}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex gap-2 justify-end">
+                                                <button 
+                                                    onClick={() => { setSelectedJobId(item.job.id); setFilterWo(''); }}
+                                                    className="bg-ink text-canvas hover:bg-mute px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap"
+                                                >
+                                                    TAMBAH
+                                                </button>
+                                                <button 
+                                                    onClick={() => { setSelectedJobId(item.job.id); setFilterWo(''); }}
+                                                    className="bg-sale text-canvas hover:bg-sale-deep px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition-colors whitespace-nowrap"
+                                                >
+                                                    BATALKAN
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {issuedMaterialJobs.length === 0 && (
+                                    <tr><td colSpan={5} className="py-12 text-center text-mute text-[12px] uppercase tracking-widest">BELUM ADA PEMBEBANAN</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {selectedJob && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] animate-fade-in">

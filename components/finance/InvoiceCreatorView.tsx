@@ -291,7 +291,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                     </div>
                     <div className="overflow-x-auto flex-grow">
                         <table className="w-full text-left">
-                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0">
+                            <thead className="bg-canvas text-mute font-medium uppercase tracking-widest text-[10px] border-b border-hairline sticky top-0 z-10">
                                 <tr>
                                     <th className="px-6 py-4 font-normal">Unit</th>
                                     <th className="px-6 py-4 text-center font-normal">Part</th>
