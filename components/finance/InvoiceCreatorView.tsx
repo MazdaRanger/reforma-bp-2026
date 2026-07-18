@@ -88,7 +88,14 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
   const wipUnits = useMemo(() => {
       return jobs
         .filter(j => !j.isClosed && j.woNumber && !j.isDeleted)
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        .sort((a, b) => {
+            const readyA = isJobReadyForInvoice(a) ? 1 : 0;
+            const readyB = isJobReadyForInvoice(b) ? 1 : 0;
+            if (readyA !== readyB) {
+                return readyB - readyA;
+            }
+            return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        });
   }, [jobs]);
 
   useEffect(() => {
