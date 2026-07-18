@@ -20,6 +20,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
   const [discountJasa, setDiscountJasa] = useState(0);
   const [discountPart, setDiscountPart] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRawatJalan, setIsRawatJalan] = useState(false);
 
   const isManager = userPermissions.role === 'Manager';
 
@@ -221,6 +222,25 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
       }
   };
 
+  const handleSelectJobWithWarning = (job: Job) => {
+      const parts = job.estimateData?.partItems || [];
+      const hasParts = parts.length > 0;
+      const partLogs = job.usageLog?.filter(l => l.category === 'sparepart') || [];
+      const legacyIssuedParts = parts.filter(p => p.hasArrived);
+      const partsIssued = partLogs.length > 0 || legacyIssuedParts.length > 0;
+      
+      const materialsIssued = job.usageLog?.some(l => l.category === 'material');
+
+      if (!partsIssued || !materialsIssued) {
+          const proceed = window.confirm("Kendaraan ini terdeteksi belum di lakukan pembebanan Sparepart atau Bahan Baku, harap konfirmasi terlebih dahulu kepada Partman sebelum melanjutkan pembuatan invoice");
+          if (!proceed) return;
+      }
+
+      setIsRawatJalan(false);
+      setSelectedJob(job);
+      setSearchTerm('');
+  };
+
   return (
     <div className="animate-fade-in pb-[48px]">
         {/* HEADER */}
@@ -248,7 +268,7 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                         return (
                             <div 
                                 key={job.id}
-                                onClick={() => { setSelectedJob(job); setSearchTerm(''); }}
+                                onClick={() => handleSelectJobWithWarning(job)}
                                 className={`p-4 border border-hairline cursor-pointer flex justify-between items-center transition-colors ${hasMismatch ? 'bg-soft-cloud hover:bg-mute/10' : 'bg-canvas hover:bg-soft-cloud'}`}
                             >
                                 <div>
@@ -334,7 +354,12 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {isReady ? (
-                                                    <span className="text-[9px] font-medium uppercase tracking-widest text-ink border border-ink px-2 py-1">READY</span>
+                                                    <button 
+                                                        onClick={() => handleSelectJobWithWarning(j)}
+                                                        className="text-[9px] font-medium uppercase tracking-widest text-canvas bg-ink border border-ink hover:bg-mute transition-colors px-3 py-2 cursor-pointer"
+                                                    >
+                                                        READY (INVOICE)
+                                                    </button>
                                                 ) : (
                                                     <span className="text-[9px] font-medium uppercase tracking-widest text-mute">NOT YET</span>
                                                 )}
@@ -531,10 +556,27 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
                             </div>
                         )}
 
+                        {!selectedJob.hasInvoice && validationWarnings.some(w => w.includes("Terdapat Sparepart yang belum Issued/Datang.")) && (
+                            <div className="mt-6 p-4 bg-soft-cloud border border-hairline flex flex-col gap-3">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isRawatJalan}
+                                        onChange={(e) => setIsRawatJalan(e.target.checked)}
+                                        className="w-5 h-5 accent-ink cursor-pointer"
+                                    />
+                                    <span className="text-[12px] font-medium text-ink uppercase tracking-widest group-hover:text-mute transition-colors">
+                                        Konfirmasi: Unit Keluar Rawat Jalan (Ada part yang belum dipasang)
+                                    </span>
+                                </label>
+                                <p className="text-[10px] text-mute pl-8">Dengan mencentang opsi ini, Anda menyetujui pembuatan faktur meskipun ada part yang berstatus indent atau on order.</p>
+                            </div>
+                        )}
+
                         <div className="mt-8 pt-6 border-t border-hairline flex flex-col gap-4">
                             <button 
                                 onClick={handleFinalizeAndPrint}
-                                disabled={isProcessing}
+                                disabled={isProcessing || (validationWarnings.some(w => w.includes("CRITICAL")) && !selectedJob.hasInvoice) || (validationWarnings.some(w => w.includes("Terdapat Sparepart yang belum Issued/Datang.")) && !isRawatJalan && !selectedJob.hasInvoice)}
                                 className={`w-full py-4 text-[14px] font-medium uppercase tracking-widest transition-colors ${selectedJob.hasInvoice ? 'bg-canvas text-ink border border-ink hover:bg-soft-cloud' : 'bg-ink text-canvas hover:bg-mute'} disabled:opacity-50`}
                             >
                                 {isProcessing ? 'PROCESSING...' : selectedJob.hasInvoice ? 'CETAK SALINAN (COPY)' : 'SIMPAN & CETAK FAKTUR'}
