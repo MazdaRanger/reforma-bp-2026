@@ -10,6 +10,7 @@ export const PRODUCTION_STAGES = [
     "Poles",
     "Finishing",
     "Quality Control",
+    "Selesai (Tunggu Pengambilan)"
 ];
 
 export const carBrands = ["Mazda", "Toyota", "Honda", "Mitsubishi", "Suzuki", "Daihatsu", "Nissan", "Hyundai", "Wuling", "BMW", "Mercedes-Benz", "Lainnya"];
@@ -20,10 +21,10 @@ export const jobdeskOptions = ["Service Advisor", "Admin Bengkel", "CRC", "Forem
 
 export const initialSettingsState: Settings = {
     workshopName: "REFORMA BODY & PAINT",
-    workshopAddress: "Jl. Pangeran Antasari No. 12, Jakarta Selatan",
+    workshopAddress: "Puri Harmoni 9, Desa Cikahuripan Kec. Klapanunggal Kab. Bogor, Jawa Barat",
     workshopPhone: "(021) 750-9999",
     workshopEmail: "service@reforma.com",
-    
+
     ppnPercentage: 11,
     monthlyTarget: 600000000,
     weeklyTarget: 150000000,
@@ -53,20 +54,20 @@ export const initialSettingsState: Settings = {
     carModels: [...mazdaModels],
     carColors: [...mazdaColors],
     statusKendaraanOptions: [
-        "Tunggu Estimasi", 
-        "Tunggu SPK Asuransi", 
-        "Banding Harga SPK", 
-        "Unit di Pemilik (Tunggu Part)", 
-        "Booking Masuk", 
-        "Work In Progress", 
-        "Unit Rawat Jalan", 
-        "Selesai (Tunggu Pengambilan)", 
+        "Tunggu Estimasi",
+        "Tunggu SPK Asuransi",
+        "Banding Harga SPK",
+        "Unit di Pemilik (Tunggu Part)",
+        "Booking Masuk",
+        "Work In Progress",
+        "Unit Rawat Jalan",
+        "Selesai (Tunggu Pengambilan)",
         "Sudah Diambil Pemilik"
     ],
     statusPekerjaanOptions: ["Belum Mulai Perbaikan", "Las Ketok", "Bongkar", "Dempul", "Cat", "Poles", "Pemasangan", "Finishing", "Quality Control", "Tunggu Part", "Selesai"],
     userRoles: {},
     roleOptions: ["Manager", "Service Advisor", "Admin Bengkel", "Foreman", "Sparepart", "Staff", "CRC"],
-    workshopBankAccounts: [], 
+    workshopBankAccounts: [],
     whatsappTemplates: {
         bookingReminder: "Halo Bpk/Ibu {nama}, kami mengonfirmasi jadwal booking perbaikan {mobil} ({nopol}) pada tanggal {tgl_booking}. Mohon kehadirannya tepat waktu di ReForma. Terima kasih.",
         afterService: "Halo Bpk/Ibu {nama}, terima kasih telah mempercayakan perbaikan {mobil} di ReForma. Bagaimana hasil perbaikannya? Mohon luangkan waktu untuk memberi penilaian.",

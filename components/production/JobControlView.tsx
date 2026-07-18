@@ -86,10 +86,15 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
           }
       });
 
-      if (readyCount === parts.length) return { label: 'PART READY', style: 'text-ink border-ink' };
-      if (readyCount > 0) return { label: 'PARTIAL READY', style: 'text-ink border-ink' };
-      if (indentCount > 0) return { label: 'PART INDENT', style: 'text-mute border-mute' };
-      if (onOrderCount > 0) return { label: 'ON ORDER', style: 'text-mute border-mute' };
+      if (readyCount === parts.length) return { label: 'PART LENGKAP / READY', style: 'text-ink border-ink' };
+      if (readyCount > 0) {
+          if (indentCount > 0) return { label: 'PARTIAL (INDENT)', style: 'text-ink border-ink' };
+          return { label: 'PARTIAL', style: 'text-ink border-ink' };
+      }
+      if (onOrderCount > 0 || indentCount > 0) {
+          if (indentCount > 0) return { label: 'ON ORDER (INDENT)', style: 'text-mute border-mute' };
+          return { label: 'ON ORDER', style: 'text-mute border-mute' };
+      }
       return { label: 'NEED ORDER', style: 'text-mute border-mute opacity-50' };
   };
 
@@ -433,43 +438,50 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                                     <div className="px-2 py-1 bg-soft-cloud border border-hairline text-[10px] font-medium text-ink uppercase tracking-widest text-center truncate">
                                                         PENDING: {job.statusKendaraan}
                                                     </div>
-                                                    {partStatus && (
-                                                        <div className={`px-2 py-1 border text-[10px] font-medium uppercase tracking-widest text-center ${partStatus.style}`}>
-                                                            {partStatus.label}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             )}
                                             
-                                            <div className="mb-4 bg-soft-cloud p-3 border border-hairline">
-                                                <label className="text-[10px] font-medium text-mute uppercase tracking-widest block mb-2">PIC STALL</label>
-                                                {hasAssignments ? (
-                                                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
-                                                        {stageAssignments.map((asg, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between border border-ink bg-canvas px-3 py-2">
-                                                                <span className="text-[12px] font-medium text-ink uppercase tracking-widest truncate">{asg.name}</span>
-                                                                {asg.panelCount !== undefined && <span className="text-[10px] font-medium text-ink uppercase tracking-widest">{asg.panelCount} PNL</span>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full py-2 border border-hairline hover:border-ink text-[10px] font-medium text-ink uppercase tracking-widest transition-colors bg-canvas">ASSIGN MECHANIC</button>
-                                                )}
-                                                {assigningJobId === job.id && (
-                                                    <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in rounded-2xl overflow-hidden">
-                                                        {(settings.mechanicNames || []).map(m => {
-                                                            const isAssigned = stageAssignments.some(a => a.name === m);
-                                                            const asgPanels = stageAssignments.find(a => a.name === m)?.panelCount;
-                                                            return (
-                                                                <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${isAssigned ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
-                                                                    <div className="truncate">{m}</div>
-                                                                    {isAssigned && asgPanels !== undefined && <div className="text-[8px] opacity-70 mt-1">{asgPanels} PNL</div>}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {partStatus && (
+                                                <div className={`mb-4 px-2 py-1 border text-[10px] font-medium uppercase tracking-widest text-center ${partStatus.style}`}>
+                                                    SPAREPART: {partStatus.label}
+                                                </div>
+                                            )}
+                                            
+                                            <details className="mb-4 bg-soft-cloud border border-hairline group">
+                                                <summary className="p-3 text-[10px] font-medium text-mute uppercase tracking-widest cursor-pointer list-none flex justify-between items-center outline-none">
+                                                    <span>PIC STALL {hasAssignments ? `(${stageAssignments.length})` : ''}</span>
+                                                    <span className="group-open:hidden border border-hairline px-2 py-0.5 text-ink">+ BUKA</span>
+                                                    <span className="hidden group-open:block border border-hairline px-2 py-0.5 text-ink">- TUTUP</span>
+                                                </summary>
+                                                <div className="p-3 pt-0 border-t border-hairline mt-2">
+                                                    {hasAssignments ? (
+                                                        <div className="flex flex-col gap-1 cursor-pointer mt-3" onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)}>
+                                                            {stageAssignments.map((asg, idx) => (
+                                                                <div key={idx} className="flex items-center justify-between border border-ink bg-canvas px-3 py-2">
+                                                                    <span className="text-[12px] font-medium text-ink uppercase tracking-widest truncate">{asg.name}</span>
+                                                                    {asg.panelCount !== undefined && <span className="text-[10px] font-medium text-ink uppercase tracking-widest">{asg.panelCount} PNL</span>}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <button onClick={() => setAssigningJobId(assigningJobId === job.id ? null : job.id)} className="w-full mt-3 py-2 border border-hairline hover:border-ink text-[10px] font-medium text-ink uppercase tracking-widest transition-colors bg-canvas">ASSIGN MECHANIC</button>
+                                                    )}
+                                                    {assigningJobId === job.id && (
+                                                        <div className="mt-2 grid grid-cols-2 gap-2 bg-canvas p-2 border border-hairline animate-fade-in rounded-2xl overflow-hidden">
+                                                            {(settings.mechanicNames || []).map(m => {
+                                                                const isAssigned = stageAssignments.some(a => a.name === m);
+                                                                const asgPanels = stageAssignments.find(a => a.name === m)?.panelCount;
+                                                                return (
+                                                                    <button key={m} onClick={(e) => { e.stopPropagation(); handleAssignMechanic(job, m); }} className={`text-[10px] p-2 border transition-colors text-left uppercase tracking-widest ${isAssigned ? 'bg-ink text-canvas border-ink' : 'bg-canvas text-ink border-hairline hover:border-ink'}`}>
+                                                                        <div className="truncate">{m}</div>
+                                                                        {isAssigned && asgPanels !== undefined && <div className="text-[8px] opacity-70 mt-1">{asgPanels} PNL</div>}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </details>
                                             <div className="flex justify-between items-center pt-4 border-t border-hairline">
                                                 <button onClick={() => handleMoveStage(job, 'prev')} disabled={isPersiapan} className="border border-hairline hover:border-ink text-ink px-4 py-2 text-[10px] font-medium uppercase tracking-widest transition-colors disabled:opacity-30">&lt; REWORK</button>
                                                 {!isAdminPending && <button onClick={() => handleRequestAddition(job)} className="border border-hairline hover:border-ink text-ink px-2 py-2 text-[10px] font-medium uppercase tracking-widest transition-colors">ADD</button>}
