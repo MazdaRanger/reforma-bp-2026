@@ -20,7 +20,6 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
   const [discountJasa, setDiscountJasa] = useState(0);
   const [discountPart, setDiscountPart] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRawatJalan, setIsRawatJalan] = useState(false);
 
   const isManager = userPermissions.role === 'Manager';
 
@@ -243,7 +242,6 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
           if (!proceed) return;
       }
 
-      setIsRawatJalan(false);
       setSelectedJob(job);
       setSearchTerm('');
   };
@@ -565,25 +563,16 @@ const InvoiceCreatorView: React.FC<InvoiceCreatorViewProps> = ({ jobs, settings,
 
                         {!selectedJob.hasInvoice && validationWarnings.some(w => w.includes("Terdapat Sparepart yang belum Issued/Datang.")) && (
                             <div className="mt-6 p-4 bg-soft-cloud border border-hairline flex flex-col gap-3">
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={isRawatJalan}
-                                        onChange={(e) => setIsRawatJalan(e.target.checked)}
-                                        className="w-5 h-5 accent-ink cursor-pointer"
-                                    />
-                                    <span className="text-[12px] font-medium text-ink uppercase tracking-widest group-hover:text-mute transition-colors">
-                                        Konfirmasi: Unit Keluar Rawat Jalan (Ada part yang belum dipasang)
-                                    </span>
-                                </label>
-                                <p className="text-[10px] text-mute pl-8">Dengan mencentang opsi ini, Anda menyetujui pembuatan faktur meskipun ada part yang berstatus indent atau on order.</p>
+                                <p className="text-[12px] font-medium text-ink uppercase tracking-widest text-center">
+                                    Peringatan: Terdapat part yang belum lengkap/issued. Silakan proses unit ini via fitur Rawat Jalan pada menu Gatepass jika pelanggan ingin membawa unit.
+                                </p>
                             </div>
                         )}
 
                         <div className="mt-8 pt-6 border-t border-hairline flex flex-col gap-4">
                             <button 
                                 onClick={handleFinalizeAndPrint}
-                                disabled={isProcessing || (validationWarnings.some(w => w.includes("CRITICAL")) && !selectedJob.hasInvoice) || (validationWarnings.some(w => w.includes("Terdapat Sparepart yang belum Issued/Datang.")) && !isRawatJalan && !selectedJob.hasInvoice)}
+                                disabled={isProcessing || (validationWarnings.some(w => w.includes("CRITICAL")) && !selectedJob.hasInvoice) || (validationWarnings.some(w => w.includes("Terdapat Sparepart yang belum Issued/Datang.")) && !selectedJob.hasInvoice)}
                                 className={`w-full py-4 text-[14px] font-medium uppercase tracking-widest transition-colors ${selectedJob.hasInvoice ? 'bg-canvas text-ink border border-ink hover:bg-soft-cloud' : 'bg-ink text-canvas hover:bg-mute'} disabled:opacity-50`}
                             >
                                 {isProcessing ? 'PROCESSING...' : selectedJob.hasInvoice ? 'CETAK SALINAN (COPY)' : 'SIMPAN & CETAK FAKTUR'}

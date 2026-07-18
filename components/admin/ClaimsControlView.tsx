@@ -22,7 +22,8 @@ const CLAIM_STAGES = [
     "Tunggu SPK Asuransi",
     "Banding Harga SPK",
     "Unit di Pemilik (Tunggu Part)",
-    "Booking Masuk"
+    "Booking Masuk",
+    "Unit Keluar Rawat Jalan"
 ];
 
 const DICTIONARY: Record<string, Record<string, string>> = {
@@ -41,6 +42,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
         "Banding Harga SPK": "Banding Harga SPK",
         "Unit di Pemilik (Tunggu Part)": "Unit di Pemilik (Tunggu Part)",
         "Booking Masuk": "Booking Masuk",
+        "Unit Keluar Rawat Jalan": "Unit Keluar Rawat Jalan",
         btn_deal: "SPK DEAL / ACC"
     },
     en: {
@@ -58,6 +60,7 @@ const DICTIONARY: Record<string, Record<string, string>> = {
         "Banding Harga SPK": "Negotiation Phase",
         "Unit di Pemilik (Tunggu Part)": "With Owner (Awaiting Part)",
         "Booking Masuk": "Scheduled Booking",
+        "Unit Keluar Rawat Jalan": "Rawat Jalan (Missing Parts)",
         btn_deal: "SPK APPROVED"
     }
 };
@@ -74,7 +77,14 @@ const ClaimsControlView: React.FC<ClaimsControlViewProps> = ({ jobs, inventoryIt
 
   const activeClaimJobs = useMemo(() => {
       const term = searchTerm.toUpperCase();
-      const filtered = jobs.filter(j => !j.isClosed && !j.isDeleted && isInsuranceJob(j.namaAsuransi) && CLAIM_STAGES.includes(j.statusKendaraan) && (j.policeNumber.includes(term) || j.customerName.toUpperCase().includes(term)));
+      const filtered = jobs.filter(j => 
+          !j.isClosed && !j.isDeleted && 
+          (
+              (isInsuranceJob(j.namaAsuransi) && CLAIM_STAGES.includes(j.statusKendaraan)) ||
+              (j.isRawatJalan)
+          ) && 
+          (j.policeNumber.includes(term) || j.customerName.toUpperCase().includes(term))
+      );
       
       const stockMap: Record<string, number> = {};
       inventoryItems.forEach(i => { stockMap[i.id] = i.stock; });
@@ -130,7 +140,13 @@ const ClaimsControlView: React.FC<ClaimsControlViewProps> = ({ jobs, inventoryIt
   const boardData = useMemo(() => {
       const columns: Record<string, any[]> = {};
       CLAIM_STAGES.forEach(s => columns[s] = []);
-      activeClaimJobs.forEach(job => { if (columns[job.statusKendaraan]) columns[job.statusKendaraan].push(job); });
+      activeClaimJobs.forEach(job => {
+          if (job.isRawatJalan) {
+              columns["Unit Keluar Rawat Jalan"].push(job);
+          } else if (columns[job.statusKendaraan]) {
+              columns[job.statusKendaraan].push(job);
+          }
+      });
       return columns;
   }, [activeClaimJobs]);
 
@@ -301,7 +317,7 @@ const ClaimsControlView: React.FC<ClaimsControlViewProps> = ({ jobs, inventoryIt
                                         </div>
                                         
                                         {/* LOGISTIC STATUS BADGES */}
-                                        {stage === 'Unit di Pemilik (Tunggu Part)' && (
+                                        {(stage === 'Unit di Pemilik (Tunggu Part)' || stage === 'Unit Keluar Rawat Jalan') && (
                                             <div className="mb-3">
                                                 {job.logisticStatus === 'READY' && <span className="w-full block text-center text-[10px] font-black bg-emerald-100 text-emerald-700 py-1 rounded border border-emerald-200">READY ALL PART</span>}
                                                 {job.logisticStatus === 'PARTIAL' && <span className="w-full block text-center text-[10px] font-black bg-blue-100 text-blue-700 py-1 rounded border border-blue-200">READY PARTIAL</span>}
@@ -311,7 +327,7 @@ const ClaimsControlView: React.FC<ClaimsControlViewProps> = ({ jobs, inventoryIt
                                             </div>
                                         )}
 
-                                        {job.isReadyToCall && stage === 'Unit di Pemilik (Tunggu Part)' && (
+                                        {job.isReadyToCall && (stage === 'Unit di Pemilik (Tunggu Part)' || stage === 'Unit Keluar Rawat Jalan') && (
                                             <div className="mb-4 py-1.5 px-2 bg-emerald-100/50 rounded-lg flex items-center gap-2 border border-emerald-200 animate-pulse"><Zap size={14} className="text-emerald-600 fill-emerald-600"/><span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{t('ready_badge')}</span></div>
                                         )}
                                         

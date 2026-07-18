@@ -43,21 +43,6 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
       endDate: string;
   }>({ isOpen: false, job: null, startDate: '', endDate: '' });
 
-  const activeProductionJobs = useMemo(() => {
-      const term = searchTerm.toUpperCase();
-      return jobs.filter(j => 
-          !j.isClosed && j.woNumber && !j.isDeleted && 
-          (j.posisiKendaraan === 'Di Bengkel' || (j.posisiKendaraan === 'Di Pemilik' && ADMIN_HURDLE_STATUSES.includes(j.statusKendaraan))) &&
-          (
-            j.statusKendaraan === 'Work In Progress' || 
-            j.statusKendaraan === 'Unit Rawat Jalan' || 
-            j.statusKendaraan === 'Selesai (Tunggu Pengambilan)' || 
-            ADMIN_HURDLE_STATUSES.includes(j.statusKendaraan)
-          ) && 
-          (j.policeNumber.includes(term) || j.carModel.toUpperCase().includes(term) || j.customerName.toUpperCase().includes(term))
-      );
-  }, [jobs, searchTerm]);
-
   // Virtual Stock Map
   const stockMap = useMemo(() => {
       const map: Record<string, number> = {};
@@ -98,16 +83,51 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
       return { label: 'NEED ORDER', style: 'text-mute border-mute opacity-50' };
   };
 
-  const boardData = useMemo(() => {
-      const columns: Record<string, Job[]> = {};
-      PRODUCTION_STAGES.forEach(s => columns[s] = []);
-      activeProductionJobs.forEach(job => {
-          let status = ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan) ? "Persiapan Kendaraan" : (PRODUCTION_STAGES.includes(job.statusPekerjaan) ? job.statusPekerjaan : 'Bongkar');
-          if (job.statusKendaraan === 'Selesai (Tunggu Pengambilan)') status = "Selesai (Tunggu Pengambilan)";
-          if (columns[status]) columns[status].push(job);
+  const activeProductionJobs = useMemo(() => {
+      const term = searchTerm.toUpperCase();
+      return jobs.filter(j => {
+          if (j.isClosed || !j.woNumber || j.isDeleted) return false;
+          
+          const isRawatJalanReady = j.isRawatJalan && getPartStatus(j)?.label === 'PART LENGKAP / READY';
+          const isPosisiValid = j.posisiKendaraan === 'Di Bengkel' || 
+                               (j.posisiKendaraan === 'Di Pemilik' && ADMIN_HURDLE_STATUSES.includes(j.statusKendaraan)) ||
+                               isRawatJalanReady;
+                               
+          const isStatusValid = j.statusKendaraan === 'Work In Progress' || 
+                                j.statusKendaraan === 'Unit Rawat Jalan' || 
+                                j.statusKendaraan === 'Selesai (Tunggu Pengambilan)' || 
+                                ADMIN_HURDLE_STATUSES.includes(j.statusKendaraan) ||
+                                isRawatJalanReady;
+                                
+          const matchesSearch = j.policeNumber.includes(term) || j.carModel.toUpperCase().includes(term) || j.customerName.toUpperCase().includes(term);
+          
+          return isPosisiValid && isStatusValid && matchesSearch;
       });
-      return columns;
-  }, [activeProductionJobs]);
+  }, [jobs, searchTerm, stockMap]);
+
+  const boardData = useMemo(() => {
+      const data: Record<string, Job[]> = {};
+      PRODUCTION_STAGES.forEach(s => data[s] = []);
+      data["Persiapan Kendaraan"] = []; 
+      data["Selesai (Tunggu Pengambilan)"] = []; 
+
+      activeProductionJobs.forEach(job => {
+          const isRawatJalanReady = job.isRawatJalan && getPartStatus(job)?.label === 'PART LENGKAP / READY';
+          if (isRawatJalanReady) {
+              data["Persiapan Kendaraan"].push(job);
+              return;
+          }
+
+          if (ADMIN_HURDLE_STATUSES.includes(job.statusKendaraan)) {
+              data["Persiapan Kendaraan"].push(job);
+          } else if (job.statusKendaraan === 'Selesai (Tunggu Pengambilan)') {
+              data["Selesai (Tunggu Pengambilan)"].push(job);
+          } else if (data[job.statusPekerjaan || 'Bongkar']) {
+              data[job.statusPekerjaan || 'Bongkar'].push(job);
+          }
+      });
+      return data;
+  }, [activeProductionJobs, stockMap]);
 
   const mechanicWorkload = useMemo(() => {
       const workload: Record<string, number> = {};
@@ -425,7 +445,10 @@ const JobControlView: React.FC<JobControlViewProps> = ({ jobs, settings, showNot
                                                         <span className="font-display text-[24px] text-ink leading-none">{job.policeNumber}</span>
                                                         {!isFinal && !isAdminPending && deadlineAlert}
                                                     </div>
-                                                    <p className="text-[10px] font-medium text-mute uppercase tracking-widest mt-2 truncate max-w-[200px]">{job.carModel} | {job.customerName}</p>
+                                                    <div className="flex flex-col mt-2 gap-1">
+                                                        <p className="text-[10px] font-medium text-mute uppercase tracking-widest truncate max-w-[200px]">{job.carModel} | {job.customerName}</p>
+                                                        {job.isRawatJalan && <span className="text-[9px] font-bold bg-ink text-canvas w-fit px-1.5 py-0.5 uppercase tracking-widest">RAWAT JALAN (FITTER)</span>}
+                                                    </div>
                                                 </div>
                                                 <div className="flex flex-col gap-2">
                                                     <button onClick={() => openScheduleModal(job)} className="text-[10px] border border-hairline hover:border-ink px-2 py-1 uppercase tracking-widest text-ink transition-colors">SCHED</button>

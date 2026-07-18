@@ -420,7 +420,10 @@ const CrcDashboardView: React.FC<CrcDashboardViewProps> = ({ jobs, inventoryItem
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-[14px] font-medium text-ink">{job.policeNumber}</div>
-                                            <div className="text-[12px] text-mute">{job.carModel}</div>
+                                            <div className="text-[12px] text-mute flex items-center gap-2">
+                                                {job.carModel}
+                                                {job.isRawatJalan && <span className="text-[8px] bg-ink text-canvas px-1 py-0.5 uppercase tracking-widest">RAWAT JALAN</span>}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {job.isPartReady ? <span className="text-[10px] font-medium text-ink border border-ink px-2 py-1 uppercase tracking-widest">Part Ready</span> : <span className="text-[10px] font-medium text-mute border border-mute px-2 py-1 uppercase tracking-widest">Waiting Part</span>}

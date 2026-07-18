@@ -34,6 +34,9 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
   const [woSearch, setWoSearch] = useState('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ totalBill: 0, totalPaid: 0, remaining: 0 });
+  
+  // Gatepass Additions
+  const [isRawatJalan, setIsRawatJalan] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -225,13 +228,14 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
               statusPekerjaan: 'Selesai', 
               posisiKendaraan: 'Di Pemilik', 
               crcFollowUpStatus: 'Pending', 
+              isRawatJalan: isRawatJalan,
               updatedAt: serverTimestamp(),
               productionLogs: arrayUnion({
                   stage: 'Gate Pass',
                   timestamp: new Date().toISOString(),
                   user: userPermissions.role || 'Cashier',
                   type: 'progress',
-                  note: 'Unit Keluar (Gate Pass Printed)'
+                  note: `Unit Keluar (Gate Pass Printed) ${isRawatJalan ? '- RAWAT JALAN' : ''}`
               })
           };
 
@@ -383,6 +387,26 @@ const CashierView: React.FC<CashierViewProps> = ({ jobs, transactions, userPermi
                                         <span className="text-ink font-medium uppercase tracking-widest text-[12px]">REMAINING:</span>
                                         <span className="font-display text-[20px] leading-none text-ink">{formatCurrency(paymentSummary.remaining)}</span>
                                     </div>
+                                    
+                                    <div className="pt-2 border-t border-hairline mt-2">
+                                        <label className="flex items-start gap-2 cursor-pointer group">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isRawatJalan}
+                                                onChange={(e) => setIsRawatJalan(e.target.checked)}
+                                                className="w-4 h-4 accent-ink mt-0.5"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] font-medium text-ink uppercase tracking-widest group-hover:text-mute transition-colors">
+                                                    Unit Keluar Rawat Jalan
+                                                </span>
+                                                <span className="text-[9px] text-mute leading-tight mt-0.5">
+                                                    Centang ini jika unit diizinkan keluar tapi part/pekerjaan belum lengkap (Masih ada tanggungan bengkel).
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+
                                     <div className="pt-4 border-t border-hairline flex gap-2">
                                         <button 
                                             type="button"
