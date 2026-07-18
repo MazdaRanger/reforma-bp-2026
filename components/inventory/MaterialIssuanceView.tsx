@@ -163,7 +163,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
           else if (readyCount > 0) statusLabel = 'PARTIAL';
           else if (indentCount > 0) statusLabel = 'ON ORDER (INDENT)';
           
-          const orderDate = job.updatedAt ? new Date(job.updatedAt).toISOString() : new Date().toISOString(); 
+          const orderDate = job.updatedAt || job.createdAt || new Date().toISOString(); 
           
           return { job, statusLabel, orderDate };
       });
