@@ -862,7 +862,7 @@ const MaterialIssuanceView: React.FC<MaterialIssuanceViewProps> = ({
                     )}
 
                     {issuanceType === 'material' && (
-                        <div className="bg-canvas border border-hairline p-6 rounded-2xl overflow-hidden">
+                        <div className="bg-canvas border border-hairline p-6 rounded-2xl overflow-visible">
                                 <div className="flex justify-between items-center mb-6 border-b border-hairline pb-4">
                                     <h3 className="font-medium text-ink uppercase tracking-widest text-[16px]">INPUT PEMAKAIAN BAHAN</h3>
                                     <button 
